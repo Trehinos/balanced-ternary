@@ -666,7 +666,7 @@ impl BitOr for Digit {
 
 impl BitXor for Digit {
     type Output = Self;
-    
+
     /// Performs a bitwise XOR (exclusive OR) operation between two `Digit` values.
     ///
     /// - The rules for the bitwise XOR (`^`) operation are as follows:

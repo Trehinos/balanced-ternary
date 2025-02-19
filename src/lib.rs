@@ -120,6 +120,84 @@ pub use crate::digit::{
     Digit::{Neg, Pos, Zero},
 };
 
+/// Converts a character into a `Digit`.
+///
+/// # Arguments
+/// * `from` - A single character (`+`, `0`, or `-`).
+/// * **Panics** if the input character is invalid.
+///
+/// # Returns
+/// * A `Digit` enum corresponding to the character.
+///
+/// # Example
+/// ```
+/// use balanced_ternary::{i3, Digit};
+///
+/// let digit = i3('+');
+/// assert_eq!(digit, Digit::Pos);
+/// ```
+pub fn i3(from: char) -> Digit {
+    Digit::from_char(from)
+}
+
+
+/// Converts a string representation of a balanced ternary number into a `Ternary` object.
+///
+/// This function is a convenient shorthand for creating `Ternary` numbers 
+/// from string representations. The input string must consist of balanced 
+/// ternary characters: `+`, `0`, and `-`.
+///
+/// # Arguments
+///
+/// * `from` - A string slice representing the balanced ternary number.
+/// * **Panics** if an input character is invalid.
+///
+/// # Returns
+///
+/// A `Ternary` object created from the provided string representation.
+///
+/// # Example
+/// ```
+/// use balanced_ternary::{ter, Ternary};
+///
+/// let ternary = ter("+-0+");
+/// assert_eq!(ternary.to_string(), "+-0+");
+/// ```
+pub fn ter(from: &str) -> Ternary {
+    Ternary::parse(from)
+}
+
+
+/// Creates a `Tryte` object from a string representation of a balanced ternary number.
+///
+/// This function first converts the input string representation into a `Ternary` object
+/// using the `ter` function, and then constructs a `Tryte` from that `Ternary`.
+///
+/// # Panics
+///
+/// This function panics if the `Ternary` contains more than 6 digits or if an input character is invalid.
+///
+/// # Arguments
+///
+/// * `from` - A string slice representing the balanced ternary number. It must contain
+///   valid balanced ternary characters (`+`, `0`, or `-`) only.
+/// * Panics if an input character is invalid.
+///
+/// # Returns
+///
+/// A `Tryte` object constructed from the provided balanced ternary string.
+///
+/// # Example
+/// ```
+/// use balanced_ternary::{tryte, Tryte};
+///
+/// let tryte_value = tryte("+0+0");
+/// assert_eq!(tryte_value.to_string(), "+0+0");
+/// ```
+pub fn tryte(from: &str) -> Tryte {
+    Tryte::from_ternary(&ter(from))
+}
+
 /// Represents a balanced ternary number using a sequence of `Digit`s.
 ///
 /// Provides functions for creating, parsing, converting, and manipulating balanced ternary numbers.
