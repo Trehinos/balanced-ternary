@@ -213,12 +213,12 @@ impl Ternary {
     /// ```
     /// use balanced_ternary::Ternary;
     ///
-    /// //                              3
-    /// //                              |2
-    /// //                              ||1
-    /// //                              |||0
-    /// //                              ||||
-    /// //                              vvvv
+    /// // Indexes :
+    /// //                              32
+    /// //                             4||1
+    /// //                            5||||0
+    /// //                            ||||||
+    /// //                            vvvvvv
     /// let ternary = Ternary::parse("+++--+");
     /// assert_eq!(ternary.get_digit(1).unwrap().to_char(), '-')
     /// ```
