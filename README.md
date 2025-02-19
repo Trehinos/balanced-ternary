@@ -1,3 +1,5 @@
+[![Rust](https://github.com/Trehinos/balanced-ternary/actions/workflows/rust.yml/badge.svg)](https://github.com/Trehinos/balanced-ternary/actions/workflows/rust.yml)
+
 # Balanced Ternary
 
 **Balanced Ternary** is a Rust library for manipulating **balanced ternary** numbers, a numeral system with digits `-1`,
@@ -60,4 +62,5 @@ balanced-ternary = "0.1.*"
 ```
 
 ## License
-`Balanced Ternary` is licensed under the [MIT License]().
+Copyright (c) 2025 Sébastien GELDREICH  
+`Balanced Ternary` is licensed under the [MIT License](LICENSE).
