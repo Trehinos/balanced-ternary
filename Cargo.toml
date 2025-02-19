@@ -9,7 +9,7 @@ keywords = ["ternary", "balanced-ternary", "base3"]
 categories = ["data-structures", "mathematics", "science", "no-std"]
 
 [features]
-default = []
+default = ["tryte"]
 tryte = []
 
 [dependencies]

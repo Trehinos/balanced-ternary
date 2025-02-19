@@ -294,7 +294,8 @@ impl Display for Ternary {
 
 pub mod operations;
 
-//pub mod tryte;
+#[cfg(feature = "tryte")]
+pub mod tryte;
 
 #[cfg(test)]
 mod tests {

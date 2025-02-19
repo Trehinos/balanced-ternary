@@ -83,6 +83,7 @@
 
 use crate::{Digit, Ternary};
 use alloc::vec;
+use alloc::vec::Vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Sub};
 
 impl Neg for Digit {
@@ -279,6 +280,57 @@ impl Div<&Ternary> for &Ternary {
     }
 }
 
+impl BitAnd<&Ternary> for &Ternary {
+    type Output = Ternary;
+
+    fn bitand(self, rhs: &Ternary) -> Self::Output {
+        if self.log() < rhs.log() {
+            return rhs & self;
+        }
+        let mut digits = Vec::new();
+        for (i, d) in self.digits.iter().rev().enumerate() {
+            let other = rhs.get_digit(i).unwrap_or(&Digit::Zero);
+            digits.push(*d & *other);
+        }
+        digits.reverse();
+        Ternary::new(digits)
+    }
+}
+
+impl BitOr<&Ternary> for &Ternary {
+    type Output = Ternary;
+
+    fn bitor(self, rhs: &Ternary) -> Self::Output {
+        if self.log() < rhs.log() {
+            return rhs | self;
+        }
+        let mut digits = Vec::new();
+        for (i, d) in self.digits.iter().rev().enumerate() {
+            let other = rhs.get_digit(i).unwrap_or(&Digit::Zero);
+            digits.push(*d | *other);
+        }
+        digits.reverse();
+        Ternary::new(digits)
+    }
+}
+
+impl BitXor<&Ternary> for &Ternary {
+    type Output = Ternary;
+
+    fn bitxor(self, rhs: &Ternary) -> Self::Output {
+        if self.log() < rhs.log() {
+            return rhs ^ self;
+        }
+        let mut digits = Vec::new();
+        for (i, d) in self.digits.iter().rev().enumerate() {
+            let other = rhs.get_digit(i).unwrap_or(&Digit::Zero);
+            digits.push(*d ^ *other);
+        }
+        digits.reverse();
+        Ternary::new(digits)
+    }
+}
+
 #[cfg(test)]
 #[test]
 fn test_ternary_ops() {
@@ -305,4 +357,20 @@ fn test_ternary_ops() {
     let repr_neg120 = -&repr120;
     assert_eq!(repr_neg120.to_dec(), -120);
     assert_eq!(repr_neg120.to_string(), "----0");
+
+    let bitwise = &Ternary::parse("++00") & &Ternary::parse("0000");
+    assert_eq!(bitwise.to_string(), "0000");
+
+    let bitwise = &Ternary::parse("++00") & &Ternary::parse("0+00");
+    assert_eq!(bitwise.to_string(), "0+00");
+
+    let bitwise = &Ternary::parse("+000") | &Ternary::parse("000-");
+    assert_eq!(bitwise.to_string(), "+000");
+
+
+    let bitwise = &Ternary::parse("+000") & &Ternary::parse("000-");
+    assert_eq!(bitwise.to_string(), "000-");
+
+    let bitwise = &Ternary::parse("+000") | &Ternary::parse("000+");
+    assert_eq!(bitwise.to_string(), "+00+");
 }
