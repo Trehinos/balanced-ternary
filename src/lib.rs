@@ -82,8 +82,8 @@
 extern crate alloc;
 
 use alloc::string::{String, ToString};
-use alloc::vec;
 use alloc::vec::Vec;
+use alloc::{format, vec};
 use core::fmt::{Display, Formatter};
 use core::str::FromStr;
 
@@ -94,23 +94,31 @@ use core::str::FromStr;
 /// - `radix`: The base of the numeral system.
 ///
 /// Returns a string representation of the number in the specified base.
-fn format_radix(mut x: u32, radix: u32) -> String {
+fn format_radix(x: i64, radix: u32) -> String {
     let mut result = vec![];
-
+    let sign = x.signum();
+    let mut x = x.abs() as u64;
     loop {
-        let m = x % radix;
-        x /= radix;
+        let m = (x % radix as u64) as u32;
+        x /= radix as u64;
         result.push(core::char::from_digit(m, radix).unwrap());
         if x == 0 {
             break;
         }
     }
-    result.into_iter().rev().collect()
+    format!(
+        "{}{}",
+        if sign == -1 { "-" } else { "" },
+        result.into_iter().rev().collect::<String>()
+    )
 }
 
 pub mod digit;
 
-pub use crate::digit::Digit;
+pub use crate::digit::{
+    Digit,
+    Digit::{Neg, Pos, Zero},
+};
 
 /// Represents a balanced ternary number using a sequence of `Digit`s.
 ///
@@ -178,23 +186,25 @@ impl Ternary {
     /// with digits represented as `Digit`s.
     pub fn from_dec(dec: i64) -> Self {
         let sign = dec.signum();
-        let str = format_radix(dec.abs() as u32, 3);
-        let mut next = 0u8;
+        let str = format_radix(dec.abs(), 3);
+        let mut carry = 0u8;
         let mut repr = Ternary::new(vec![]);
         for digit in str.chars().rev() {
-            let digit = u8::from_str(&digit.to_string()).unwrap() + next;
+            let digit = u8::from_str(&digit.to_string()).unwrap() + carry;
             if digit < 2 {
                 repr.digits.push(Digit::from_i8(digit as i8));
-                next = 0;
+                carry = 0;
             } else if digit == 2 {
                 repr.digits.push(Digit::from_i8(-1));
-                next = 1;
+                carry = 1;
             } else if digit == 3 {
                 repr.digits.push(Digit::from_i8(0));
-                next = 1;
+                carry = 1;
+            } else {
+                panic!("Ternary::from_dec(): Invalid digit: {}", digit);
             }
         }
-        if next == 1 {
+        if carry == 1 {
             repr.digits.push(Digit::from_i8(1));
         }
         repr.digits.reverse();
@@ -203,6 +213,63 @@ impl Ternary {
         } else {
             repr
         }
+    }
+
+    /// Converts the balanced ternary number to its unbalanced representation as a string.
+    ///
+    /// The unbalanced representation treats the digits as standard ternary (0, 1, 2),
+    /// instead of balanced ternary (-1, 0, +1). Negative digits are handled by
+    /// calculating the decimal value of the balanced ternary number and converting
+    /// it back to an unbalanced ternary string.
+    ///
+    /// Returns:
+    /// * `String` - The unbalanced ternary representation of the number, where each
+    /// digit is one of `0`, `1`, or `2`.
+    ///
+    /// Example:
+    /// ```
+    /// use balanced_ternary::Ternary;
+    ///
+    /// let repr = Ternary::parse("+--");
+    /// assert_eq!(repr.to_unbalanced(), "12");
+    /// assert_eq!(repr.to_dec(), 5);
+    /// let repr = Ternary::parse("-++");
+    /// assert_eq!(repr.to_unbalanced(), "-12");
+    /// assert_eq!(repr.to_dec(), -5);
+    /// ```
+    pub fn to_unbalanced(&self) -> String {
+        format_radix(self.to_dec(), 3)
+    }
+
+    /// Parses a string representation of an unbalanced ternary number into a `Ternary` object.
+    ///
+    /// The string must only contain characters valid in the unbalanced ternary numeral system (`0`, `1`, or `2`).
+    /// Each character is directly converted into its decimal value and then interpreted as a balanced ternary number.
+    ///
+    /// # Arguments
+    ///
+    /// * `unbalanced` - A string slice representing the unbalanced ternary number.
+    ///
+    /// # Returns
+    ///
+    /// A `Ternary` object representing the same value as the input string in balanced ternary form.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the string is not a valid unbalanced ternary number.
+    /// For instance, if it contains characters other than `0`, `1`, or `2`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::Ternary;
+    ///
+    /// let ternary = Ternary::from_unbalanced("-12");
+    /// assert_eq!(ternary.to_string(), "-++");
+    /// assert_eq!(ternary.to_dec(), -5);
+    /// ```
+    pub fn from_unbalanced(unbalanced: &str) -> Self {
+        Self::from_dec(i64::from_str_radix(unbalanced, 3).unwrap())
     }
 }
 
@@ -229,12 +296,12 @@ pub use crate::tryte::Tryte;
 fn test_ternary() {
     use crate::*;
 
-    let repr5 = Ternary::new(vec![Digit::Pos, Digit::Neg, Digit::Neg]);
+    let repr5 = Ternary::new(vec![Pos, Neg, Neg]);
     assert_eq!(repr5.to_dec(), 5);
     let repr5 = Ternary::from_dec(5);
     assert_eq!(repr5.to_dec(), 5);
 
-    let repr13 = Ternary::new(vec![Digit::Pos, Digit::Pos, Digit::Pos]);
+    let repr13 = Ternary::new(vec![Pos, Pos, Pos]);
     assert_eq!(repr13.to_dec(), 13);
 
     let repr14 = Ternary::parse("+---");
@@ -266,4 +333,16 @@ fn test_ternary() {
     let test = Ternary::from_dec(18887455);
     assert_eq!(test.to_dec(), 18887455);
     assert_eq!(test.to_string(), "++00--0--+-0++0+");
+
+    let unbalanced = Ternary::from_unbalanced("12");
+    assert_eq!(unbalanced.to_dec(), 5);
+    assert_eq!(unbalanced.to_string(), "+--");
+
+    let unbalanced = Ternary::from_unbalanced("-12");
+    assert_eq!(unbalanced.to_dec(), -5);
+    assert_eq!(unbalanced.to_string(), "-++");
+
+    let unbalanced = Ternary::from_dec(121);
+    assert_eq!(unbalanced.to_unbalanced(), "11111");
+    assert_eq!(unbalanced.to_string(), "+++++");
 }

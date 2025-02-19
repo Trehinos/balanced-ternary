@@ -9,10 +9,14 @@
 //!
 //! A [Tryte] can holds value between `-364` and `+364`.
 
-use crate::{Digit, Ternary};
+use crate::{
+    Digit,
+    Digit::{Neg, Pos, Zero},
+    Ternary,
+};
 use alloc::string::ToString;
 use core::fmt::{Display, Formatter};
-use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
+use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
 
 /// A struct representing a balanced ternary number with a fixed length of 6 digits.
 ///
@@ -26,17 +30,11 @@ pub struct Tryte {
 
 impl Tryte {
     /// `364` or `++++++`
-    pub const MAX: Self = Self {
-        raw: [Digit::Pos; 6],
-    };
+    pub const MAX: Self = Self { raw: [Pos; 6] };
     /// `-364` or `------`
-    pub const MIN: Self = Self {
-        raw: [Digit::Neg; 6],
-    };
+    pub const MIN: Self = Self { raw: [Neg; 6] };
     /// `0` or `000000`
-    pub const ZERO: Self = Self {
-        raw: [Digit::Zero; 6],
-    };
+    pub const ZERO: Self = Self { raw: [Zero; 6] };
 
     /// Converts the `BalancedTryte` into its `Ternary` representation.
     ///
@@ -72,7 +70,7 @@ impl Tryte {
         if v.log() > 6 {
             panic!("Cannot convert a Ternary with more than 6 digits to a Tryte.");
         }
-        let mut digits = [Digit::Zero; 6];
+        let mut digits = [Zero; 6];
         for (i, d) in v.digits.iter().rev().enumerate() {
             digits[5 - i] = *d;
         }
@@ -148,7 +146,7 @@ impl Display for Tryte {
     }
 }
 
-impl Neg for Tryte {
+impl StdNeg for Tryte {
     type Output = Tryte;
     fn neg(self) -> Self::Output {
         Self::from_ternary(&-&self.to_ternary())

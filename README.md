@@ -11,7 +11,7 @@ This system is useful in areas like computer science and mathematics due to its 
 
 - **Number Conversions:** Convert between decimal and balanced ternary representations.
 - **Arithmetic Operations:** Support for addition, subtraction, multiplication, and division.
-- **Logic Operations:** Support for bitwise and, or, xor, and not.
+- **[Logic Operations](https://en.wikipedia.org/wiki/Three-valued_logic):** Support for bitwise and, or, xor, and not.
 - **Advanced logic**: Implementation of K3, L3, RM3 and HT imply operation.
 - **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols.
 - **No Standard Library:** Suitable for `#![no_std]` environments.

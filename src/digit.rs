@@ -350,6 +350,66 @@ impl Digit {
             Digit::Pos => Digit::Neg,
         }
     }
+
+
+    /// Converts the `Digit` to a `bool` in HT logic.
+    ///
+    /// - Returns:
+    ///     - `true` when `self` is `Digit::Pos`.
+    ///     - `false` when `self` is `Digit::Neg`.
+    ///
+    /// - Panics:
+    ///     - Panics if `self` is `Digit::Zero`, as `Digit::Zero` cannot be directly
+    ///       converted to a boolean value.
+    ///       > Use `Digit::possibly()` or `Digit::necessary()` before calling this method in such cases.
+    pub fn ht_bool(&self) -> bool {
+        match self {
+            Digit::Neg => false,
+            Digit::Zero => panic!(
+                "Cannot convert a Digit::Zero to a bool. \
+                 Use Digit::possibly()->to_bool() or Digit::necessary()->to_bool() instead."),
+            Digit::Pos => true,
+        }
+    }
+
+    /// This method maps this `Digit` value to its corresponding unbalanced ternary
+    /// integer representation.
+    ///
+    /// - Returns:
+    ///     - `0` for `Digit::Neg`.
+    ///     - `1` for `Digit::Zero`.
+    ///     - `2` for `Digit::Pos`.
+    ///
+    pub fn to_unbalanced(&self) -> u8 {
+        match self {
+            Digit::Neg => 0,
+            Digit::Zero => 1,
+            Digit::Pos => 2,
+        }
+    }
+    
+
+    /// Creates a `Digit` from an unbalanced ternary integer representation.
+    ///
+    /// # Arguments:
+    /// - `u`: An unsigned 8-bit integer representing an unbalanced ternary value.
+    ///
+    /// # Returns:
+    /// - `Digit::Neg` for `0`.
+    /// - `Digit::Zero` for `1`.
+    /// - `Digit::Pos` for `2`.
+    ///
+    /// # Panics:
+    /// - Panics if the provided value is not `0`, `1`, or `2`, as these are the
+    ///   only valid representations of unbalanced ternary values.
+    pub fn from_unbalanced(u: u8) -> Digit {
+        match u {
+            0 => Digit::Neg,
+            1 => Digit::Zero,
+            2 => Digit::Pos,
+            _ => panic!("Invalid value. A unbalanced ternary value must be either 0, 1 or 2."),
+        }
+    }
 }
 
 impl Neg for Digit {
