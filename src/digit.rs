@@ -438,6 +438,26 @@ impl Not for Digit {
 
 impl Add<Digit> for Digit {
     type Output = Ternary;
+
+    /// Adds two `Digit` values together and returns a `Ternary` result.
+    ///
+    /// - The rules for addition are based on ternary arithmetic:
+    ///   - For `Digit::Neg`:
+    ///     - Adding `Digit::Neg` results in "underflow" (`Ternary::parse("-+")`).
+    ///     - Adding `Digit::Zero` keeps the result as `Digit::Neg` (`Ternary::parse("-")`).
+    ///     - Adding `Digit::Pos` results in a balance (`Ternary::parse("0")`).
+    ///   - For `Digit::Zero`:
+    ///     - Simply returns the other operand wrapped in a `Ternary` object.
+    ///   - For `Digit::Pos`:
+    ///     - Adding `Digit::Neg` results in balance (`Ternary::parse("0")`).
+    ///     - Adding `Digit::Zero` keeps the result as `Digit::Pos` (`Ternary::parse("+")`).
+    ///     - Adding `Digit::Pos` results in "overflow" (`Ternary::parse("+-")`).
+    ///
+    /// - Returns:
+    ///   - A `Ternary` instance that holds the result of the addition.
+    ///
+    /// - Panics:
+    ///   - This method does not panic under any circumstances.
     fn add(self, other: Digit) -> Self::Output {
         match self {
             Digit::Neg => match other {
@@ -457,6 +477,27 @@ impl Add<Digit> for Digit {
 
 impl Sub<Digit> for Digit {
     type Output = Ternary;
+    
+
+    /// Subtracts two `Digit` values and returns a `Ternary` result.
+    ///
+    /// - The rules for subtraction are based on ternary arithmetic:
+    ///   - For `Digit::Neg`:
+    ///     - Subtracting `Digit::Neg` results in balance (`Ternary::parse("0")`).
+    ///     - Subtracting `Digit::Zero` keeps the result as `Digit::Neg` (`Ternary::parse("-")`).
+    ///     - Subtracting `Digit::Pos` results in "underflow" (`Ternary::parse("-+")`).
+    ///   - For `Digit::Zero`:
+    ///     - Simply negates the other operand and returns it wrapped in a `Ternary` object.
+    ///   - For `Digit::Pos`:
+    ///     - Subtracting `Digit::Neg` results in "overflow" (`Ternary::parse("+-")`).
+    ///     - Subtracting `Digit::Zero` keeps the result as `Digit::Pos` (`Ternary::parse("+")`).
+    ///     - Subtracting `Digit::Pos` results in balance (`Ternary::parse("0")`).
+    ///
+    /// - Returns:
+    ///   - A `Ternary` instance that holds the result of the subtraction.
+    ///
+    /// - Panics:
+    ///   - This method does not panic under any circumstances.
     fn sub(self, other: Digit) -> Self::Output {
         match self {
             Digit::Neg => match other {
@@ -477,6 +518,22 @@ impl Sub<Digit> for Digit {
 impl Mul<Digit> for Digit {
     type Output = Digit;
 
+    
+    /// Multiplies two `Digit` values together and returns the product as a `Digit`.
+    ///
+    /// - The rules for multiplication in this implementation are straightforward:
+    ///   - `Digit::Neg` multiplied by:
+    ///     - `Digit::Neg` results in `Digit::Pos`.
+    ///     - `Digit::Zero` results in `Digit::Zero`.
+    ///     - `Digit::Pos` results in `Digit::Neg`.
+    ///   - `Digit::Zero` multiplied by any `Digit` always results in `Digit::Zero`.
+    ///   - `Digit::Pos` multiplied by:
+    ///     - `Digit::Neg` results in `Digit::Neg`.
+    ///     - `Digit::Zero` results in `Digit::Zero`.
+    ///     - `Digit::Pos` results in `Digit::Pos`.
+    ///
+    /// - Returns:
+    ///   - A `Digit` instance representing the result of the multiplication.
     fn mul(self, other: Digit) -> Self::Output {
         match self {
             Digit::Neg => -other,
@@ -489,6 +546,28 @@ impl Mul<Digit> for Digit {
 impl Div<Digit> for Digit {
     type Output = Digit;
 
+    
+    /// Divides one `Digit` value by another and returns the result as a `Digit`.
+    ///
+    /// # Rules for division:
+    /// - For `Digit::Neg`:
+    ///   - Dividing `Digit::Neg` by `Digit::Neg` results in `Digit::Pos`.
+    ///   - Dividing `Digit::Neg` by `Digit::Zero` will panic with "Cannot divide by zero."
+    ///   - Dividing `Digit::Neg` by `Digit::Pos` results in `Digit::Neg`.
+    /// - For `Digit::Zero`:
+    ///   - Dividing `Digit::Zero` by `Digit::Neg` results in `Digit::Zero`.
+    ///   - Dividing `Digit::Zero` by `Digit::Zero` will panic with "Cannot divide by zero."
+    ///   - Dividing `Digit::Zero` by `Digit::Pos` results in `Digit::Zero`.
+    /// - For `Digit::Pos`:
+    ///   - Dividing `Digit::Pos` by `Digit::Neg` results in `Digit::Neg`.
+    ///   - Dividing `Digit::Pos` by `Digit::Zero` will panic with "Cannot divide by zero."
+    ///   - Dividing `Digit::Pos` by `Digit::Pos` results in `Digit::Pos`.
+    ///
+    /// # Returns:
+    /// - A `Digit` value representing the result of the division.
+    ///
+    /// # Panics:
+    /// - Panics with "Cannot divide by zero." if the `other` operand is `Digit::Zero`.
     fn div(self, other: Digit) -> Self::Output {
         match self {
             Digit::Neg => match other {
@@ -512,6 +591,29 @@ impl Div<Digit> for Digit {
 
 impl BitAnd for Digit {
     type Output = Self;
+    
+    /// Performs a bitwise AND operation between two `Digit` values and returns the result.
+    ///
+    /// - The rules for the bitwise AND (`&`) operation are:
+    ///   - If `self` is `Digit::Neg`, the result is always `Digit::Neg`.
+    ///   - If `self` is `Digit::Zero`, the result depends on the value of `other`:
+    ///     - `Digit::Neg` results in `Digit::Neg`.
+    ///     - Otherwise, the result is `Digit::Zero`.
+    ///   - If `self` is `Digit::Pos`, the result is simply `other`.
+    ///
+    /// # Returns:
+    /// - A `Digit` value that is the result of the bitwise AND operation.
+    ///
+    /// # Examples:
+    /// ```
+    /// use balanced_ternary::Digit;
+    /// use Digit::{Neg, Pos, Zero};
+    ///
+    /// assert_eq!(Neg & Pos, Neg);
+    /// assert_eq!(Zero & Neg, Neg);
+    /// assert_eq!(Zero & Pos, Zero);
+    /// assert_eq!(Pos & Zero, Zero);
+    /// ```
     fn bitand(self, other: Self) -> Self::Output {
         match self {
             Digit::Neg => Digit::Neg,
@@ -526,6 +628,30 @@ impl BitAnd for Digit {
 
 impl BitOr for Digit {
     type Output = Self;
+
+
+    /// Performs a bitwise OR operation between two `Digit` values and returns the result.
+    ///
+    /// - The rules for the bitwise OR (`|`) operation are as follows:
+    ///   - If `self` is `Digit::Neg`, the result is always the value of `other`.
+    ///   - If `self` is `Digit::Zero`, the result depends on the value of `other`:
+    ///     - `Digit::Pos` results in `Digit::Pos`.
+    ///     - Otherwise, the result is `Digit::Zero`.
+    ///   - If `self` is `Digit::Pos`, the result is always `Digit::Pos`.
+    ///
+    /// # Returns:
+    /// - A `Digit` value that is the result of the bitwise OR operation.
+    ///
+    /// # Examples:
+    /// ```
+    /// use balanced_ternary::Digit;
+    /// use Digit::{Neg, Pos, Zero};
+    ///
+    /// assert_eq!(Neg | Pos, Pos);
+    /// assert_eq!(Zero | Neg, Zero);
+    /// assert_eq!(Zero | Pos, Pos);
+    /// assert_eq!(Pos | Zero, Pos);
+    /// ```
     fn bitor(self, other: Self) -> Self::Output {
         match self {
             Digit::Neg => other,
@@ -540,7 +666,29 @@ impl BitOr for Digit {
 
 impl BitXor for Digit {
     type Output = Self;
-
+    
+    /// Performs a bitwise XOR (exclusive OR) operation between two `Digit` values.
+    ///
+    /// - The rules for the bitwise XOR (`^`) operation are as follows:
+    ///   - If `self` is `Digit::Neg`, the result is always the value of `rhs`.
+    ///   - If `self` is `Digit::Zero`, the result is always `Digit::Zero`.
+    ///   - If `self` is `Digit::Pos`, the result is the negation of `rhs`:
+    ///     - `Digit::Neg` becomes `Digit::Pos`.
+    ///     - `Digit::Zero` becomes `Digit::Zero`.
+    ///     - `Digit::Pos` becomes `Digit::Neg`.
+    ///
+    /// # Returns:
+    /// - A `Digit` value that is the result of the bitwise XOR operation.
+    ///
+    /// # Examples:
+    /// ```
+    /// use balanced_ternary::Digit;
+    /// use Digit::{Neg, Pos, Zero};
+    ///
+    /// assert_eq!(Neg ^ Pos, Pos);
+    /// assert_eq!(Zero ^ Neg, Zero);
+    /// assert_eq!(Pos ^ Pos, Neg);
+    /// ```
     fn bitxor(self, rhs: Self) -> Self::Output {
         match self {
             Digit::Neg => rhs,

@@ -18,7 +18,7 @@ This system is useful in areas like computer science and mathematics due to its 
 - Provides the types:
   - `Digit` (`Neg`, `Zero` or `Pos`),
   - `Ternary` (heap allocated variable-length balanced-ternary number),
-  - `Tryte` (copy-type 6 character long ternary number).
+  - `Tryte` (6 characters long copy-type ternary number).
 
 ## Examples
 
