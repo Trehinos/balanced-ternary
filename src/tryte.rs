@@ -1,10 +1,10 @@
-//! A module defining the `BalancedTryte` structure and its associated functionality.
+//! A module defining the `Tryte` structure and its associated functionality.
 //!
-//! The `BalancedTryte` struct represents a Copy type balanced ternary number with exactly 6 digits.
+//! The `Tryte` struct represents a Copy type balanced ternary number with exactly 6 digits.
 //! Each digit in a balanced ternary system can have one of three values: -1, 0, or 1.
 //!
-//! This module provides utilities to convert between `BalancedTryte` and various
-//! representations such as `Ternary`, `u8`, and `u16`. It ensures that the `BalancedTryte`
+//! This module provides utilities to convert between `Tryte` and various
+//! representations such as `Ternary`, `u8`, and `u16`. It ensures that the `Tryte`
 //! always consists of exactly 6 ternary digits.
 //!
 //! A [Tryte] can holds value between `-364` and `+364`.
@@ -24,7 +24,7 @@ use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
 /// This struct provides conversion methods to and from other formats.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Copy)]
 pub struct Tryte {
-    /// The raw representation of the `BalancedTryte` as 6 ternary digits.
+    /// The raw representation of the `Tryte` as 6 ternary digits.
     raw: [Digit; 6],
 }
 
@@ -36,7 +36,7 @@ impl Tryte {
     /// `0` or `000000`
     pub const ZERO: Self = Self { raw: [Zero; 6] };
 
-    /// Converts the `BalancedTryte` into its `Ternary` representation.
+    /// Converts the `Tryte` into its `Ternary` representation.
     ///
     /// # Returns
     ///
@@ -45,11 +45,11 @@ impl Tryte {
         Ternary::new(self.raw.to_vec())
     }
 
-    /// Retrieves a slice containing the digits of the `BalancedTryte`.
+    /// Retrieves a slice containing the digits of the `Tryte`.
     ///
     /// # Returns
     ///
-    /// A slice referencing the six-digit array of the `BalancedTryte`.
+    /// A slice referencing the six-digit array of the `Tryte`.
     ///
     /// This function allows access to the raw representation of the
     /// balanced ternary number as a slice of `Digit` values.
@@ -57,7 +57,7 @@ impl Tryte {
         &self.raw
     }
 
-    /// Creates a `BalancedTryte` from the given `Ternary`.
+    /// Creates a `Tryte` from the given `Ternary`.
     ///
     /// # Arguments
     ///
@@ -77,16 +77,16 @@ impl Tryte {
         Self { raw: digits }
     }
 
-    /// Converts the `BalancedTryte` into a signed 16-bit integer.
+    /// Converts the `Tryte` into a signed 16-bit integer.
     ///
     /// # Returns
     ///
-    /// A `i16` representing the decimal value of the `BalancedTryte`.
+    /// A `i16` representing the decimal value of the `Tryte`.
     pub fn to_i16(&self) -> i16 {
         self.to_ternary().to_dec() as i16
     }
 
-    /// Creates a `BalancedTryte` from a signed 8-bit integer.
+    /// Creates a `Tryte` from a signed 8-bit integer.
     ///
     /// # Arguments
     ///
@@ -94,12 +94,12 @@ impl Tryte {
     ///
     /// # Returns
     ///
-    /// A `BalancedTryte` representing the equivalent ternary number.
+    /// A `Tryte` representing the equivalent ternary number.
     pub fn from_i8(v: i8) -> Self {
         Self::from_ternary(&Ternary::from_dec(v as i64))
     }
 
-    /// Creates a `BalancedTryte` from a signed 16-bit integer.
+    /// Creates a `Tryte` from a signed 16-bit integer.
     ///
     /// # Arguments
     ///
@@ -107,12 +107,12 @@ impl Tryte {
     ///
     /// # Returns
     ///
-    /// A `BalancedTryte` representing the equivalent ternary number.
+    /// A `Tryte` representing the equivalent ternary number.
     pub fn from_i16(v: i16) -> Self {
         Self::from_ternary(&Ternary::from_dec(v as i64))
     }
 
-    /// Retrieves the digit at the specified index in the `BalancedTryte`.
+    /// Retrieves the digit at the specified index in the `Tryte`.
     ///
     /// # Arguments
     ///
@@ -137,9 +137,9 @@ impl Tryte {
 }
 
 impl Display for Tryte {
-    /// Formats the `BalancedTryte` for display.
+    /// Formats the `Tryte` for display.
     ///
-    /// The `BalancedTryte` is displayed in its balanced ternary representation
+    /// The `Tryte` is displayed in its balanced ternary representation
     /// as a 6-character string.
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:06}", self.to_ternary().to_string())

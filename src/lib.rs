@@ -139,6 +139,18 @@ impl Ternary {
         self.digits.len()
     }
 
+    /// Retrieves a slice containing the digits of the `Ternary`.
+    ///
+    /// # Returns
+    ///
+    /// A slice referencing the digits vec of the `Ternary`.
+    ///
+    /// This function allows access to the raw representation of the
+    /// balanced ternary number as a slice of `Digit` values.
+    pub fn to_digit_slice(&self) -> &[Digit] {
+        self.digits.as_slice()
+    }
+
     /// Returns a reference to the [Digit] indexed by `index` if it exists.
     ///
     /// Digits are indexed **from the right**:
