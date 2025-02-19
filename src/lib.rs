@@ -301,7 +301,7 @@ pub mod tryte;
 #[test]
 fn test_ternary() {
     use crate::*;
-    
+
     let repr5 = Ternary::new(vec![Digit::Pos, Digit::Neg, Digit::Neg]);
     assert_eq!(repr5.to_dec(), 5);
     let repr5 = Ternary::from_dec(5);
