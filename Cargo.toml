@@ -2,10 +2,14 @@
 name = "balanced-ternary"
 description = "A library to manipulate balanced ternary values."
 authors = ["Sébastien GELDREICH <trehinos@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 keywords = ["ternary", "balanced-ternary", "base3"]
 categories = ["data-structures", "mathematics", "science", "no-std"]
+
+[features]
+default = []
+tryte = []
 
 [dependencies]

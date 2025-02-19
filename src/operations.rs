@@ -43,6 +43,36 @@
 //! - `Mul<Digit>` for `Digit`: Multiplies two `Digit` values and returns a `Digit`.
 //! - `Div<Digit>` for `Digit`: Divides one `Digit` by another and returns a `Digit`. Division by zero panics.
 //!
+//! ### Logical Operations for `Digit`
+//!
+//! The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
+//!
+//! #### `BitAnd` for `Digit`
+//!
+//! Performs a bitwise AND operation between two `Digit` values.
+//!
+//! - `Digit::Neg & other` → `Digit::Neg`
+//! - `Digit::Zero & Digit::Neg` → `Digit::Neg`
+//! - `Digit::Zero & other` → `Digit::Zero`
+//! - `Digit::Pos & other` → `other`
+//!
+//! #### `BitOr` for `Digit`
+//!
+//! Performs a bitwise OR operation between two `Digit` values.
+//!
+//! - `Digit::Neg | other` → `other`
+//! - `Digit::Zero | Digit::Pos` → `Digit::Pos`
+//! - `Digit::Zero | other` → `Digit::Zero`
+//! - `Digit::Pos | other` → `Digit::Pos`
+//!
+//! #### `BitXor` for `Digit`
+//!
+//! Performs a bitwise XOR operation between two `Digit` values.
+//!
+//! - `Digit::Neg ^ other` → `other`
+//! - `Digit::Zero ^ other` → `Digit::Zero`
+//! - `Digit::Pos ^ other` → `-other`
+//!
 //! ## `Ternary` type
 //!
 //! - `Neg` for `&Ternary`: Negates the `Ternary` by negating each digit in its balanced ternary representation.
@@ -53,7 +83,7 @@
 
 use crate::{Digit, Ternary};
 use alloc::vec;
-use core::ops::{Add, Div, Mul, Neg, Sub};
+use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Sub};
 
 impl Neg for Digit {
     type Output = Self;
@@ -145,6 +175,47 @@ impl Div<Digit> for Digit {
         }
     }
 }
+
+impl BitAnd for Digit {
+    type Output = Self;
+    fn bitand(self, other: Self) -> Self::Output {
+        match self {
+            Digit::Neg => Digit::Neg,
+            Digit::Zero => match other {
+                Digit::Neg => Digit::Neg,
+                _ => Digit::Zero,
+            },
+            Digit::Pos => other,
+        }
+    }
+}
+
+impl BitOr for Digit {
+    type Output = Self;
+    fn bitor(self, other: Self) -> Self::Output {
+        match self {
+            Digit::Neg => other,
+            Digit::Zero => match other {
+                Digit::Pos => Digit::Pos,
+                _ => Digit::Zero,
+            },
+            Digit::Pos => Digit::Pos,
+        }
+    }
+}
+
+impl BitXor for Digit {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        match self {
+            Digit::Neg => rhs,
+            Digit::Zero => Digit::Zero,
+            Digit::Pos => -rhs,
+        }
+    }
+}
+
 impl Neg for &Ternary {
     type Output = Ternary;
 
