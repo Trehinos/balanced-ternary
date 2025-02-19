@@ -131,12 +131,12 @@ pub use crate::digit::{
 ///
 /// # Example
 /// ```
-/// use balanced_ternary::{i3, Digit};
+/// use balanced_ternary::{trit, Digit};
 ///
-/// let digit = i3('+');
+/// let digit = trit('+');
 /// assert_eq!(digit, Digit::Pos);
 /// ```
-pub fn i3(from: char) -> Digit {
+pub fn trit(from: char) -> Digit {
     Digit::from_char(from)
 }
 
