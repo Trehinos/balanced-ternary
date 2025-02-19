@@ -87,24 +87,6 @@ use alloc::vec::Vec;
 use core::fmt::{Display, Formatter};
 use core::str::FromStr;
 
-/// Represents a digit in the balanced ternary numeral system.
-///
-/// A digit can have one of three values:
-/// - `Neg` (-1): Represents the value -1 in the balanced ternary system.
-/// - `Zero` (0): Represents the value 0 in the balanced ternary system.
-/// - `Pos` (+1): Represents the value +1 in the balanced ternary system.
-///
-/// Provides utility functions for converting to/from characters, integers, and negation.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Digit {
-    /// Represents -1
-    Neg,
-    /// Represents 0
-    Zero,
-    /// Represents +1
-    Pos,
-}
-
 /// Provides helper functions for formatting integers in a given radix.
 ///
 /// Used internally to convert decimal numbers into their ternary representation.
@@ -126,67 +108,9 @@ fn format_radix(mut x: u32, radix: u32) -> String {
     result.into_iter().rev().collect()
 }
 
-impl Digit {
-    /// Converts the `Digit` into its character representation.
-    ///
-    /// - Returns:
-    ///     - `-` for `Digit::Neg`
-    ///     - `0` for `Digit::Zero`
-    ///     - `+` for `Digit::Pos`
-    pub fn to_char(&self) -> char {
-        match self {
-            Digit::Neg => '-',
-            Digit::Zero => '0',
-            Digit::Pos => '+',
-        }
-    }
+pub mod digit;
 
-    /// Creates a `Digit` from its character representation.
-    ///
-    /// - Accepts:
-    ///     - `-` for `Digit::Neg`
-    ///     - `0` for `Digit::Zero`
-    ///     - `+` for `Digit::Pos`
-    /// - Panics if the input character is invalid.
-    pub fn from_char(c: char) -> Digit {
-        match c {
-            '-' => Digit::Neg,
-            '0' => Digit::Zero,
-            '+' => Digit::Pos,
-            _ => panic!("Invalid value. A Ternary must be either -, 0 or +."),
-        }
-    }
-
-    /// Converts the `Digit` into its integer representation.
-    ///
-    /// - Returns:
-    ///     - -1 for `Digit::Neg`
-    ///     - 0 for `Digit::Zero`
-    ///     - 1 for `Digit::Pos`
-    pub fn to_i8(&self) -> i8 {
-        match self {
-            Digit::Neg => -1,
-            Digit::Zero => 0,
-            Digit::Pos => 1,
-        }
-    }
-
-    /// Creates a `Digit` from its integer representation.
-    ///
-    /// - Accepts:
-    ///     - -1 for `Digit::Neg`
-    ///     - 0 for `Digit::Zero`
-    ///     - 1 for `Digit::Pos`
-    /// - Panics if the input integer is invalid.
-    pub fn from_i8(i: i8) -> Digit {
-        match i {
-            -1 => Digit::Neg,
-            0 => Digit::Zero,
-            1 => Digit::Pos,
-            _ => panic!("Invalid value. A Ternary must be either -1, 0 or +1."),
-        }
-    }
-}
+pub use crate::digit::Digit;
 
 /// Represents a balanced ternary number using a sequence of `Digit`s.
 ///
@@ -296,6 +220,9 @@ pub mod operations;
 
 #[cfg(feature = "tryte")]
 pub mod tryte;
+
+#[cfg(feature = "tryte")]
+pub use crate::tryte::Tryte;
 
 #[cfg(test)]
 #[test]

@@ -1,23 +1,5 @@
-//! This module provides implementations for arithmetic operations on `Digit` and `Ternary` types
+//! This module provides implementations for arithmetic operations on the `Ternary` type
 //! such as addition, subtraction, multiplication, and division.
-//!
-//! These operations adhere to the rules of balanced ternary arithmetic.
-//!
-//! # Examples
-//!
-//! Using `Digit` arithmetic:
-//!
-//! ```rust
-//! use balanced_ternary::Digit;
-//!
-//! let a = Digit::Neg;
-//! let b = Digit::Zero;
-//! let sum = a + b;
-//! assert_eq!(sum.to_string(), "-");
-//! let product = a * b; // Results in Digit::Neg
-//! assert_eq!(product.to_char(), '0')
-//! ```
-//!
 //! Using `Ternary` arithmetic:
 //!
 //! ```rust
@@ -33,45 +15,7 @@
 //!
 //! # Implementations
 //!
-//! The following arithmetic operations are implemented for `Digit` and `Ternary` types:
-//!
-//! ## `Digit` type
-//!
-//! - `Neg` and `Not` for `Digit`: Negates the digit value, adhering to balanced ternary rules.
-//! - `Add<Digit>` for `Digit`: Adds two `Digit` values and returns a `Ternary`.
-//! - `Sub<Digit>` for `Digit`: Subtracts one `Digit` from another and returns a `Ternary`.
-//! - `Mul<Digit>` for `Digit`: Multiplies two `Digit` values and returns a `Digit`.
-//! - `Div<Digit>` for `Digit`: Divides one `Digit` by another and returns a `Digit`. Division by zero panics.
-//!
-//! ### Logical Operations for `Digit`
-//!
-//! The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
-//!
-//! #### `BitAnd` for `Digit`
-//!
-//! Performs a bitwise AND operation between two `Digit` values.
-//!
-//! - `Digit::Neg & other` → `Digit::Neg`
-//! - `Digit::Zero & Digit::Neg` → `Digit::Neg`
-//! - `Digit::Zero & other` → `Digit::Zero`
-//! - `Digit::Pos & other` → `other`
-//!
-//! #### `BitOr` for `Digit`
-//!
-//! Performs a bitwise OR operation between two `Digit` values.
-//!
-//! - `Digit::Neg | other` → `other`
-//! - `Digit::Zero | Digit::Pos` → `Digit::Pos`
-//! - `Digit::Zero | other` → `Digit::Zero`
-//! - `Digit::Pos | other` → `Digit::Pos`
-//!
-//! #### `BitXor` for `Digit`
-//!
-//! Performs a bitwise XOR operation between two `Digit` values.
-//!
-//! - `Digit::Neg ^ other` → `other`
-//! - `Digit::Zero ^ other` → `Digit::Zero`
-//! - `Digit::Pos ^ other` → `-other`
+//! The following arithmetic operations are implemented for the `Ternary` :
 //!
 //! ## `Ternary` type
 //!
@@ -80,13 +24,14 @@
 //! - `Sub<&Ternary>` for `&Ternary`: Subtracts one `Ternary` from another and returns a new `Ternary`. Panics on overflow.
 //! - `Mul<&Ternary>` for `&Ternary`: Multiplies two `Ternary` values and returns a new `Ternary`. Panics on overflow.
 //! - `Div<&Ternary>` for `&Ternary`: Divides one `Ternary` by another and returns a new `Ternary`. Panics on overflow or division by zero.
+//! - `BitAnd<&Ternary>` for `&Ternary`: Computes the bitwise AND operation on two `Ternary` operands.
+//! - `BitOr<&Ternary>` for `&Ternary`: Computes the bitwise OR operation on two `Ternary` operands.
+//! - `BitXor<&Ternary>` for `&Ternary`: Computes the bitwise XOR operation on two `Ternary` operands.
 
 use crate::{Digit, Ternary};
 use alloc::vec;
 use alloc::vec::Vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
-
-pub mod digit;
 
 impl Neg for &Ternary {
     type Output = Ternary;
