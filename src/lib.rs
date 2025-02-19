@@ -375,6 +375,8 @@ impl Display for Ternary {
 
 pub mod operations;
 
+pub mod conversions;
+
 #[cfg(feature = "tryte")]
 pub mod tryte;
 

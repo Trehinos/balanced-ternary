@@ -14,7 +14,7 @@ use crate::{
     Digit::{Neg, Pos, Zero},
     Ternary,
 };
-use alloc::string::ToString;
+use alloc::string::{String, ToString};
 use core::fmt::{Display, Formatter};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
 
@@ -222,6 +222,36 @@ impl From<Ternary> for Tryte {
 impl From<Tryte> for Ternary {
     fn from(value: Tryte) -> Self {
         value.to_ternary()
+    }
+}
+
+impl From<&str> for Tryte {
+    fn from(value: &str) -> Self {
+        Self::from_ternary(&Ternary::parse(value))
+    }
+}
+
+impl From<String> for Tryte {
+    fn from(value: String) -> Self {
+        Self::from(value.as_str())
+    }
+}
+
+impl From<Tryte> for String {
+    fn from(value: Tryte) -> Self {
+        value.to_string()
+    }
+}
+
+impl From<i16> for Tryte {
+    fn from(value: i16) -> Self {
+        Self::from_i16(value)
+    }
+}
+
+impl From<Tryte> for i16 {
+    fn from(value: Tryte) -> Self {
+        value.to_i16()
     }
 }
 
