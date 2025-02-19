@@ -167,7 +167,7 @@ pub fn ter(from: &str) -> Ternary {
     Ternary::parse(from)
 }
 
-
+#[cfg(feature = "tryte")]
 /// Creates a `Tryte` object from a string representation of a balanced ternary number.
 ///
 /// This function first converts the input string representation into a `Ternary` object
