@@ -192,7 +192,7 @@ pub fn ter(from: &str) -> Ternary {
 /// use balanced_ternary::{tryte, Tryte};
 ///
 /// let tryte_value = tryte("+0+0");
-/// assert_eq!(tryte_value.to_string(), "+0+0");
+/// assert_eq!(tryte_value.to_string(), "00+0+0");
 /// ```
 pub fn tryte(from: &str) -> Tryte {
     Tryte::from_ternary(&ter(from))
