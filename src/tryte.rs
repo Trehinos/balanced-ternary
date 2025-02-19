@@ -106,7 +106,7 @@ impl Tryte {
     ///
     /// # Arguments
     ///
-    /// * `index` - The index of the digit to retrieve (0-based).
+    /// * `index` - The index of the digit to retrieve (0-based, right-to-left).
     ///
     /// # Returns
     ///
@@ -122,7 +122,7 @@ impl Tryte {
                 index
             );
         }
-        self.raw[index]
+        *self.raw.iter().rev().nth(index).unwrap()
     }
 }
 
@@ -203,10 +203,6 @@ impl From<Tryte> for Ternary {
 
 #[cfg(test)]
 #[test]
-/// A set of unit tests for the `BalancedTryte` struct.
-///
-/// Tests basic functionalities of `BalancedTryte` such as conversion
-/// to and from `u8` and `u16`, and formatting as a string.
 pub fn test_tryte() {
     let tryte = Tryte::from_i16(255);
     assert_eq!(tryte.to_i16(), 255);

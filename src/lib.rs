@@ -298,46 +298,45 @@ pub mod operations;
 pub mod tryte;
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_ternary() {
-        let repr5 = Ternary::new(vec![Digit::Pos, Digit::Neg, Digit::Neg]);
-        assert_eq!(repr5.to_dec(), 5);
-        let repr5 = Ternary::from_dec(5);
-        assert_eq!(repr5.to_dec(), 5);
+#[test]
+fn test_ternary() {
+    use crate::*;
+    
+    let repr5 = Ternary::new(vec![Digit::Pos, Digit::Neg, Digit::Neg]);
+    assert_eq!(repr5.to_dec(), 5);
+    let repr5 = Ternary::from_dec(5);
+    assert_eq!(repr5.to_dec(), 5);
 
-        let repr13 = Ternary::new(vec![Digit::Pos, Digit::Pos, Digit::Pos]);
-        assert_eq!(repr13.to_dec(), 13);
+    let repr13 = Ternary::new(vec![Digit::Pos, Digit::Pos, Digit::Pos]);
+    assert_eq!(repr13.to_dec(), 13);
 
-        let repr14 = Ternary::parse("+---");
-        let repr15 = Ternary::parse("+--0");
-        assert_eq!(repr14.to_dec(), 14);
-        assert_eq!(repr15.to_dec(), 15);
-        assert_eq!(repr14.to_string(), "+---");
-        assert_eq!(repr15.to_string(), "+--0");
+    let repr14 = Ternary::parse("+---");
+    let repr15 = Ternary::parse("+--0");
+    assert_eq!(repr14.to_dec(), 14);
+    assert_eq!(repr15.to_dec(), 15);
+    assert_eq!(repr14.to_string(), "+---");
+    assert_eq!(repr15.to_string(), "+--0");
 
-        let repr120 = Ternary::from_dec(120);
-        assert_eq!(repr120.to_dec(), 120);
-        assert_eq!(repr120.to_string(), "++++0");
-        let repr121 = Ternary::from_dec(121);
-        assert_eq!(repr121.to_dec(), 121);
-        assert_eq!(repr121.to_string(), "+++++");
+    let repr120 = Ternary::from_dec(120);
+    assert_eq!(repr120.to_dec(), 120);
+    assert_eq!(repr120.to_string(), "++++0");
+    let repr121 = Ternary::from_dec(121);
+    assert_eq!(repr121.to_dec(), 121);
+    assert_eq!(repr121.to_string(), "+++++");
 
-        let repr_neg_5 = Ternary::parse("-++");
-        assert_eq!(repr_neg_5.to_dec(), -5);
-        assert_eq!(repr_neg_5.to_string(), "-++");
+    let repr_neg_5 = Ternary::parse("-++");
+    assert_eq!(repr_neg_5.to_dec(), -5);
+    assert_eq!(repr_neg_5.to_string(), "-++");
 
-        let repr_neg_5 = Ternary::from_dec(-5);
-        assert_eq!(repr_neg_5.to_dec(), -5);
-        assert_eq!(repr_neg_5.to_string(), "-++");
+    let repr_neg_5 = Ternary::from_dec(-5);
+    assert_eq!(repr_neg_5.to_dec(), -5);
+    assert_eq!(repr_neg_5.to_string(), "-++");
 
-        let repr_neg_121 = Ternary::from_dec(-121);
-        assert_eq!(repr_neg_121.to_dec(), -121);
-        assert_eq!(repr_neg_121.to_string(), "-----");
+    let repr_neg_121 = Ternary::from_dec(-121);
+    assert_eq!(repr_neg_121.to_dec(), -121);
+    assert_eq!(repr_neg_121.to_string(), "-----");
 
-        let test = Ternary::from_dec(18887455);
-        assert_eq!(test.to_dec(), 18887455);
-        assert_eq!(test.to_string(), "++00--0--+-0++0+");
-    }
+    let test = Ternary::from_dec(18887455);
+    assert_eq!(test.to_dec(), 18887455);
+    assert_eq!(test.to_string(), "++00--0--+-0++0+");
 }
