@@ -240,10 +240,10 @@ impl Ternary {
     /// Converts the `Ternary` object to its integer (decimal) representation.
     ///
     /// Calculates the sum of each digit's value multiplied by the appropriate power of 3.
-    pub fn to_dec(&self) -> i32 {
+    pub fn to_dec(&self) -> i64 {
         let mut dec = 0;
         for (rank, digit) in self.digits.iter().rev().enumerate() {
-            dec += digit.to_i8() as i32 * 3_i32.pow(rank as u32);
+            dec += digit.to_i8() as i64 * 3_i64.pow(rank as u32);
         }
         dec
     }
@@ -252,7 +252,7 @@ impl Ternary {
     ///
     /// The input number is converted into its balanced ternary representation,
     /// with digits represented as `Digit`s.
-    pub fn from_dec(dec: i32) -> Self {
+    pub fn from_dec(dec: i64) -> Self {
         let sign = dec.signum();
         let str = format_radix(dec.abs() as u32, 3);
         let mut next = 0u8;
