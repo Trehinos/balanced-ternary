@@ -37,7 +37,7 @@
 //!
 //! ## `Digit` type
 //!
-//! - `Neg` for `Digit`: Negates the digit value, adhering to balanced ternary rules.
+//! - `Neg` and `Not` for `Digit`: Negates the digit value, adhering to balanced ternary rules.
 //! - `Add<Digit>` for `Digit`: Adds two `Digit` values and returns a `Ternary`.
 //! - `Sub<Digit>` for `Digit`: Subtracts one `Digit` from another and returns a `Ternary`.
 //! - `Mul<Digit>` for `Digit`: Multiplies two `Digit` values and returns a `Digit`.
@@ -75,7 +75,7 @@
 //!
 //! ## `Ternary` type
 //!
-//! - `Neg` for `&Ternary`: Negates the `Ternary` by negating each digit in its balanced ternary representation.
+//! - `Neg` and `Not` for `&Ternary`: Negates the `Ternary` by negating each digit in its balanced ternary representation.
 //! - `Add<&Ternary>` for `&Ternary`: Adds two `Ternary` values and returns a new `Ternary`. Panics on overflow.
 //! - `Sub<&Ternary>` for `&Ternary`: Subtracts one `Ternary` from another and returns a new `Ternary`. Panics on overflow.
 //! - `Mul<&Ternary>` for `&Ternary`: Multiplies two `Ternary` values and returns a new `Ternary`. Panics on overflow.
@@ -84,7 +84,7 @@
 use crate::{Digit, Ternary};
 use alloc::vec;
 use alloc::vec::Vec;
-use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Sub};
+use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
 
 impl Neg for Digit {
     type Output = Self;
@@ -100,6 +100,13 @@ impl Neg for Digit {
             Digit::Zero => Digit::Zero,
             Digit::Pos => Digit::Neg,
         }
+    }
+}
+
+impl Not for Digit {
+    type Output = Self;
+    fn not(self) -> Self::Output {
+        -self
     }
 }
 
@@ -328,6 +335,13 @@ impl BitXor<&Ternary> for &Ternary {
         }
         digits.reverse();
         Ternary::new(digits)
+    }
+}
+
+impl Not for &Ternary {
+    type Output = Ternary;
+    fn not(self) -> Self::Output {
+        -self
     }
 }
 

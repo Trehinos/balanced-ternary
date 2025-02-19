@@ -12,7 +12,7 @@
 use crate::{Digit, Ternary};
 use alloc::string::ToString;
 use core::fmt::{Display, Formatter};
-use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Sub};
+use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
 
 /// A struct representing a balanced ternary number with a fixed length of 6 digits.
 ///
@@ -45,6 +45,18 @@ impl Tryte {
     /// A `Ternary` object representing the same balanced ternary number.
     pub fn to_ternary(&self) -> Ternary {
         Ternary::new(self.raw.to_vec())
+    }
+
+    /// Retrieves a slice containing the digits of the `BalancedTryte`.
+    ///
+    /// # Returns
+    ///
+    /// A slice referencing the six-digit array of the `BalancedTryte`.
+    ///
+    /// This function allows access to the raw representation of the
+    /// balanced ternary number as a slice of `Digit` values.
+    pub fn to_digit_slice(&self) -> &[Digit] {
+        &self.raw
     }
 
     /// Creates a `BalancedTryte` from the given `Ternary`.
@@ -136,6 +148,13 @@ impl Display for Tryte {
     }
 }
 
+impl Neg for Tryte {
+    type Output = Tryte;
+    fn neg(self) -> Self::Output {
+        Self::from_ternary(&-&self.to_ternary())
+    }
+}
+
 impl Add for Tryte {
     type Output = Tryte;
 
@@ -186,6 +205,13 @@ impl BitXor for Tryte {
     type Output = Tryte;
     fn bitxor(self, rhs: Self) -> Self::Output {
         Self::from_ternary(&(&self.to_ternary() ^ &rhs.to_ternary()))
+    }
+}
+
+impl Not for Tryte {
+    type Output = Tryte;
+    fn not(self) -> Self::Output {
+        -self
     }
 }
 

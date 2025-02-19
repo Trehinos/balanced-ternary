@@ -11,8 +11,13 @@ This system is useful in areas like computer science and mathematics due to its 
 
 - **Number Conversions:** Convert between decimal and balanced ternary representations.
 - **Arithmetic Operations:** Support for addition, subtraction, multiplication, and division.
+- **Logic Operations:** Support for bitwise and, or, xor, and not.
 - **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols.
 - **No Standard Library:** Suitable for `#![no_std]` environments.
+- Provides the types:
+  - `Digit` (`Neg`, `Zero` or `Pos`),
+  - `Ternary` (heap allocated variable-length balanced-ternary number),
+  - `Tryte` (copy-type 6 character long ternary number).
 
 ## Examples
 
@@ -24,11 +29,13 @@ use balanced_ternary::*;
 fn test() {
     let ternary = Ternary::from_dec(5);
     assert_eq!(ternary.to_string(), "+--");
+    
+    let ternary = Ternary::parse("+--");
     assert_eq!(ternary.to_dec(), 5);
 }
 ```
 
-### Perform arithmetic operations
+### Perform arithmetic or logic operations
 
 ```rust
 use balanced_ternary::*;
@@ -39,6 +46,22 @@ fn test() {
     let sum = &a + &b;
     assert_eq!(ternary.to_string(), "+++");
     assert_eq!(sum.to_dec(), 13);
+
+    let bitwise = &Ternary::parse("++00") & &Ternary::parse("0000");
+    assert_eq!(bitwise.to_string(), "0000");
+
+    let bitwise = &Ternary::parse("++00") & &Ternary::parse("0+00");
+    assert_eq!(bitwise.to_string(), "0+00");
+
+    let bitwise = &Ternary::parse("+000") | &Ternary::parse("000-");
+    assert_eq!(bitwise.to_string(), "+000");
+
+
+    let bitwise = &Ternary::parse("+000") & &Ternary::parse("000-");
+    assert_eq!(bitwise.to_string(), "000-");
+
+    let bitwise = &Ternary::parse("+000") | &Ternary::parse("000+");
+    assert_eq!(bitwise.to_string(), "+00+");
 }
 ```
 
