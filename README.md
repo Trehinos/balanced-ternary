@@ -24,11 +24,11 @@ properties.
     - `Ternary` (heap allocated variable-length balanced-ternary number),
     - `Tryte` (6 characters long copy-type ternary number).
 
-### Digits operators
+### Digits operations
 
-These operators (except inc & dec) can be applied for `Ternary` with `Ternary::each(operator)`:
+These operations (except inc & dec) can be applied for `Ternary` with `Ternary::each(operations)`:
 
-| Unary operators                                    | -    | 0 | +    |
+| Unary operations                                   | -    | 0 | +    |
 |----------------------------------------------------|------|---|------|
 | possibly (L3)                                      | -    | + | +    |
 | necessary (L3)                                     | -    | - | +    |
@@ -46,12 +46,12 @@ These operators (except inc & dec) can be applied for `Ternary` with `Ternary::e
 | inc                                                | 0    | + | `+-` |
 | dec                                                | `-+` | - | 0    |
 
-These operators (except add & sub) can be applied for `Ternary` with:
+These operations (except add & sub) can be applied for `Ternary` with:
 
-- `Ternary::each_with(operator, with)`, or,
-- `Ternary::each_zip(operator, other)`:
+- `Ternary::each_with(operations, with)`, or,
+- `Ternary::each_zip(operations, other)`:
 
-| Binary operators  | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
+| Binary operations | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
 |-------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
 | `+` (add)         | `-+`   | -      | 0      | -      | 0      | +      | 0      | +      | `+-`   |
 | `-` (sub)         | 0      | -      | `-+`   | +      | 0      | -      | `+-`   | +      | 0      |

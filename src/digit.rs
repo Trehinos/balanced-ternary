@@ -33,13 +33,13 @@
 //!
 //! The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
 //!
-//! ### Digits operators
+//! ### Digits operations
 //!
-//! #### Unary operators
+//! #### Unary operations
 //!
-//! These operators (except inc & dec) can be applied for `Ternary` with `Ternary::each(operator)`:
+//! These operations (except inc & dec) can be applied for `Ternary` with `Ternary::each(operator)`:
 //!
-//! | Unary operators       | - | 0 | + |
+//! | Unary operations      | - | 0 | + |
 //! |-----------------------|---|---|---|
 //! | possibly              | - | + | + |
 //! | necessary             | - | - | + |
@@ -59,14 +59,14 @@
 //!
 //! `inc` and `dec` can respectively be replaced by `post` and `pre` which are the same operations without the carry digit.
 //!
-//! #### Binary operators
+//! #### Binary operations
 //!
-//! These operators (except add & sub) can be applied for `Ternary` with:
+//! These operations (except add & sub) can be applied for `Ternary` with:
 //!
 //! - `Ternary::each_with(operator, with)`, or,
 //! - `Ternary::each_zip(operator, other)`:
 //!
-//! | Binary operators | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
+//! | Binary operations | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
 //! |------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
 //! | `+` (add)        | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
 //! | `-` (sub)        | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
