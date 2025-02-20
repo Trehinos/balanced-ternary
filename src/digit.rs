@@ -488,6 +488,38 @@ impl Digit {
         }
     }
 
+    /// Performs Post's negation of the current `Digit`.
+    ///
+    /// - Returns:
+    ///     - `Digit::Zero` when `self` is `Digit::Neg`.
+    ///     - `Digit::Pos` when `self` is `Digit::Zero`.
+    ///     - `Digit::Neg` when `self` is `Digit::Pos`.
+    ///
+    /// This method evaluates the negation based on Post's logic in ternary systems,
+    /// which differs from standard negation logic.
+    pub fn post_not(self) -> Self {
+        match self {
+            Digit::Neg => Digit::Zero,
+            Digit::Zero => Digit::Pos,
+            Digit::Pos => Digit::Neg,
+        }
+    }
+
+    /// Performs the inverse operation from the Post's negation of the current `Digit`.
+    ///
+    /// - Returns:
+    ///     - `Digit::Pos` when `self` is `Digit::Neg`.
+    ///     - `Digit::Neg` when `self` is `Digit::Zero`.
+    ///     - `Digit::Zero` when `self` is `Digit::Pos`.
+    pub fn pre_not(self) -> Self {
+        match self {
+            Digit::Neg => Digit::Pos,
+            Digit::Zero => Digit::Neg,
+            Digit::Pos => Digit::Zero,
+        }
+    }
+
+
     /// This method maps this `Digit` value to its corresponding unbalanced ternary
     /// integer representation.
     ///

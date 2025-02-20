@@ -385,6 +385,8 @@ impl Ternary {
     ///     * [Digit::contingently]
     ///     * [Digit::ht_not]
     /// * Returns either `Zero` or `Pos` or `Neg`.
+    ///     * [Digit::pre_not]
+    ///     * [Digit::post_not]
     ///     * [Digit::not]
     ///     * [Digit::neg]
     ///     * [Digit::absolute_positive]
