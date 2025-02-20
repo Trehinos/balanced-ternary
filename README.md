@@ -2,9 +2,8 @@
 
 # Balanced Ternary
 
-**Balanced Ternary** is a Rust library for manipulating *
-*[balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary)** numbers, a numeral system with digits `-1`,
-`0`, and `+1`.
+**Balanced Ternary** is a Rust library for manipulating **[balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary)**
+numbers, a numeral system with digits `-1`, `0`, and `+1`.
 
 This system is useful in areas like computer science and mathematics due to its symmetry and unique arithmetic
 properties.
@@ -48,7 +47,7 @@ These operators can be applied for `Ternary` with:
 - `Ternary::each_zip(operator, other)`:
 
 | Binary operators | -- | -0 | -+ | 0- | 00 | 0+ | +- | +0 | ++ |
-|------------------|----|----|----|:---|:---|:---|:---|:---|:---|
+|------------------|----|----|----|----|----|----|----|----|----|
 | `+` (add)        | -+ | -  | 0  | -  | 0  | +  | 0  | +  | +- |
 | `-` (sub)        | 0  | -  | -+ | +  | 0  | -  | +- | +  | 0  |
 | `/` (div)        | +  |    | -  | 0  |    | 0  | -  |    | +  |

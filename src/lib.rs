@@ -97,7 +97,7 @@ use core::str::FromStr;
 fn format_radix(x: i64, radix: u32) -> String {
     let mut result = vec![];
     let sign = x.signum();
-    let mut x = x.abs() as u64;
+    let mut x = x.unsigned_abs();
     loop {
         let m = (x % radix as u64) as u32;
         x /= radix as u64;
