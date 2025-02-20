@@ -26,7 +26,7 @@ properties.
 
 ### Digits operators
 
-These operators can be applied for `Ternary` with `Ternary::each(operator)`:
+These operators (except inc & dec) can be applied for `Ternary` with `Ternary::each(operator)`:
 
 | Unary operators                                    | -    | 0 | +    |
 |----------------------------------------------------|------|---|------|
@@ -46,7 +46,7 @@ These operators can be applied for `Ternary` with `Ternary::each(operator)`:
 | inc                                                | 0    | + | `+-` |
 | dec                                                | `-+` | - | 0    |
 
-These operators can be applied for `Ternary` with:
+These operators (except add & sub) can be applied for `Ternary` with:
 
 - `Ternary::each_with(operator, with)`, or,
 - `Ternary::each_zip(operator, other)`:

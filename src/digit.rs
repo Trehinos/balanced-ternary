@@ -37,7 +37,7 @@
 //!
 //! #### Unary operators
 //!
-//! These operators can be applied for `Ternary` with `Ternary::each(operator)`:
+//! These operators (except inc & dec) can be applied for `Ternary` with `Ternary::each(operator)`:
 //!
 //! | Unary operators       | - | 0 | + |
 //! |-----------------------|---|---|---|
@@ -54,10 +54,14 @@
 //! | not_positive          | - | - | 0 |
 //! | negative              | - | 0 | 0 |
 //! | absolute_negative     | - | 0 | - |
+//! | inc                   | 0 | + | `+-` |
+//! | dec                   | `-+` | - | 0 |
+//!
+//! `inc` and `dec` can respectively be replaced by `post` and `pre` which are the same operations without the carry digit.
 //!
 //! #### Binary operators
 //!
-//! These operators can be applied for `Ternary` with:
+//! These operators (except add & sub) can be applied for `Ternary` with:
 //!
 //! - `Ternary::each_with(operator, with)`, or,
 //! - `Ternary::each_zip(operator, other)`:
@@ -80,6 +84,12 @@
 //! | rm3_imply        | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
 //! | para_imply       | +      | +      | +      | -      | 0      | +      | -      | 0      | +      |
 //! | ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
+//!
+//! `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.  
+//! Instead, use these operators from `Ternary` directly.
+//!
+//! Do so to `add` and `sub` ternaries, too.
+//!
 
 use crate::Ternary;
 use alloc::vec;
