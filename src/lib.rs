@@ -537,10 +537,10 @@ impl Ternary {
     /// # Arguments
     ///
     /// * `f` - A closure or function that takes three arguments:
-    ///         - a `Digit` from the current `Ternary`,
-    ///         - a `Digit` from the corresponding position in the `other` `Ternary`, and
-    ///         - the current carry `Digit`.
-    ///         The function must return a tuple containing a new carry `Digit` and a transformed `Digit`.
+    ///     * a `Digit` from the current `Ternary`,
+    ///     * a `Digit` from the corresponding position in the `other` `Ternary`,
+    ///     * and the current carry `Digit`.
+    ///     * The function must return a tuple containing `(carry: Digit, transformed: Digit)`.
     /// * `other` - A `Ternary` object with digits to process alongside the digits of the current object.
     ///
     /// # Returns
@@ -569,8 +569,8 @@ impl Ternary {
     ///     (Digit::from_i8(sum / 3), Digit::from_i8(sum % 3))
     /// };
     ///
-    /// let result = ternary1.each_zip_carry(combine, ternary2.clone());
-    /// assert_eq!(result.trim().to_string(), (&ternary1 + &ternary2).to_string());
+    /// let result = ternary1.each_zip_carry(combine, ternary2.clone()).trim();
+    /// assert_eq!(result.to_string(), (&ternary1 + &ternary2).to_string());
     /// ```
     pub fn each_zip_carry(&self, f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit), other: Self) -> Self {
         if self.digits.len() < other.digits.len() {
