@@ -377,7 +377,7 @@ impl Ternary {
     ///
     /// # Digit transformations
     ///
-    /// These methods from the [Digit] type can be called directly.
+    /// These methods (unary operators) from the [Digit] type can be called directly.
     ///
     /// * Returns either `Pos` or `Neg`:
     ///     * [Digit::possibly]
@@ -385,20 +385,28 @@ impl Ternary {
     ///     * [Digit::contingently]
     ///     * [Digit::ht_not]
     /// * Returns either `Zero` or `Pos` or `Neg`.
+    ///     * [Digit::not]
+    ///     * [Digit::neg]
+    ///     * [Digit::absolute_positive]
     ///     * [Digit::positive]
     ///     * [Digit::not_negative]
     ///     * [Digit::not_positive]
     ///     * [Digit::negative]
-    ///     * [Digit::not]
-    ///     * [Digit::neg]
+    ///     * [Digit::absolute_negative]
     ///
     /// # Examples
     /// ```
     /// use balanced_ternary::{Ternary, Digit};
     ///
-    /// let orig_ternary = Ternary::parse("+-0");
+    /// let orig_ternary = Ternary::parse("+0-");
     /// let transformed = orig_ternary.each(Digit::necessary);
     /// assert_eq!(transformed.to_string(), "+--");
+    /// let transformed = orig_ternary.each(Digit::positive);
+    /// assert_eq!(transformed.to_string(), "+00");
+    /// let transformed = orig_ternary.each(Digit::not_negative);
+    /// assert_eq!(transformed.to_string(), "++0");
+    /// let transformed = orig_ternary.each(Digit::absolute_negative);
+    /// assert_eq!(transformed.to_string(), "-0-");
     /// ```
     pub fn each(&self, f: impl Fn(Digit) -> Digit) -> Self {
         let mut repr = Ternary::new(vec![]);
@@ -428,15 +436,13 @@ impl Ternary {
     ///
     /// # Digit transformations
     ///
-    /// These methods from the [Digit] type can be called directly.
+    /// These methods (binary operators) from the [Digit] type can be called directly.
     ///
-    /// * [Digit::add]
-    /// * [Digit::sub]
     /// * [Digit::mul]
     /// * [Digit::div]
-    /// * [Digit::bitand]
-    /// * [Digit::bitor]
-    /// * [Digit::bitxor]
+    /// * [Digit::bitand] (k3/p3 and)
+    /// * [Digit::bitor]  (k3/p3 or)
+    /// * [Digit::bitxor] (k3/p3 xor)
     /// * [Digit::k3_imply]
     /// * [Digit::k3_equiv]
     /// * [Digit::bi3_imply]
@@ -458,6 +464,60 @@ impl Ternary {
         for digit in self.digits.iter() {
             repr.digits.push(f(*digit, other));
         }
+        repr
+    }
+
+
+    /// Applies a transformation function to each digit of the balanced ternary number,
+    /// along with a corresponding digit from another `Ternary` number.
+    ///
+    /// This method ensures that the digits of both `Ternary` objects are aligned from the least
+    /// significant to the most significant digit. If the `other` `Ternary` has fewer digits
+    /// than the current one, the process is reversed to handle the shorter `Ternary` consistently.
+    /// The result is a new `Ternary` object where each digit was transformed using the provided function `f`.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure or function that takes two arguments:
+    ///     * a `Digit` from the current `Ternary`,
+    ///     * a `Digit` from the corresponding position in the `other` `Ternary`.
+    ///     * The function must return a transformed `Digit`.
+    /// * `other` - A `Ternary` object with digits to process alongside the digits of the current object.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `Ternary` object containing the transformed digits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::ops::Mul;
+    /// use balanced_ternary::{Ternary, Digit};
+    ///
+    /// let ternary1 = Ternary::parse("-+0-+0-+0");
+    /// let ternary2 = Ternary::parse("---000+++");
+    ///
+    /// let result = ternary1.each_zip(Digit::mul, ternary2.clone());
+    /// assert_eq!(result.to_string(), "+-0000-+0");
+    ///
+    /// let result = ternary1.each_zip(Digit::k3_imply, ternary2.clone());
+    /// assert_eq!(result.to_string(), "+-0+00+++");
+    /// let result = ternary1.each_zip(Digit::bi3_imply, ternary2.clone());
+    /// assert_eq!(result.to_string(), "+-0000++0");
+    /// let result = ternary1.each_zip(Digit::ht_imply, ternary2.clone());
+    /// assert_eq!(result.to_string(), "+--+0++++");
+    /// ```
+    pub fn each_zip(&self, f: impl Fn(Digit, Digit) -> Digit, other: Self) -> Self {
+        if self.digits.len() < other.digits.len() {
+            return other.each_zip(f, self.clone());
+        }
+        let mut repr = Ternary::new(vec![]);
+        for (i, digit) in self.digits.iter().rev().enumerate() {
+            let d_other = other.get_digit(i).unwrap();
+            let res= f(*digit, *d_other);
+            repr.digits.push(res);
+        }
+        repr.digits.reverse();
         repr
     }
 
@@ -504,12 +564,12 @@ impl Ternary {
     ///     (Digit::from_i8(sum / 3), Digit::from_i8(sum % 3))
     /// };
     ///
-    /// let result = ternary1.each_zip(combine, ternary2.clone());
+    /// let result = ternary1.each_zip_carry(combine, ternary2.clone());
     /// assert_eq!(result.trim().to_string(), (&ternary1 + &ternary2).to_string());
     /// ```
-    pub fn each_zip(&self, f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit), other: Self) -> Self {
+    pub fn each_zip_carry(&self, f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit), other: Self) -> Self {
         if self.digits.len() < other.digits.len() {
-            return other.each_zip(f, self.clone());
+            return other.each_zip_carry(f, self.clone());
         }
         let mut repr = Ternary::new(vec![]);
         let mut carry = Zero;

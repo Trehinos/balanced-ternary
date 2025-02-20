@@ -189,19 +189,16 @@ impl Digit {
         }
     }
 
-    /// Determines the condition of non-negativity for the current `Digit`.
+    /// Returns the absolute positive value of the current `Digit`.
     ///
     /// - Returns:
-    ///     - `Digit::Zero` for `Digit::Neg`
-    ///     - `Digit::Pos` for `Digit::Zero`
+    ///     - `Digit::Pos` for `Digit::Neg`
+    ///     - `Digit::Zero` for `Digit::Zero`
     ///     - `Digit::Pos` for `Digit::Pos`
-    ///
-    /// This method is used to filter out negative conditions
-    /// in computations with balanced ternary representations.
-    pub fn not_negative(self) -> Self {
+    pub fn absolute_positive(self) -> Self {
         match self {
-            Digit::Neg => Digit::Zero,
-            Digit::Zero => Digit::Pos,
+            Digit::Neg => Digit::Pos,
+            Digit::Zero => Digit::Zero,
             Digit::Pos => Digit::Pos,
         }
     }
@@ -223,19 +220,36 @@ impl Digit {
         }
     }
 
+    /// Determines the condition of non-negativity for the current `Digit`.
+    ///
+    /// - Returns:
+    ///     - `Digit::Zero` for `Digit::Neg`
+    ///     - `Digit::Pos` for `Digit::Zero`
+    ///     - `Digit::Pos` for `Digit::Pos`
+    ///
+    /// This method is used to filter out negative conditions
+    /// in computations with balanced ternary representations.
+    pub fn not_negative(self) -> Self {
+        match self {
+            Digit::Neg => Digit::Zero,
+            Digit::Zero => Digit::Pos,
+            Digit::Pos => Digit::Pos,
+        }
+    }
+
     /// Determines the condition of non-positivity for the current `Digit`.
     ///
     /// - Returns:
-    ///     - `Digit::Pos` for `Digit::Neg`
-    ///     - `Digit::Pos` for `Digit::Zero`
+    ///     - `Digit::Neg` for `Digit::Neg`
+    ///     - `Digit::Neg` for `Digit::Zero`
     ///     - `Digit::Zero` for `Digit::Pos`
     ///
     /// This method complements the `positive` condition and captures
     /// states that are not strictly positive.
     pub fn not_positive(self) -> Self {
         match self {
-            Digit::Neg => Digit::Pos,
-            Digit::Zero => Digit::Pos,
+            Digit::Neg => Digit::Neg,
+            Digit::Zero => Digit::Neg,
             Digit::Pos => Digit::Zero,
         }
     }
@@ -243,7 +257,7 @@ impl Digit {
     /// Determines the strictly negative condition for the current `Digit`.
     ///
     /// - Returns:
-    ///     - `Digit::Pos` for `Digit::Neg`
+    ///     - `Digit::Neg` for `Digit::Neg`
     ///     - `Digit::Zero` for `Digit::Zero`
     ///     - `Digit::Zero` for `Digit::Pos`
     ///
@@ -251,9 +265,23 @@ impl Digit {
     /// in association with ternary logic.
     pub fn negative(self) -> Self {
         match self {
-            Digit::Neg => Digit::Pos,
+            Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Zero,
             Digit::Pos => Digit::Zero,
+        }
+    }
+
+    /// Returns the absolute negative value of the current `Digit`.
+    ///
+    /// - Returns:
+    ///     - `Digit::Neg` for `Digit::Neg`
+    ///     - `Digit::Zero` for `Digit::Zero`
+    ///     - `Digit::Neg` for `Digit::Pos`
+    pub fn absolute_negative(self) -> Self {
+        match self {
+            Digit::Neg => Digit::Neg,
+            Digit::Zero => Digit::Zero,
+            Digit::Pos => Digit::Neg,
         }
     }
 
@@ -297,7 +325,6 @@ impl Digit {
         }
     }
 
-
     /// Performs a ternary AND operation for the current `Digit` and another `Digit`.
     ///
     /// - `self`: The first operand of the AND operation.
@@ -312,15 +339,11 @@ impl Digit {
     /// which evaluates the logical conjunction of two `Digit`s in the ternary logic system.
     pub fn bi3_and(self, other: Self) -> Self {
         match self {
-            Digit::Neg => match other {
-                Digit::Zero => Digit::Zero,
-                _ => Digit::Neg,
-            },
+            Digit::Neg => other.absolute_negative(),
             Digit::Zero => Digit::Zero,
             Digit::Pos => other,
         }
     }
-
 
     /// Performs a ternary OR operation for the current `Digit` and another `Digit`.
     ///
@@ -338,10 +361,7 @@ impl Digit {
         match self {
             Digit::Neg => other,
             Digit::Zero => Digit::Zero,
-            Digit::Pos => match other {
-                Digit::Zero => Digit::Zero,
-                _ => Digit::Pos,
-            },
+            Digit::Pos => other.absolute_positive(),
         }
     }
 
@@ -362,10 +382,7 @@ impl Digit {
     /// consistent with three-valued logic principles.
     pub fn bi3_imply(self, other: Self) -> Self {
         match self {
-            Digit::Neg => match other {
-                Digit::Zero => Digit::Zero,
-                _ => Digit::Pos,
-            },
+            Digit::Neg => other.absolute_positive(),
             Digit::Zero => Digit::Zero,
             Digit::Pos => other,
         }
@@ -454,7 +471,12 @@ impl Digit {
     /// - Panics:
     ///     - Panics if `self` is `Digit::Zero`, as `Digit::Zero` cannot be directly
     ///       converted to a boolean value.
-    ///       > Use `Digit::possibly()` or `Digit::necessary()` before calling this method in such cases.
+    ///       > To ensure `Pos` or `Neg` value, use one of :
+    ///       > * [Digit::possibly]
+    ///       > * [Digit::necessary]
+    ///       > * [Digit::contingently]
+    ///       > * [Digit::ht_not]
+    ///
     pub fn ht_bool(self) -> bool {
         match self {
             Digit::Neg => false,
@@ -707,10 +729,7 @@ impl BitAnd for Digit {
     fn bitand(self, other: Self) -> Self::Output {
         match self {
             Digit::Neg => Digit::Neg,
-            Digit::Zero => match other {
-                Digit::Neg => Digit::Neg,
-                _ => Digit::Zero,
-            },
+            Digit::Zero => other.negative(),
             Digit::Pos => other,
         }
     }
@@ -744,10 +763,7 @@ impl BitOr for Digit {
     fn bitor(self, other: Self) -> Self::Output {
         match self {
             Digit::Neg => other,
-            Digit::Zero => match other {
-                Digit::Pos => Digit::Pos,
-                _ => Digit::Zero,
-            },
+            Digit::Zero => other.positive(),
             Digit::Pos => Digit::Pos,
         }
     }
