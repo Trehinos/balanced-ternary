@@ -24,6 +24,8 @@ properties.
 
 ### Digits operators
 
+These operators can be applied for `Ternary` with `Ternary::each(operator)`:
+
 | Unary operators       | ➖   | 0️⃣ | ➕   |
 |-----------------------|-----|-----|-----|
 | possibly              | ➖   | ➕   | ➕   |
@@ -39,6 +41,10 @@ properties.
 | not_positive          | ➖   | ➖   | 0️⃣ |
 | negative              | ➖   | 0️⃣ | 0️⃣ |
 | absolute_negative     | ➖   | 0️⃣ | ➖   |
+
+These operators can be applied for `Ternary` with:
+- `Ternary::each_with(operator, with)`, or,
+- `Ternary::each_zip(operator, other)`:
 
 | Binary operators | ➖➖  | ➖0️⃣ | ➖➕  | 0️⃣➖ | 0️⃣0️⃣ | 0️⃣➕ | ➕➖  | ➕0️⃣ | ➕➕  |
 |------------------|-----|------|-----|:-----|:-------|:-----|:----|:-----|:----|
