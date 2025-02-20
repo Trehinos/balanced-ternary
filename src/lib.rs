@@ -388,8 +388,8 @@ impl Ternary {
     /// * Returns either `Zero` or `Pos` or `Neg`.
     ///     * [Digit::pre]
     ///     * [Digit::post]
-    ///     * [Digit::not]
-    ///     * [Digit::neg]
+    ///     * `Digit::not`
+    ///     * `Digit::neg`
     ///     * [Digit::absolute_positive]
     ///     * [Digit::positive]
     ///     * [Digit::not_negative]
@@ -441,13 +441,13 @@ impl Ternary {
     ///
     /// These methods (binary operators) from the [Digit] type can be called directly.
     ///
-    /// * [Digit::mul]
-    /// * [Digit::div]
-    /// * [Digit::bitand] (k3/p3 and)
+    /// * `Digit::mul`
+    /// * `Digit::div`
+    /// * `Digit::bitand` (k3/p3 and)
     /// * [Digit::bi3_and]
-    /// * [Digit::bitor]  (k3/p3 or)
+    /// * `Digit::bitor`  (k3/p3 or)
     /// * [Digit::bi3_or]
-    /// * [Digit::bitxor] (k3/p3 xor)
+    /// * `Digit::bitxor` (k3/p3 xor)
     /// * [Digit::k3_imply]
     /// * [Digit::k3_equiv]
     /// * [Digit::bi3_imply]

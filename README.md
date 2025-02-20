@@ -22,7 +22,7 @@ properties.
 - Provides the types:
     - `Digit` (`Neg`, `Zero` or `Pos`),
     - `Ternary` (heap allocated variable-length balanced-ternary number),
-    - `Tryte` (6 characters long copy-type ternary number).
+    - `Tryte<S>` (S characters long copy-type ternary number).
 
 ### Digits operations
 
@@ -126,7 +126,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-balanced-ternary = "0.2.*"
+balanced-ternary = "0.3.*"
 ```
 
 ## License
