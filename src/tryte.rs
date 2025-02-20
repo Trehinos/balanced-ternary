@@ -28,14 +28,16 @@ use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
 /// `SIZE` is 6 by default (the size of a tryte in a Setun computer).
 ///
 /// > **6 trits ~= 9.505 bits**
+///
 /// > `-364` to `364`
 ///
 /// # Warning
 ///
 /// Because arithmetic operations are performed in with 64 bits integers, `SIZE` cannot be > 40.
 ///
-/// > **40 trits ~= 63.399 bits**
-/// > `-6'078'832'729'528'464'000` to `6'078'832'729'528'464'000`
+/// > **40 trits ~= 63,398 bits**
+/// >
+/// > `-6 078 832 729 528 464 400` to `6 078 832 729 528 464 400`
 ///
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Copy)]
 pub struct Tryte<const SIZE: usize = 6> {
