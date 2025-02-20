@@ -147,7 +147,7 @@ impl Digit {
     ///     - `Digit::Neg` for `Digit::Neg`
     ///     - `Digit::Pos` for `Digit::Zero`
     ///     - `Digit::Pos` for `Digit::Pos`
-    pub fn possibly(&self) -> Self {
+    pub fn possibly(self) -> Self {
         match self {
             Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Pos,
@@ -164,7 +164,7 @@ impl Digit {
     ///
     /// This method is used to calculate necessity as part
     /// of balanced ternary logic systems.
-    pub fn necessary(&self) -> Self {
+    pub fn necessary(self) -> Self {
         match self {
             Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Neg,
@@ -181,7 +181,7 @@ impl Digit {
     ///
     /// This method represents contingency in balanced ternary logic,
     /// which defines the specific alternation of `Digit` values.
-    pub fn contingently(&self) -> Self {
+    pub fn contingently(self) -> Self {
         match self {
             Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Pos,
@@ -198,7 +198,7 @@ impl Digit {
     ///
     /// This method is used to filter out negative conditions
     /// in computations with balanced ternary representations.
-    pub fn not_negative(&self) -> Self {
+    pub fn not_negative(self) -> Self {
         match self {
             Digit::Neg => Digit::Zero,
             Digit::Zero => Digit::Pos,
@@ -215,7 +215,7 @@ impl Digit {
     ///
     /// This method is used to calculate strictly positive states
     /// in association with ternary logic.
-    pub fn positive(&self) -> Self {
+    pub fn positive(self) -> Self {
         match self {
             Digit::Neg => Digit::Zero,
             Digit::Zero => Digit::Zero,
@@ -232,7 +232,7 @@ impl Digit {
     ///
     /// This method complements the `positive` condition and captures
     /// states that are not strictly positive.
-    pub fn not_positive(&self) -> Self {
+    pub fn not_positive(self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => Digit::Pos,
@@ -249,7 +249,7 @@ impl Digit {
     ///
     /// This method calculates strictly negative states
     /// in association with ternary logic.
-    pub fn negative(&self) -> Self {
+    pub fn negative(self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => Digit::Zero,
@@ -269,7 +269,7 @@ impl Digit {
     ///
     /// Implements Kleene ternary implication logic, which includes
     /// determining the logical result based on antecedent and consequent.
-    pub fn k3_imply(&self, other: Self) -> Self {
+    pub fn k3_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => other.positive(),
@@ -289,7 +289,7 @@ impl Digit {
     ///
     /// This method implements a ternary logic equivalence, which captures the relationship between
     /// two balanced ternary `Digit`s based on their logical equivalence.
-    pub fn k3_equiv(&self, other: Self) -> Self {
+    pub fn k3_equiv(self, other: Self) -> Self {
         match self {
             Digit::Neg => -other,
             Digit::Zero => Digit::Zero,
@@ -310,7 +310,7 @@ impl Digit {
     ///
     /// This method implements Bochvar's internal three-valued logic in balanced ternary AND operation,
     /// which evaluates the logical conjunction of two `Digit`s in the ternary logic system.
-    pub fn bi3_and(&self, other: Self) -> Self {
+    pub fn bi3_and(self, other: Self) -> Self {
         match self {
             Digit::Neg => match other {
                 Digit::Zero => Digit::Zero,
@@ -334,7 +334,7 @@ impl Digit {
     ///
     /// This method implements Bochvar's three-valued internal ternary logic for the OR operation,
     /// determining the logical disjunction of two balanced ternary `Digit`s.
-    pub fn bi3_or(&self, other: Self) -> Self {
+    pub fn bi3_or(self, other: Self) -> Self {
         match self {
             Digit::Neg => other,
             Digit::Zero => Digit::Zero,
@@ -360,7 +360,7 @@ impl Digit {
     /// This method implements Bochvar's internal implication logic, which evaluates
     /// the logical consequence, between two balanced ternary `Digit`s in a manner
     /// consistent with three-valued logic principles.
-    pub fn bi3_imply(&self, other: Self) -> Self {
+    pub fn bi3_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => match other {
                 Digit::Zero => Digit::Zero,
@@ -383,7 +383,7 @@ impl Digit {
     ///
     /// Implements Łukasiewicz ternary implication logic, which
     /// evaluates an alternative approach for implication compared to Kleene logic.
-    pub fn l3_imply(&self, other: Self) -> Self {
+    pub fn l3_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => other.not_negative(),
@@ -403,7 +403,7 @@ impl Digit {
     ///
     /// Implements RM3 ternary implication logic, which defines a unique
     /// perspective for implication operations in balanced ternary systems.
-    pub fn rm3_imply(&self, other: Self) -> Self {
+    pub fn rm3_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => other,
@@ -422,7 +422,7 @@ impl Digit {
     ///     - `other` when `self` is `Digit::Pos`.
     ///
     /// This method computes HT ternary implication based on heuristic logic.
-    pub fn ht_imply(&self, other: Self) -> Self {
+    pub fn ht_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => other.possibly(),
@@ -437,7 +437,7 @@ impl Digit {
     ///     - `Digit::Neg` when `self` is `Digit::Zero` or `Digit::Pos`.
     ///
     /// This method evaluates the HT negation result using heuristic ternary logic.
-    pub fn ht_not(&self) -> Self {
+    pub fn ht_not(self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => Digit::Neg,
@@ -455,7 +455,7 @@ impl Digit {
     ///     - Panics if `self` is `Digit::Zero`, as `Digit::Zero` cannot be directly
     ///       converted to a boolean value.
     ///       > Use `Digit::possibly()` or `Digit::necessary()` before calling this method in such cases.
-    pub fn ht_bool(&self) -> bool {
+    pub fn ht_bool(self) -> bool {
         match self {
             Digit::Neg => false,
             Digit::Zero => panic!(
@@ -474,7 +474,7 @@ impl Digit {
     ///     - `1` for `Digit::Zero`.
     ///     - `2` for `Digit::Pos`.
     ///
-    pub fn to_unbalanced(&self) -> u8 {
+    pub fn to_unbalanced(self) -> u8 {
         match self {
             Digit::Neg => 0,
             Digit::Zero => 1,
