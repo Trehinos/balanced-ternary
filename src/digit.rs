@@ -110,7 +110,7 @@ impl Digit {
     ///     - `-` for `Digit::Neg`
     ///     - `0` for `Digit::Zero`
     ///     - `+` for `Digit::Pos`
-    pub fn to_char(&self) -> char {
+    pub const fn to_char(&self) -> char {
         match self {
             Digit::Neg => '-',
             Digit::Zero => '0',
@@ -125,7 +125,7 @@ impl Digit {
     ///     - `0` for `Digit::Zero`
     ///     - `+` for `Digit::Pos`
     /// - Panics if the input character is invalid.
-    pub fn from_char(c: char) -> Digit {
+    pub const fn from_char(c: char) -> Digit {
         match c {
             '-' => Digit::Neg,
             '0' => Digit::Zero,
@@ -140,7 +140,7 @@ impl Digit {
     ///     - -1 for `Digit::Neg`
     ///     - 0 for `Digit::Zero`
     ///     - 1 for `Digit::Pos`
-    pub fn to_i8(&self) -> i8 {
+    pub const fn to_i8(&self) -> i8 {
         match self {
             Digit::Neg => -1,
             Digit::Zero => 0,
@@ -155,7 +155,7 @@ impl Digit {
     ///     - 0 for `Digit::Zero`
     ///     - 1 for `Digit::Pos`
     /// - Panics if the input integer is invalid.
-    pub fn from_i8(i: i8) -> Digit {
+    pub const fn from_i8(i: i8) -> Digit {
         match i {
             -1 => Digit::Neg,
             0 => Digit::Zero,
@@ -169,7 +169,7 @@ impl Digit {
     ///     - `Digit::Neg` for `Digit::Neg`
     ///     - `Digit::Pos` for `Digit::Zero`
     ///     - `Digit::Pos` for `Digit::Pos`
-    pub fn possibly(self) -> Self {
+    pub const fn possibly(self) -> Self {
         match self {
             Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Pos,
@@ -186,7 +186,7 @@ impl Digit {
     ///
     /// This method is used to calculate necessity as part
     /// of balanced ternary logic systems.
-    pub fn necessary(self) -> Self {
+    pub const fn necessary(self) -> Self {
         match self {
             Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Neg,
@@ -203,7 +203,7 @@ impl Digit {
     ///
     /// This method represents contingency in balanced ternary logic,
     /// which defines the specific alternation of `Digit` values.
-    pub fn contingently(self) -> Self {
+    pub const fn contingently(self) -> Self {
         match self {
             Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Pos,
@@ -217,7 +217,7 @@ impl Digit {
     ///     - `Digit::Pos` for `Digit::Neg`
     ///     - `Digit::Zero` for `Digit::Zero`
     ///     - `Digit::Pos` for `Digit::Pos`
-    pub fn absolute_positive(self) -> Self {
+    pub const fn absolute_positive(self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => Digit::Zero,
@@ -234,7 +234,7 @@ impl Digit {
     ///
     /// This method is used to calculate strictly positive states
     /// in association with ternary logic.
-    pub fn positive(self) -> Self {
+    pub const fn positive(self) -> Self {
         match self {
             Digit::Neg => Digit::Zero,
             Digit::Zero => Digit::Zero,
@@ -251,7 +251,7 @@ impl Digit {
     ///
     /// This method is used to filter out negative conditions
     /// in computations with balanced ternary representations.
-    pub fn not_negative(self) -> Self {
+    pub const fn not_negative(self) -> Self {
         match self {
             Digit::Neg => Digit::Zero,
             Digit::Zero => Digit::Pos,
@@ -268,7 +268,7 @@ impl Digit {
     ///
     /// This method complements the `positive` condition and captures
     /// states that are not strictly positive.
-    pub fn not_positive(self) -> Self {
+    pub const fn not_positive(self) -> Self {
         match self {
             Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Neg,
@@ -285,7 +285,7 @@ impl Digit {
     ///
     /// This method calculates strictly negative states
     /// in association with ternary logic.
-    pub fn negative(self) -> Self {
+    pub const fn negative(self) -> Self {
         match self {
             Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Zero,
@@ -299,7 +299,7 @@ impl Digit {
     ///     - `Digit::Neg` for `Digit::Neg`
     ///     - `Digit::Zero` for `Digit::Zero`
     ///     - `Digit::Neg` for `Digit::Pos`
-    pub fn absolute_negative(self) -> Self {
+    pub const fn absolute_negative(self) -> Self {
         match self {
             Digit::Neg => Digit::Neg,
             Digit::Zero => Digit::Zero,
@@ -319,7 +319,7 @@ impl Digit {
     ///
     /// Implements Kleene ternary implication logic, which includes
     /// determining the logical result based on antecedent and consequent.
-    pub fn k3_imply(self, other: Self) -> Self {
+    pub const fn k3_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => other.positive(),
@@ -339,9 +339,13 @@ impl Digit {
     ///
     /// This method implements a ternary logic equivalence, which captures the relationship between
     /// two balanced ternary `Digit`s based on their logical equivalence.
-    pub fn k3_equiv(self, other: Self) -> Self {
+    pub const fn k3_equiv(self, other: Self) -> Self {
         match self {
-            Digit::Neg => -other,
+            Digit::Neg => match other {
+                Digit::Neg => Digit::Pos,
+                Digit::Zero => Digit::Zero,
+                Digit::Pos => Digit::Neg,
+            },
             Digit::Zero => Digit::Zero,
             Digit::Pos => other,
         }
@@ -359,7 +363,7 @@ impl Digit {
     ///
     /// This method implements Bochvar's internal three-valued logic in balanced ternary AND operation,
     /// which evaluates the logical conjunction of two `Digit`s in the ternary logic system.
-    pub fn bi3_and(self, other: Self) -> Self {
+    pub const fn bi3_and(self, other: Self) -> Self {
         match self {
             Digit::Neg => other.absolute_negative(),
             Digit::Zero => Digit::Zero,
@@ -379,7 +383,7 @@ impl Digit {
     ///
     /// This method implements Bochvar's three-valued internal ternary logic for the OR operation,
     /// determining the logical disjunction of two balanced ternary `Digit`s.
-    pub fn bi3_or(self, other: Self) -> Self {
+    pub const fn bi3_or(self, other: Self) -> Self {
         match self {
             Digit::Neg => other,
             Digit::Zero => Digit::Zero,
@@ -402,7 +406,7 @@ impl Digit {
     /// This method implements Bochvar's internal implication logic, which evaluates
     /// the logical consequence, between two balanced ternary `Digit`s in a manner
     /// consistent with three-valued logic principles.
-    pub fn bi3_imply(self, other: Self) -> Self {
+    pub const fn bi3_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => other.absolute_positive(),
             Digit::Zero => Digit::Zero,
@@ -422,7 +426,7 @@ impl Digit {
     ///
     /// Implements Łukasiewicz ternary implication logic, which
     /// evaluates an alternative approach for implication compared to Kleene logic.
-    pub fn l3_imply(self, other: Self) -> Self {
+    pub const fn l3_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => other.not_negative(),
@@ -442,7 +446,7 @@ impl Digit {
     ///
     /// Implements RM3 ternary implication logic, which defines a unique
     /// perspective for implication operations in balanced ternary systems.
-    pub fn rm3_imply(self, other: Self) -> Self {
+    pub const fn rm3_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => other,
@@ -458,7 +462,7 @@ impl Digit {
     /// - Returns:
     ///     - `Digit::Pos` when `self` is `Digit::Neg`.
     ///     - `other` otherwise.
-    pub fn para_imply(self, other: Self) -> Self {
+    pub const fn para_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             _ => other,
@@ -476,7 +480,7 @@ impl Digit {
     ///     - `other` when `self` is `Digit::Pos`.
     ///
     /// This method computes HT ternary implication based on heuristic logic.
-    pub fn ht_imply(self, other: Self) -> Self {
+    pub const fn ht_imply(self, other: Self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => other.possibly(),
@@ -491,7 +495,7 @@ impl Digit {
     ///     - `Digit::Neg` when `self` is `Digit::Zero` or `Digit::Pos`.
     ///
     /// This method evaluates the HT negation result using heuristic ternary logic.
-    pub fn ht_not(self) -> Self {
+    pub const fn ht_not(self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => Digit::Neg,
@@ -514,7 +518,7 @@ impl Digit {
     ///       > * [Digit::contingently]
     ///       > * [Digit::ht_not]
     ///
-    pub fn ht_bool(self) -> bool {
+    pub const fn ht_bool(self) -> bool {
         match self {
             Digit::Neg => false,
             Digit::Zero => panic!(
@@ -534,7 +538,7 @@ impl Digit {
     ///
     /// This method evaluates the negation based on Post's logic in ternary systems,
     /// which differs from standard negation logic.
-    pub fn post(self) -> Self {
+    pub const fn post(self) -> Self {
         match self {
             Digit::Neg => Digit::Zero,
             Digit::Zero => Digit::Pos,
@@ -548,7 +552,7 @@ impl Digit {
     ///     - `Digit::Pos` when `self` is `Digit::Neg`.
     ///     - `Digit::Neg` when `self` is `Digit::Zero`.
     ///     - `Digit::Zero` when `self` is `Digit::Pos`.
-    pub fn pre(self) -> Self {
+    pub const fn pre(self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => Digit::Neg,
@@ -564,7 +568,7 @@ impl Digit {
     ///     - `1` for `Digit::Zero`.
     ///     - `2` for `Digit::Pos`.
     ///
-    pub fn to_unbalanced(self) -> u8 {
+    pub const fn to_unbalanced(self) -> u8 {
         match self {
             Digit::Neg => 0,
             Digit::Zero => 1,
@@ -585,7 +589,7 @@ impl Digit {
     /// # Panics:
     /// - Panics if the provided value is not `0`, `1`, or `2`, as these are the
     ///   only valid representations of unbalanced ternary values.
-    pub fn from_unbalanced(u: u8) -> Digit {
+    pub const fn from_unbalanced(u: u8) -> Digit {
         match u {
             0 => Digit::Neg,
             1 => Digit::Zero,

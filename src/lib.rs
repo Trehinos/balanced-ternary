@@ -136,7 +136,7 @@ pub use crate::digit::{
 /// let digit = trit('+');
 /// assert_eq!(digit, Digit::Pos);
 /// ```
-pub fn trit(from: char) -> Digit {
+pub const fn trit(from: char) -> Digit {
     Digit::from_char(from)
 }
 
@@ -213,7 +213,7 @@ impl Ternary {
     }
 
     /// Returns the number of digits (length) of the balanced ternary number.
-    pub fn log(&self) -> usize {
+    pub  fn log(&self) -> usize {
         self.digits.len()
     }
 

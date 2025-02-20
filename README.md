@@ -11,6 +11,7 @@ properties.
 
 ## Features
 
+- **No Standard Library:** Suitable for `#![no_std]` environments.
 - **Number Conversions:** Convert between decimal and balanced ternary representations.
 - **Arithmetic Operations:** Support for addition, subtraction, multiplication, and division.
 - **[Three-value Logic Operations](https://en.wikipedia.org/wiki/Three-valued_logic):**
@@ -18,7 +19,6 @@ properties.
     - **Advanced logic**: Implementation of K3, BI3, L3, RM3, paraconsistent-logic and HT imply operation,
       and some more HT, BI3, L3 and post-logic operations.
 - **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols.
-- **No Standard Library:** Suitable for `#![no_std]` environments.
 - Provides the types:
     - `Digit` (`Neg`, `Zero` or `Pos`),
     - `Ternary` (heap allocated variable-length balanced-ternary number),
@@ -51,8 +51,8 @@ These operators can be applied for `Ternary` with:
 
 | Binary operators  | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
 |-------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-| `+` (add)         | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
-| `-` (sub)         | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
+| `+` (add)         | `-+`   | -      | 0      | -      | 0      | +      | 0      | +      | `+-`   |
+| `-` (sub)         | 0      | -      | `-+`   | +      | 0      | -      | `+-`   | +      | 0      |
 | `/` (div)         | +      |        | -      | 0      |        | 0      | -      |        | +      |
 | `*` (mul)         | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
 | `&` (bitand) (L3) | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |

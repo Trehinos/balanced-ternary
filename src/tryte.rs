@@ -30,11 +30,34 @@ pub struct Tryte {
 
 impl Tryte {
     /// `364` or `++++++`
-    pub const MAX: Self = Self { raw: [Pos; 6] };
+    pub const MAX: Self = Self::new([Pos; 6]);
     /// `-364` or `------`
-    pub const MIN: Self = Self { raw: [Neg; 6] };
+    pub const MIN: Self = Self::new([Neg; 6]);
     /// `0` or `000000`
-    pub const ZERO: Self = Self { raw: [Zero; 6] };
+    pub const ZERO: Self = Self::new([Zero; 6]);
+
+    /// Creates a new `Tryte` instance from a given array of `Digit`s.
+    ///
+    /// # Arguments
+    ///
+    /// * `raw` - An array of exactly 6 `Digit` values representing the balanced ternary digits.
+    ///
+    /// # Returns
+    ///
+    /// A new `Tryte` instance with the specified balanced ternary digits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::{Tryte, Digit::{Pos, Zero, Neg}};
+    ///
+    /// let digits = [Pos, Zero, Neg, Zero, Pos, Neg];
+    /// let tryte = Tryte::new(digits);
+    /// assert_eq!(tryte.to_digit_slice(), &digits);
+    /// ```
+    pub const fn new(raw: [Digit; 6]) -> Self {
+        Self { raw }
+    }
 
     /// Converts the `Tryte` into its `Ternary` representation.
     ///
@@ -53,7 +76,7 @@ impl Tryte {
     ///
     /// This function allows access to the raw representation of the
     /// balanced ternary number as a slice of `Digit` values.
-    pub fn to_digit_slice(&self) -> &[Digit] {
+    pub const fn to_digit_slice(&self) -> &[Digit] {
         &self.raw
     }
 
