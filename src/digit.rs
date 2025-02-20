@@ -33,31 +33,52 @@
 //!
 //! The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
 //!
-//! #### `BitAnd` for `Digit`
+//! ### Digits operators
 //!
-//! Performs a bitwise AND operation between two `Digit` values.
+//! #### Unary operators
 //!
-//! - `Digit::Neg & other` → `Digit::Neg`
-//! - `Digit::Zero & Digit::Neg` → `Digit::Neg`
-//! - `Digit::Zero & other` → `Digit::Zero`
-//! - `Digit::Pos & other` → `other`
+//! These operators can be applied for `Ternary` with `Ternary::each(operator)`:
+//! 
+//! | Unary operators       | - | 0 | + |
+//! |-----------------------|---|---|---|
+//! | possibly              | - | + | + |
+//! | necessary             | - | - | + |
+//! | contingently          | - | + | - |
+//! | ht_not                | + | - | - |
+//! | post                  | 0 | + | - |
+//! | pre                   | + | - | 0 |
+//! | `!` (not) / `-` (neg) | + | 0 | - |
+//! | absolute_positive     | + | 0 | + |
+//! | positive              | 0 | 0 | + |
+//! | not_negative          | 0 | + | + |
+//! | not_positive          | - | - | 0 |
+//! | negative              | - | 0 | 0 |
+//! | absolute_negative     | - | 0 | - |
 //!
-//! #### `BitOr` for `Digit`
+//! #### Binary operators
 //!
-//! Performs a bitwise OR operation between two `Digit` values.
-//!
-//! - `Digit::Neg | other` → `other`
-//! - `Digit::Zero | Digit::Pos` → `Digit::Pos`
-//! - `Digit::Zero | other` → `Digit::Zero`
-//! - `Digit::Pos | other` → `Digit::Pos`
-//!
-//! #### `BitXor` for `Digit`
-//!
-//! Performs a bitwise XOR operation between two `Digit` values.
-//!
-//! - `Digit::Neg ^ other` → `other`
-//! - `Digit::Zero ^ other` → `Digit::Zero`
-//! - `Digit::Pos ^ other` → `-other`
+//! These operators can be applied for `Ternary` with:
+//! 
+//! - `Ternary::each_with(operator, with)`, or,
+//! - `Ternary::each_zip(operator, other)`:
+//! 
+//! | Binary operators | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
+//! |------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
+//! | `+` (add)        | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
+//! | `-` (sub)        | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
+//! | `/` (div)        | +      |        | -      | 0      |        | 0      | -      |        | +      |
+//! | `*` (mul)        | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+//! | `&` (bitand)     | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
+//! | bi3_and          | -      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+//! | `\|` (bitor)     | -      | 0      | +      | 0      | 0      | +      | +      | +      | +      |
+//! | bi3_or           | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | +      |
+//! | `^` (bitxor)     | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | -      |
+//! | k3_equiv         | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+//! | k3_imply         | +      | +      | +      | 0      | 0      | +      | -      | 0      | +      |
+//! | bi3_imply        | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
+//! | l3_imply         | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
+//! | rm3_imply        | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
+//! | ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
 
 use crate::Ternary;
 use alloc::vec;
