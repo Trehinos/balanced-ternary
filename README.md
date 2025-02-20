@@ -30,8 +30,8 @@ properties.
 | necessary             | ➖   | ➖   | ➕   |
 | contingently          | ➖   | ➕   | ➖   |
 | ht_not                | ➕   | ➖   | ➖   |
-| post_not              | 0️⃣ | ➕   | ➖   |
-| pre_not               | ➕️  | ➖   | 0️⃣ |
+| post                  | 0️⃣ | ➕   | ➖   |
+| pre                   | ➕️  | ➖   | 0️⃣ |
 | `!` (not) / `-` (neg) | ➕   | 0️⃣ | ➖   |
 | absolute_positive     | ➕   | 0️⃣ | ➕   |
 | positive              | 0️⃣ | 0️⃣ | ➕   |

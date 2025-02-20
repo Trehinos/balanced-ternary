@@ -497,7 +497,7 @@ impl Digit {
     ///
     /// This method evaluates the negation based on Post's logic in ternary systems,
     /// which differs from standard negation logic.
-    pub fn post_not(self) -> Self {
+    pub fn post(self) -> Self {
         match self {
             Digit::Neg => Digit::Zero,
             Digit::Zero => Digit::Pos,
@@ -511,7 +511,7 @@ impl Digit {
     ///     - `Digit::Pos` when `self` is `Digit::Neg`.
     ///     - `Digit::Neg` when `self` is `Digit::Zero`.
     ///     - `Digit::Zero` when `self` is `Digit::Pos`.
-    pub fn pre_not(self) -> Self {
+    pub fn pre(self) -> Self {
         match self {
             Digit::Neg => Digit::Pos,
             Digit::Zero => Digit::Neg,
