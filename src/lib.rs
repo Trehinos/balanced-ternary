@@ -408,67 +408,6 @@ impl Ternary {
         repr
     }
 
-
-    /// Applies a transformation function to each digit of the balanced ternary number,
-    /// along with a corresponding digit from another `Ternary` number, and a carry digit.
-    ///
-    /// This method processes the digits in reverse order (from the least significant to the most significant),
-    /// keeping their transformed order correct by reversing the result afterward. Each digit from the 
-    /// current `Ternary` object is processed with the corresponding digit from another `Ternary` object
-    /// and a carry digit using the provided closure or function `f`.
-    ///
-    /// # Arguments
-    ///
-    /// * `f` - A closure or function that takes three arguments: 
-    ///         - a reference to a `Digit` from the current `Ternary`,
-    ///         - a `Digit` from the corresponding position in the `other` `Ternary`, and
-    ///         - the current carry `Digit`.
-    ///         The function must return a tuple containing a new carry `Digit` and a transformed `Digit`.
-    /// * `other` - A `Ternary` object with digits to process alongside the digits of the current object.
-    ///
-    /// # Returns
-    ///
-    /// * `Self` - A new `Ternary` object containing the transformed digits.
-    ///
-    /// # Notes
-    ///
-    /// The carry digit is initially `Zero` and is passed between each step of the transformation process.
-    /// If the `other` `Ternary` has fewer digits than the current one, the missing digits in `other`
-    /// are treated as `Zero`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use balanced_ternary::{Digit, Ternary};
-    ///
-    /// let ternary1 = Ternary::parse("+-0");
-    /// let ternary2 = Ternary::parse("-+0");
-    ///
-    /// // Transformation function that adds digits with a carry digit
-    /// let combine = |d1: &Digit, d2: Digit, carry: Digit| -> (Digit, Digit) {
-    ///     // Simple example operation: this just illustrates transforming with carry.
-    ///     // Replace with meaningful logic as needed for your application.
-    ///     let sum = d1.to_i8() + d2.to_i8() + carry.to_i8();
-    ///     (Digit::from_i8(sum / 3), Digit::from_i8(sum % 3))
-    /// };
-    ///
-    /// let result = ternary1.each_zip(combine, ternary2.clone());
-    /// assert_eq!(result.to_string(), "000");
-    /// assert_eq!((&ternary1 + &ternary2).to_string(), "0");
-    /// ```
-    pub fn each_zip(&self, f: impl Fn(&Digit, Digit, Digit) -> (Digit, Digit), other: Self) -> Self {
-        let mut repr = Ternary::new(vec![]);
-        let mut carry = Zero;
-        for (i, digit) in self.digits.iter().rev().enumerate() {
-            let d_other = other.get_digit(i).unwrap();
-            let (c, res) = f(digit, *d_other, carry);
-            carry = c;
-            repr.digits.push(res);
-        }
-        repr.digits.reverse();
-        repr
-    }
-
     /// Applies a transformation function to each digit of the balanced ternary number,
     /// using an additional parameter for the transformation process, returning a new `Ternary`
     /// object with the transformed digits.
@@ -536,6 +475,136 @@ impl Ternary {
         for digit in self.digits.iter() {
             repr.digits.push(f(digit, other));
         }
+        repr
+    }
+
+    /// Applies a transformation function to each digit of the balanced ternary number,
+    /// along with a corresponding digit from another `Ternary` number, and a carry digit.
+    ///
+    /// This method processes the digits in reverse order (from the least significant to the most significant),
+    /// keeping their transformed order correct by reversing the result afterward. Each digit from the
+    /// current `Ternary` object is processed with the corresponding digit from another `Ternary` object
+    /// and a carry digit using the provided closure or function `f`.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure or function that takes three arguments:
+    ///         - a `Digit` from the current `Ternary`,
+    ///         - a `Digit` from the corresponding position in the `other` `Ternary`, and
+    ///         - the current carry `Digit`.
+    ///         The function must return a tuple containing a new carry `Digit` and a transformed `Digit`.
+    /// * `other` - A `Ternary` object with digits to process alongside the digits of the current object.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `Ternary` object containing the transformed digits.
+    ///
+    /// # Notes
+    ///
+    /// The carry digit is initially `Zero` and is passed between each step of the transformation process.
+    /// If the `other` `Ternary` has fewer digits than the current one, the missing digits in `other`
+    /// are treated as `Zero`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::{Digit, Ternary};
+    ///
+    /// let ternary1 = Ternary::parse("+-0");
+    /// let ternary2 = Ternary::parse("-+0");
+    ///
+    /// // Transformation function that adds digits with a carry digit
+    /// let combine = |d1: Digit, d2: Digit, carry: Digit| -> (Digit, Digit) {
+    ///     // Simple example operation: this just illustrates transforming with carry.
+    ///     // Replace with meaningful logic as needed for your application.
+    ///     let sum = d1.to_i8() + d2.to_i8() + carry.to_i8();
+    ///     (Digit::from_i8(sum / 3), Digit::from_i8(sum % 3))
+    /// };
+    ///
+    /// let result = ternary1.each_zip(combine, ternary2.clone());
+    /// assert_eq!(result.to_string(), "000");
+    /// assert_eq!((&ternary1 + &ternary2).to_string(), "0");
+    /// ```
+    pub fn each_zip(&self, f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit), other: Self) -> Self {
+        if self.digits.len() < other.digits.len() {
+            return other.each_zip(f, self.clone());
+        }
+        let mut repr = Ternary::new(vec![]);
+        let mut carry = Zero;
+        for (i, digit) in self.digits.iter().rev().enumerate() {
+            let d_other = other.get_digit(i).unwrap();
+            let (c, res) = f(*digit, *d_other, carry);
+            carry = c;
+            repr.digits.push(res);
+        }
+        repr.digits.reverse();
+        repr
+    }
+
+    /// Applies a transformation function to each digit of the balanced ternary number,
+    /// along with a corresponding digit from another `Ternary` number, and a carry digit.
+    ///
+    /// This method processes the digits in reverse order (from the least significant to the most significant),
+    /// keeping their transformed order correct by reversing the result afterward. Each digit from the
+    /// current `Ternary` object is processed with the corresponding digit from another `Ternary` object
+    /// and a carry digit using the provided closure or function `f`.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure or function that takes three arguments:
+    ///         - a reference to a `Digit` from the current `Ternary`,
+    ///         - a `Digit` from the corresponding position in the `other` `Ternary`, and
+    ///         - the current carry `Digit`.
+    ///         The function must return a tuple containing a new carry `Digit` and a transformed `Digit`.
+    /// * `other` - A `Ternary` object with digits to process alongside the digits of the current object.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `Ternary` object containing the transformed digits.
+    ///
+    /// # Notes
+    ///
+    /// The carry digit is initially `Zero` and is passed between each step of the transformation process.
+    /// If the `other` `Ternary` has fewer digits than the current one, the missing digits in `other`
+    /// are treated as `Zero`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::{Digit, Ternary};
+    ///
+    /// let ternary1 = Ternary::parse("+-0");
+    /// let ternary2 = Ternary::parse("-+0");
+    ///
+    /// // Transformation function that adds digits with a carry digit
+    /// let combine = |d1: &Digit, d2: Digit, carry: Digit| -> (Digit, Digit) {
+    ///     // Simple example operation: this just illustrates transforming with carry.
+    ///     // Replace with meaningful logic as needed for your application.
+    ///     let sum = d1.to_i8() + d2.to_i8() + carry.to_i8();
+    ///     (Digit::from_i8(sum / 3), Digit::from_i8(sum % 3))
+    /// };
+    ///
+    /// let result = ternary1.each_zip_ref(combine, ternary2.clone());
+    /// assert_eq!(result.to_string(), "000");
+    /// assert_eq!((&ternary1 + &ternary2).to_string(), "0");
+    /// ```
+    pub fn each_zip_ref(
+        &self,
+        f: impl Fn(&Digit, Digit, Digit) -> (Digit, Digit),
+        other: Self,
+    ) -> Self {
+        if self.digits.len() < other.digits.len() {
+            return other.each_zip_ref(f, self.clone());
+        }
+        let mut repr = Ternary::new(vec![]);
+        let mut carry = Zero;
+        for (i, digit) in self.digits.iter().rev().enumerate() {
+            let d_other = other.get_digit(i).unwrap();
+            let (c, res) = f(digit, *d_other, carry);
+            carry = c;
+            repr.digits.push(res);
+        }
+        repr.digits.reverse();
         repr
     }
 }

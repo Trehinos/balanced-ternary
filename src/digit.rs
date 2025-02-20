@@ -297,7 +297,7 @@ impl Digit {
         }
     }
 
-    
+
     /// Performs a ternary AND operation for the current `Digit` and another `Digit`.
     ///
     /// - `self`: The first operand of the AND operation.
@@ -321,7 +321,7 @@ impl Digit {
         }
     }
 
-    
+
     /// Performs a ternary OR operation for the current `Digit` and another `Digit`.
     ///
     /// - `self`: The first operand of the OR operation.
@@ -345,7 +345,7 @@ impl Digit {
         }
     }
 
-    /// Performs Bochvar's internal three-valued implication with the current `Digit` as `self` 
+    /// Performs Bochvar's internal three-valued implication with the current `Digit` as `self`
     /// and another `Digit` as the consequent.
     ///
     /// - `self`: The antecedent of the implication.
@@ -357,8 +357,8 @@ impl Digit {
     ///     - `Digit::Zero` if `self` is `Digit::Zero`.
     ///     - `other` if `self` is `Digit::Pos`.
     ///
-    /// This method implements Bochvar's internal implication logic, which evaluates 
-    /// the logical consequence, between two balanced ternary `Digit`s in a manner 
+    /// This method implements Bochvar's internal implication logic, which evaluates
+    /// the logical consequence, between two balanced ternary `Digit`s in a manner
     /// consistent with three-valued logic principles.
     pub fn bi3_imply(&self, other: Self) -> Self {
         match self {
