@@ -2,7 +2,8 @@
 
 # Balanced Ternary
 
-**Balanced Ternary** is a Rust library for manipulating **[balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary)**
+**Balanced Ternary** is a Rust library for manipulating *
+*[balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary)**
 numbers, a numeral system with digits `-1`, `0`, and `+1`.
 
 This system is useful in areas like computer science and mathematics due to its symmetry and unique arithmetic
@@ -46,23 +47,23 @@ These operators can be applied for `Ternary` with:
 - `Ternary::each_with(operator, with)`, or,
 - `Ternary::each_zip(operator, other)`:
 
-| Binary operators | -- | -0 | -+ | 0- | 00 | 0+ | +- | +0 | ++ |
-|------------------|----|----|----|----|----|----|----|----|----|
-| `+` (add)        | -+ | -  | 0  | -  | 0  | +  | 0  | +  | +- |
-| `-` (sub)        | 0  | -  | -+ | +  | 0  | -  | +- | +  | 0  |
-| `/` (div)        | +  |    | -  | 0  |    | 0  | -  |    | +  |
-| `*` (mul)        | +  | 0  | -  | 0  | 0  | 0  | -  | 0  | +  |
-| `&` (bitand)     | -  | -  | -  | -  | 0  | 0  | -  | 0  | +  |
-| bi3_and          | -  | 0  | -  | 0  | 0  | 0  | -  | 0  | +  |
-| `\|` (bitor)     | -  | 0  | +  | 0  | 0  | +  | +  | +  | +  |
-| bi3_or           | -  | 0  | +  | 0  | 0  | 0  | +  | 0  | +  |
-| `^` (bitxor)     | -  | 0  | +  | 0  | 0  | 0  | +  | 0  | -  |
-| k3_equiv         | +  | 0  | -  | 0  | 0  | 0  | -  | 0  | +  |
-| k3_imply         | +  | +  | +  | 0  | 0  | +  | -  | 0  | +  |
-| bi3_imply        | +  | 0  | +  | 0  | 0  | 0  | -  | 0  | +  |
-| l3_imply         | +  | +  | +  | 0  | +  | +  | -  | 0  | +  |
-| rm3_imply        | +  | +  | +  | -  | 0  | +  | -  | -  | +  |
-| ht_imply         | +  | +  | +  | -  | +  | +  | -  | 0  | +  |
+| Binary operators | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
+|------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
+| `+` (add)        | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
+| `-` (sub)        | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
+| `/` (div)        | +      |        | -      | 0      |        | 0      | -      |        | +      |
+| `*` (mul)        | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+| `&` (bitand)     | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
+| bi3_and          | -      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+| `\|` (bitor)     | -      | 0      | +      | 0      | 0      | +      | +      | +      | +      |
+| bi3_or           | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | +      |
+| `^` (bitxor)     | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | -      |
+| k3_equiv         | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+| k3_imply         | +      | +      | +      | 0      | 0      | +      | -      | 0      | +      |
+| bi3_imply        | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
+| l3_imply         | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
+| rm3_imply        | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
+| ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
 
 ## Examples
 

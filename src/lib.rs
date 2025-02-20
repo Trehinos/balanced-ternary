@@ -168,6 +168,7 @@ pub fn ter(from: &str) -> Ternary {
 
 #[cfg(feature = "tryte")]
 /// Creates a `Tryte` object from a string representation of a balanced ternary number.
+/// It contains approximately 9.5 bits of information.
 ///
 /// This function first converts the input string representation into a `Ternary` object
 /// using the `ter` function, and then constructs a `Tryte` from that `Ternary`.
