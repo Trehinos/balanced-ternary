@@ -443,7 +443,9 @@ impl Ternary {
     /// * [Digit::mul]
     /// * [Digit::div]
     /// * [Digit::bitand] (k3/p3 and)
+    /// * [Digit::bi3_and]
     /// * [Digit::bitor]  (k3/p3 or)
+    /// * [Digit::bi3_or]
     /// * [Digit::bitxor] (k3/p3 xor)
     /// * [Digit::k3_imply]
     /// * [Digit::k3_equiv]
