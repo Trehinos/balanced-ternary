@@ -38,7 +38,7 @@
 //! #### Unary operators
 //!
 //! These operators can be applied for `Ternary` with `Ternary::each(operator)`:
-//! 
+//!
 //! | Unary operators       | - | 0 | + |
 //! |-----------------------|---|---|---|
 //! | possibly              | - | + | + |
@@ -58,10 +58,10 @@
 //! #### Binary operators
 //!
 //! These operators can be applied for `Ternary` with:
-//! 
+//!
 //! - `Ternary::each_with(operator, with)`, or,
 //! - `Ternary::each_zip(operator, other)`:
-//! 
+//!
 //! | Binary operators | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
 //! |------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
 //! | `+` (add)        | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
@@ -78,6 +78,7 @@
 //! | bi3_imply        | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
 //! | l3_imply         | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
 //! | rm3_imply        | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
+//! | para_imply       | +      | +      | +      | -      | 0      | +      | -      | 0      | +      |
 //! | ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
 
 use crate::Ternary;
@@ -449,6 +450,21 @@ impl Digit {
         }
     }
 
+    /// Performs the paraconsistent-logic implication with the current `Digit` as `self` and another `Digit`.
+    ///
+    /// - `self`: The antecedent of the implication.
+    /// - `other`: The consequent of the implication.
+    ///
+    /// - Returns:
+    ///     - `Digit::Pos` when `self` is `Digit::Neg`.
+    ///     - `other` otherwise.
+    pub fn para_imply(self, other: Self) -> Self {
+        match self {
+            Digit::Neg => Digit::Pos,
+            _ => other,
+        }
+    }
+
     /// Performs HT implication with the current `Digit` as `self` and another `Digit`.
     ///
     /// - `self`: The antecedent of the implication.
@@ -539,7 +555,6 @@ impl Digit {
             Digit::Pos => Digit::Zero,
         }
     }
-
 
     /// This method maps this `Digit` value to its corresponding unbalanced ternary
     /// integer representation.

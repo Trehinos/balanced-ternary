@@ -13,8 +13,10 @@ properties.
 
 - **Number Conversions:** Convert between decimal and balanced ternary representations.
 - **Arithmetic Operations:** Support for addition, subtraction, multiplication, and division.
-- **[Logic Operations](https://en.wikipedia.org/wiki/Three-valued_logic):** Support for bitwise and, or, xor, and not.
-- **Advanced logic**: Implementation of K3, BI3, L3, RM3 and HT imply operation.
+- **[Three-value Logic Operations](https://en.wikipedia.org/wiki/Three-valued_logic):**
+    - Support for bitwise and, or, xor, and not (in Kleene algebra (K3)).
+    - **Advanced logic**: Implementation of K3, BI3, L3, RM3, paraconsistent-logic and HT imply operation,
+      and some more HT, BI3, L3 and post-logic operations.
 - **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols.
 - **No Standard Library:** Suitable for `#![no_std]` environments.
 - Provides the types:
@@ -26,44 +28,45 @@ properties.
 
 These operators can be applied for `Ternary` with `Ternary::each(operator)`:
 
-| Unary operators       | - | 0 | + |
-|-----------------------|---|---|---|
-| possibly              | - | + | + |
-| necessary             | - | - | + |
-| contingently          | - | + | - |
-| ht_not                | + | - | - |
-| post                  | 0 | + | - |
-| pre                   | + | - | 0 |
-| `!` (not) / `-` (neg) | + | 0 | - |
-| absolute_positive     | + | 0 | + |
-| positive              | 0 | 0 | + |
-| not_negative          | 0 | + | + |
-| not_positive          | - | - | 0 |
-| negative              | - | 0 | 0 |
-| absolute_negative     | - | 0 | - |
+| Unary operators                                    | - | 0 | + |
+|----------------------------------------------------|---|---|---|
+| possibly (L3)                                      | - | + | + |
+| necessary (L3)                                     | - | - | + |
+| contingently (L3)                                  | - | + | - |
+| ht_not (HT)                                        | + | - | - |
+| post (post logic)<br>eqv. `self.pre().pre()`       | 0 | + | - |
+| pre (inverse of post)<br>eqv. `self.post().post()` | + | - | 0 |
+| `!` (not) / `-` (neg) (L3)                         | + | 0 | - |
+| absolute_positive                                  | + | 0 | + |
+| positive                                           | 0 | 0 | + |
+| not_negative                                       | 0 | + | + |
+| not_positive                                       | - | - | 0 |
+| negative                                           | - | 0 | 0 |
+| absolute_negative                                  | - | 0 | - |
 
 These operators can be applied for `Ternary` with:
 
 - `Ternary::each_with(operator, with)`, or,
 - `Ternary::each_zip(operator, other)`:
 
-| Binary operators | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
-|------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-| `+` (add)        | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
-| `-` (sub)        | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
-| `/` (div)        | +      |        | -      | 0      |        | 0      | -      |        | +      |
-| `*` (mul)        | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-| `&` (bitand)     | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
-| bi3_and          | -      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-| `\|` (bitor)     | -      | 0      | +      | 0      | 0      | +      | +      | +      | +      |
-| bi3_or           | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | +      |
-| `^` (bitxor)     | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | -      |
-| k3_equiv         | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-| k3_imply         | +      | +      | +      | 0      | 0      | +      | -      | 0      | +      |
-| bi3_imply        | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
-| l3_imply         | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
-| rm3_imply        | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
-| ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
+| Binary operators  | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
+|-------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
+| `+` (add)         | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
+| `-` (sub)         | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
+| `/` (div)         | +      |        | -      | 0      |        | 0      | -      |        | +      |
+| `*` (mul)         | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+| `&` (bitand) (L3) | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
+| bi3_and (BI3)     | -      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+| `\|` (bitor) (L3) | -      | 0      | +      | 0      | 0      | +      | +      | +      | +      |
+| bi3_or (BI3)      | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | +      |
+| `^` (bitxor) (L3) | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | -      |
+| k3_equiv (K3)     | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+| k3_imply (K3)     | +      | +      | +      | 0      | 0      | +      | -      | 0      | +      |
+| bi3_imply (BI3)   | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
+| l3_imply (L3)     | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
+| rm3_imply (RM3)   | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
+| para_imply (HT)   | +      | +      | +      | -      | 0      | +      | -      | 0      | +      |
+| ht_imply (HT)     | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
 
 ## Examples
 
@@ -128,7 +131,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-balanced-ternary = "0.1.*"
+balanced-ternary = "0.2.*"
 ```
 
 ## License
