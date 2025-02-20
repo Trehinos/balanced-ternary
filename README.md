@@ -28,21 +28,23 @@ properties.
 
 These operators can be applied for `Ternary` with `Ternary::each(operator)`:
 
-| Unary operators                                    | - | 0 | + |
-|----------------------------------------------------|---|---|---|
-| possibly (L3)                                      | - | + | + |
-| necessary (L3)                                     | - | - | + |
-| contingently (L3)                                  | - | + | - |
-| ht_not (HT)                                        | + | - | - |
-| post (post logic)<br>eqv. `self.pre().pre()`       | 0 | + | - |
-| pre (inverse of post)<br>eqv. `self.post().post()` | + | - | 0 |
-| `!` (not) / `-` (neg) (L3)                         | + | 0 | - |
-| absolute_positive                                  | + | 0 | + |
-| positive                                           | 0 | 0 | + |
-| not_negative                                       | 0 | + | + |
-| not_positive                                       | - | - | 0 |
-| negative                                           | - | 0 | 0 |
-| absolute_negative                                  | - | 0 | - |
+| Unary operators                                    | -    | 0 | +    |
+|----------------------------------------------------|------|---|------|
+| possibly (L3)                                      | -    | + | +    |
+| necessary (L3)                                     | -    | - | +    |
+| contingently (L3)                                  | -    | + | -    |
+| ht_not (HT)                                        | +    | - | -    |
+| post (post logic)<br>eqv. `self.pre().pre()`       | 0    | + | -    |
+| pre (inverse of post)<br>eqv. `self.post().post()` | +    | - | 0    |
+| `!` (not) / `-` (neg) (L3)                         | +    | 0 | -    |
+| absolute_positive                                  | +    | 0 | +    |
+| positive                                           | 0    | 0 | +    |
+| not_negative                                       | 0    | + | +    |
+| not_positive                                       | -    | - | 0    |
+| negative                                           | -    | 0 | 0    |
+| absolute_negative                                  | -    | 0 | -    |
+| inc                                                | 0    | + | `+-` |
+| dec                                                | `-+` | - | 0    |
 
 These operators can be applied for `Ternary` with:
 

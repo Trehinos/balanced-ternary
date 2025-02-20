@@ -163,6 +163,7 @@ impl Digit {
             _ => panic!("Invalid value. A Ternary must be either -1, 0 or +1."),
         }
     }
+
     /// Returns the corresponding possible value of the current `Digit`.
     ///
     /// - Returns:
@@ -597,6 +598,46 @@ impl Digit {
             _ => panic!("Invalid value. A unbalanced ternary value must be either 0, 1 or 2."),
         }
     }
+
+    /// Increments the `Digit` value and returns a `Ternary` result.
+    ///
+    /// - The rules for incrementing are based on ternary arithmetic:
+    ///   - For `Digit::Neg`:
+    ///     - Incrementing results in `Digit::Zero` (`Ternary::parse("0")`).
+    ///   - For `Digit::Zero`:
+    ///     - Incrementing results in `Digit::Pos` (`Ternary::parse("+")`).
+    ///   - For `Digit::Pos`:
+    ///     - Incrementing results in "overflow" (`Ternary::parse("+-")`).
+    ///
+    /// - Returns:
+    ///   - A `Ternary` instance representing the result of the increment operation.
+    pub fn inc(self) -> Ternary {
+        match self {
+            Digit::Neg => Ternary::parse("0"),
+            Digit::Zero => Ternary::parse("+"),
+            Digit::Pos => Ternary::parse("+-"),
+        }
+    }
+
+    /// Decrements the `Digit` value and returns a `Ternary` result.
+    ///
+    /// - The rules for decrementing are based on ternary arithmetic:
+    ///   - For `Digit::Neg`:
+    ///     - Decrementing results in "underflow" (`Ternary::parse("-+")`).
+    ///   - For `Digit::Zero`:
+    ///     - Decrementing results in `Digit::Neg` (`Ternary::parse("-")`).
+    ///   - For `Digit::Pos`:
+    ///     - Decrementing results in `Digit::Zero` (`Ternary::parse("0")`).
+    ///
+    /// - Returns:
+    ///   - A `Ternary` instance representing the result of the decrement operation.
+    pub fn dec(self) -> Ternary {
+        match self {
+            Digit::Neg => Ternary::parse("-+"),
+            Digit::Zero => Ternary::parse("-"),
+            Digit::Pos => Ternary::parse("0"),
+        }
+    }
 }
 
 impl Neg for Digit {
@@ -647,17 +688,9 @@ impl Add<Digit> for Digit {
     ///   - This method does not panic under any circumstances.
     fn add(self, other: Digit) -> Self::Output {
         match self {
-            Digit::Neg => match other {
-                Digit::Neg => Ternary::parse("-+"),
-                Digit::Zero => Ternary::parse("-"),
-                Digit::Pos => Ternary::parse("0"),
-            },
+            Digit::Neg => other.dec(),
             Digit::Zero => Ternary::new(vec![other]),
-            Digit::Pos => match other {
-                Digit::Neg => Ternary::parse("0"),
-                Digit::Zero => Ternary::parse("+"),
-                Digit::Pos => Ternary::parse("+-"),
-            },
+            Digit::Pos => other.inc(),
         }
     }
 }
@@ -686,17 +719,9 @@ impl Sub<Digit> for Digit {
     ///   - This method does not panic under any circumstances.
     fn sub(self, other: Digit) -> Self::Output {
         match self {
-            Digit::Neg => match other {
-                Digit::Neg => Ternary::parse("0"),
-                Digit::Zero => Ternary::parse("-"),
-                Digit::Pos => Ternary::parse("-+"),
-            },
+            Digit::Neg => other.inc(),
             Digit::Zero => Ternary::new(vec![-other]),
-            Digit::Pos => match other {
-                Digit::Neg => Ternary::parse("+-"),
-                Digit::Zero => Ternary::parse("+"),
-                Digit::Pos => Ternary::parse("0"),
-            },
+            Digit::Pos => other.dec(),
         }
     }
 }
@@ -753,23 +778,10 @@ impl Div<Digit> for Digit {
     /// # Panics:
     /// - Panics with "Cannot divide by zero." if the `other` operand is `Digit::Zero`.
     fn div(self, other: Digit) -> Self::Output {
-        match self {
-            Digit::Neg => match other {
-                Digit::Neg => Digit::Pos,
-                Digit::Zero => panic!("Cannot divide by zero."),
-                Digit::Pos => Digit::Neg,
-            },
-            Digit::Zero => match other {
-                Digit::Neg => Digit::Zero,
-                Digit::Zero => panic!("Cannot divide by zero."),
-                Digit::Pos => Digit::Zero,
-            },
-            Digit::Pos => match other {
-                Digit::Neg => Digit::Neg,
-                Digit::Zero => panic!("Cannot divide by zero."),
-                Digit::Pos => Digit::Pos,
-            },
+        if other == Digit::Zero {
+            panic!("Cannot divide by zero.");
         }
+        self * other
     }
 }
 
