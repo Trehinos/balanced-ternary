@@ -2,23 +2,57 @@
 
 # Balanced Ternary
 
-**Balanced Ternary** is a Rust library for manipulating **[balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary)** numbers, a numeral system with digits `-1`,
-`0`, and `+1`. 
+**Balanced Ternary** is a Rust library for manipulating *
+*[balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary)** numbers, a numeral system with digits `-1`,
+`0`, and `+1`.
 
-This system is useful in areas like computer science and mathematics due to its symmetry and unique arithmetic properties.
+This system is useful in areas like computer science and mathematics due to its symmetry and unique arithmetic
+properties.
 
 ## Features
 
 - **Number Conversions:** Convert between decimal and balanced ternary representations.
 - **Arithmetic Operations:** Support for addition, subtraction, multiplication, and division.
 - **[Logic Operations](https://en.wikipedia.org/wiki/Three-valued_logic):** Support for bitwise and, or, xor, and not.
-- **Advanced logic**: Implementation of K3, L3, RM3 and HT imply operation.
+- **Advanced logic**: Implementation of K3, BI3, L3, RM3 and HT imply operation.
 - **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols.
 - **No Standard Library:** Suitable for `#![no_std]` environments.
 - Provides the types:
-  - `Digit` (`Neg`, `Zero` or `Pos`),
-  - `Ternary` (heap allocated variable-length balanced-ternary number),
-  - `Tryte` (6 characters long copy-type ternary number).
+    - `Digit` (`Neg`, `Zero` or `Pos`),
+    - `Ternary` (heap allocated variable-length balanced-ternary number),
+    - `Tryte` (6 characters long copy-type ternary number).
+
+### Digits operators
+
+| Operator (method(&self) -> Self) - Value of &self : | - | 0 | + |
+|-----------------------------------------------------|---|---|---|
+| possibly                                            | - | + | + |
+| necessary                                           | - | - | + |
+| contingently                                        | - | + | - |
+| ht_not                                              | + | - | - |
+| positive                                            | 0 | 0 | + |
+| not_negative                                        | 0 | + | + |
+| not_positive                                        | + | + | 0 |
+| negative                                            | + | 0 | 0 |
+| not/neg                                             | + | 0 | - |
+
+| Operator (method(&self, other) -> Self) - Value of (&self, other) : | -- | -0 | -+ | 0- | 00 | 0+ | +- | +0 | ++ |
+|---------------------------------------------------------------------|----|----|----|:---|:---|:---|:---|:---|:---|
+| +                                                                   | -+ | -  | 0  | -  | 0  | +  | 0  | +  | +- |
+| -                                                                   | 0  | -  | -+ | +  | 0  | -  | +- | +  | 0  |
+| /                                                                   | +  |    | -  | 0  |    | 0  | -  |    | +  |
+| *                                                                   | +  | 0  | -  | 0  | 0  | 0  | -  | 0  | +  |
+| &                                                                   | -  | -  | -  | -  | 0  | 0  | -  | 0  | +  |
+| bi3_and                                                             | -  | 0  | -  | 0  | 0  | 0  | -  | 0  | +  |
+| \|                                                                  | -  | 0  | +  | 0  | 0  | +  | +  | +  | +  |
+| bi3_or                                                              | -  | 0  | +  | 0  | 0  | 0  | +  | 0  | +  |
+| ^                                                                   | -  | 0  | +  | 0  | 0  | 0  | +  | 0  | -  |
+| k3_equiv                                                            | +  | 0  | -  | 0  | 0  | 0  | -  | 0  | +  |
+| k3_imply                                                            | +  | +  | +  | 0  | 0  | +  | -  | 0  | +  |
+| bi3_imply                                                           | +  | 0  | +  | 0  | 0  | 0  | -  | 0  | +  |
+| l3_imply                                                            | +  | +  | +  | 0  | +  | +  | -  | 0  | +  |
+| rm3_imply                                                           | +  | +  | +  | -  | 0  | +  | -  | -  | +  |
+| ht_imply                                                            | +  | +  | +  | -  | +  | +  | -  | 0  | +  |
 
 ## Examples
 
@@ -30,7 +64,7 @@ use balanced_ternary::*;
 fn test() {
     let ternary = Ternary::from_dec(5);
     assert_eq!(ternary.to_string(), "+--");
-    
+
     let ternary = Ternary::parse("+--");
     assert_eq!(ternary.to_dec(), 5);
 }
@@ -78,6 +112,7 @@ fn test() {
 ```
 
 ## Installation
+
 Add the following to your `Cargo.toml`:
 
 ```toml
@@ -86,5 +121,6 @@ balanced-ternary = "0.1.*"
 ```
 
 ## License
+
 Copyright (c) 2025 Sébastien GELDREICH  
 `Balanced Ternary` is licensed under the [MIT License](LICENSE).

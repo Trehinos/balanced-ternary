@@ -140,11 +140,10 @@ pub fn trit(from: char) -> Digit {
     Digit::from_char(from)
 }
 
-
 /// Converts a string representation of a balanced ternary number into a `Ternary` object.
 ///
-/// This function is a convenient shorthand for creating `Ternary` numbers 
-/// from string representations. The input string must consist of balanced 
+/// This function is a convenient shorthand for creating `Ternary` numbers
+/// from string representations. The input string must consist of balanced
 /// ternary characters: `+`, `0`, and `-`.
 ///
 /// # Arguments
@@ -360,6 +359,184 @@ impl Ternary {
     /// ```
     pub fn from_unbalanced(unbalanced: &str) -> Self {
         Self::from_dec(i64::from_str_radix(unbalanced, 3).unwrap())
+    }
+
+    /// Applies a transformation function to each digit of the balanced ternary number,
+    /// returning a new `Ternary` object with the transformed digits.
+    ///
+    /// This method keeps the order of the digits unchanged while applying the provided
+    /// transformation function `f` to each digit individually.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure or function that takes a reference to a `Digit` and returns a transformed `Digit`.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `Ternary` object containing the transformed digits.
+    ///
+    /// # Digit transformations
+    ///
+    /// These methods from the [Digit] type can be called directly.
+    ///
+    /// * Returns either `Pos` or `Neg`:
+    ///     * [Digit::possibly]
+    ///     * [Digit::necessary]
+    ///     * [Digit::contingently]
+    ///     * [Digit::ht_not]
+    /// * Returns either `Zero` or `Pos` or `Neg`.
+    ///     * [Digit::positive]
+    ///     * [Digit::not_negative]
+    ///     * [Digit::not_positive]
+    ///     * [Digit::negative]
+    ///     * [Digit::not]
+    ///     * [Digit::neg]
+    ///
+    /// # Examples
+    /// ```
+    /// use balanced_ternary::{Ternary, Digit};
+    ///
+    /// let orig_ternary = Ternary::parse("+-0");
+    /// let transformed = orig_ternary.each(Digit::necessary);
+    /// assert_eq!(transformed.to_string(), "+--");
+    /// ```
+    pub fn each(&self, f: impl Fn(&Digit) -> Digit) -> Self {
+        let mut repr = Ternary::new(vec![]);
+        for digit in self.digits.iter() {
+            repr.digits.push(f(digit));
+        }
+        repr
+    }
+
+
+    /// Applies a transformation function to each digit of the balanced ternary number,
+    /// along with a corresponding digit from another `Ternary` number, and a carry digit.
+    ///
+    /// This method processes the digits in reverse order (from the least significant to the most significant),
+    /// keeping their transformed order correct by reversing the result afterward. Each digit from the 
+    /// current `Ternary` object is processed with the corresponding digit from another `Ternary` object
+    /// and a carry digit using the provided closure or function `f`.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure or function that takes three arguments: 
+    ///         - a reference to a `Digit` from the current `Ternary`,
+    ///         - a `Digit` from the corresponding position in the `other` `Ternary`, and
+    ///         - the current carry `Digit`.
+    ///         The function must return a tuple containing a new carry `Digit` and a transformed `Digit`.
+    /// * `other` - A `Ternary` object with digits to process alongside the digits of the current object.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `Ternary` object containing the transformed digits.
+    ///
+    /// # Notes
+    ///
+    /// The carry digit is initially `Zero` and is passed between each step of the transformation process.
+    /// If the `other` `Ternary` has fewer digits than the current one, the missing digits in `other`
+    /// are treated as `Zero`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::{Digit, Ternary};
+    ///
+    /// let ternary1 = Ternary::parse("+-0");
+    /// let ternary2 = Ternary::parse("-+0");
+    ///
+    /// // Transformation function that adds digits with a carry digit
+    /// let combine = |d1: &Digit, d2: Digit, carry: Digit| -> (Digit, Digit) {
+    ///     // Simple example operation: this just illustrates transforming with carry.
+    ///     // Replace with meaningful logic as needed for your application.
+    ///     let sum = d1.to_i8() + d2.to_i8() + carry.to_i8();
+    ///     (Digit::from_i8(sum / 3), Digit::from_i8(sum % 3))
+    /// };
+    ///
+    /// let result = ternary1.each_zip(combine, ternary2.clone());
+    /// assert_eq!(result.to_string(), "000");
+    /// assert_eq!((&ternary1 + &ternary2).to_string(), "0");
+    /// ```
+    pub fn each_zip(&self, f: impl Fn(&Digit, Digit, Digit) -> (Digit, Digit), other: Self) -> Self {
+        let mut repr = Ternary::new(vec![]);
+        let mut carry = Zero;
+        for (i, digit) in self.digits.iter().rev().enumerate() {
+            let d_other = other.get_digit(i).unwrap();
+            let (c, res) = f(digit, *d_other, carry);
+            carry = c;
+            repr.digits.push(res);
+        }
+        repr.digits.reverse();
+        repr
+    }
+
+    /// Applies a transformation function to each digit of the balanced ternary number,
+    /// using an additional parameter for the transformation process, returning a new `Ternary`
+    /// object with the transformed digits.
+    ///
+    /// This method keeps the order of the digits unchanged while applying the provided
+    /// transformation function `f` to each digit individually, along with the provided extra
+    /// `other` digit.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure or function that takes a `Digit` and an additional `Digit`,
+    ///         and returns a transformed `Digit`.
+    /// * `other` - An additional `Digit` to be passed to the transformation function `f`.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `Ternary` object containing the transformed digits.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::ops::Mul;
+    /// use balanced_ternary::{Ternary, Digit};
+    ///
+    /// let original = Ternary::parse("+-0");
+    /// let transformed = original.each_with(Digit::mul, Digit::Pos);
+    /// assert_eq!(transformed.to_string(), "+-0");
+    /// ```
+    pub fn each_with(&self, f: impl Fn(Digit, Digit) -> Digit, other: Digit) -> Self {
+        let mut repr = Ternary::new(vec![]);
+        for digit in self.digits.iter() {
+            repr.digits.push(f(*digit, other));
+        }
+        repr
+    }
+
+    /// Applies a transformation function to each digit of the balanced ternary number,
+    /// using an additional parameter for the transformation process, returning a new `Ternary`
+    /// object with the transformed digits.
+    ///
+    /// This method keeps the order of the digits unchanged while applying the provided
+    /// transformation function `f` to each digit individually, along with the provided extra
+    /// `other` digit.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure or function that takes references to a `Digit` and an additional `Digit`,
+    ///         and returns a transformed `Digit`.
+    /// * `other` - An additional `Digit` to be passed to the transformation function `f`.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `Ternary` object containing the transformed digits.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::ops::Mul;
+    /// use balanced_ternary::{Ternary, Digit};
+    ///
+    /// let original = Ternary::parse("+-0");
+    /// let transformed = original.each_with_ref(Digit::k3_equiv, Digit::Neg);
+    /// assert_eq!(transformed.to_string(), "-+0");
+    /// ```
+    pub fn each_with_ref(&self, f: impl Fn(&Digit, Digit) -> Digit, other: Digit) -> Self {
+        let mut repr = Ternary::new(vec![]);
+        for digit in self.digits.iter() {
+            repr.digits.push(f(digit, other));
+        }
+        repr
     }
 }
 

@@ -277,6 +277,100 @@ impl Digit {
         }
     }
 
+    /// Apply a ternary equivalence operation for the current `Digit` and another `Digit`.
+    ///
+    /// - `self`: The first operand of the equivalence operation.
+    /// - `other`: The second operand of the equivalence operation.
+    ///
+    /// - Returns:
+    ///     - The negation of `other` when `self` is `Digit::Neg`.
+    ///     - `Digit::Zero` when `self` is `Digit::Zero`.
+    ///     - `other` when `self` is `Digit::Pos`.
+    ///
+    /// This method implements a ternary logic equivalence, which captures the relationship between
+    /// two balanced ternary `Digit`s based on their logical equivalence.
+    pub fn k3_equiv(&self, other: Self) -> Self {
+        match self {
+            Digit::Neg => -other,
+            Digit::Zero => Digit::Zero,
+            Digit::Pos => other,
+        }
+    }
+
+    
+    /// Performs a ternary AND operation for the current `Digit` and another `Digit`.
+    ///
+    /// - `self`: The first operand of the AND operation.
+    /// - `other`: The second operand of the AND operation.
+    ///
+    /// - Returns:
+    ///     - `Digit::Neg` if `self` is `Digit::Neg` and `other` is not `Digit::Zero`.
+    ///     - `Digit::Zero` if either `self` or `other` is `Digit::Zero`.
+    ///     - `other` if `self` is `Digit::Pos`.
+    ///
+    /// This method implements Bochvar's internal three-valued logic in balanced ternary AND operation,
+    /// which evaluates the logical conjunction of two `Digit`s in the ternary logic system.
+    pub fn bi3_and(&self, other: Self) -> Self {
+        match self {
+            Digit::Neg => match other {
+                Digit::Zero => Digit::Zero,
+                _ => Digit::Neg,
+            },
+            Digit::Zero => Digit::Zero,
+            Digit::Pos => other,
+        }
+    }
+
+    
+    /// Performs a ternary OR operation for the current `Digit` and another `Digit`.
+    ///
+    /// - `self`: The first operand of the OR operation.
+    /// - `other`: The second operand of the OR operation.
+    ///
+    /// - Returns:
+    ///     - `other` if `self` is `Digit::Neg`.
+    ///     - `Digit::Zero` if `self` is `Digit::Zero`.
+    ///     - `Digit::Pos` if `self` is `Digit::Pos` and `other` is not `Digit::Zero`.
+    ///
+    /// This method implements Bochvar's three-valued internal ternary logic for the OR operation,
+    /// determining the logical disjunction of two balanced ternary `Digit`s.
+    pub fn bi3_or(&self, other: Self) -> Self {
+        match self {
+            Digit::Neg => other,
+            Digit::Zero => Digit::Zero,
+            Digit::Pos => match other {
+                Digit::Zero => Digit::Zero,
+                _ => Digit::Pos,
+            },
+        }
+    }
+
+    /// Performs Bochvar's internal three-valued implication with the current `Digit` as `self` 
+    /// and another `Digit` as the consequent.
+    ///
+    /// - `self`: The antecedent of the implication.
+    /// - `other`: The consequent of the implication.
+    ///
+    /// - Returns:
+    ///     - `Digit::Zero` if `self` is `Digit::Neg` and `other` is `Digit::Zero`.
+    ///     - `Digit::Pos` if `self` is `Digit::Neg` and `other` is not `Digit::Zero`.
+    ///     - `Digit::Zero` if `self` is `Digit::Zero`.
+    ///     - `other` if `self` is `Digit::Pos`.
+    ///
+    /// This method implements Bochvar's internal implication logic, which evaluates 
+    /// the logical consequence, between two balanced ternary `Digit`s in a manner 
+    /// consistent with three-valued logic principles.
+    pub fn bi3_imply(&self, other: Self) -> Self {
+        match self {
+            Digit::Neg => match other {
+                Digit::Zero => Digit::Zero,
+                _ => Digit::Pos,
+            },
+            Digit::Zero => Digit::Zero,
+            Digit::Pos => other,
+        }
+    }
+
     /// Performs Łukasiewicz implication with the current `Digit` as `self` and another `Digit`.
     ///
     /// - `self`: The antecedent of the implication.
@@ -351,7 +445,6 @@ impl Digit {
         }
     }
 
-
     /// Converts the `Digit` to a `bool` in HT logic.
     ///
     /// - Returns:
@@ -367,7 +460,8 @@ impl Digit {
             Digit::Neg => false,
             Digit::Zero => panic!(
                 "Cannot convert a Digit::Zero to a bool. \
-                 Use Digit::possibly()->to_bool() or Digit::necessary()->to_bool() instead."),
+                 Use Digit::possibly()->to_bool() or Digit::necessary()->to_bool() instead."
+            ),
             Digit::Pos => true,
         }
     }
@@ -387,7 +481,6 @@ impl Digit {
             Digit::Pos => 2,
         }
     }
-    
 
     /// Creates a `Digit` from an unbalanced ternary integer representation.
     ///
@@ -477,7 +570,6 @@ impl Add<Digit> for Digit {
 
 impl Sub<Digit> for Digit {
     type Output = Ternary;
-    
 
     /// Subtracts two `Digit` values and returns a `Ternary` result.
     ///
@@ -518,7 +610,6 @@ impl Sub<Digit> for Digit {
 impl Mul<Digit> for Digit {
     type Output = Digit;
 
-    
     /// Multiplies two `Digit` values together and returns the product as a `Digit`.
     ///
     /// - The rules for multiplication in this implementation are straightforward:
@@ -546,7 +637,6 @@ impl Mul<Digit> for Digit {
 impl Div<Digit> for Digit {
     type Output = Digit;
 
-    
     /// Divides one `Digit` value by another and returns the result as a `Digit`.
     ///
     /// # Rules for division:
@@ -591,7 +681,7 @@ impl Div<Digit> for Digit {
 
 impl BitAnd for Digit {
     type Output = Self;
-    
+
     /// Performs a bitwise AND operation between two `Digit` values and returns the result.
     ///
     /// - The rules for the bitwise AND (`&`) operation are:
@@ -628,7 +718,6 @@ impl BitAnd for Digit {
 
 impl BitOr for Digit {
     type Output = Self;
-
 
     /// Performs a bitwise OR operation between two `Digit` values and returns the result.
     ///
