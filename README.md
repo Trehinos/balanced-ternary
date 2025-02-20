@@ -26,8 +26,6 @@ properties.
 
 ### Digits operations
 
-These operations (except inc & dec) can be applied for `Ternary` with `Ternary::each(operations)`:
-
 | Unary operations                                   | -    | 0 | +    |
 |----------------------------------------------------|------|---|------|
 | possibly (L3)                                      | -    | + | +    |
@@ -45,11 +43,6 @@ These operations (except inc & dec) can be applied for `Ternary` with `Ternary::
 | absolute_negative                                  | -    | 0 | -    |
 | inc                                                | 0    | + | `+-` |
 | dec                                                | `-+` | - | 0    |
-
-These operations (except add & sub) can be applied for `Ternary` with:
-
-- `Ternary::each_with(operations, with)`, or,
-- `Ternary::each_zip(operations, other)`:
 
 | Binary operations | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
 |-------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
