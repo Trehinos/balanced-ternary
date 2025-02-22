@@ -667,15 +667,52 @@ impl Ternary {
         repr.digits.extend(self.digits.iter().cloned());
         repr
     }
+
+
+    /// Converts the `Ternary` number into a string representation by applying a given
+    /// transformation function to each digit of the ternary number.
+    ///
+    /// # Arguments
+    ///
+    /// * `transform` - A function or closure that takes a `Digit` and returns a `char`, representing the digit.
+    ///
+    /// # Returns
+    ///
+    /// A `String`-based representation of the `Ternary` number resulting from
+    /// applying the transformation to its digits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::{Digit, Pos, Neg, Zero, Ternary};
+    ///
+    /// let ternary = Ternary::new(vec![Pos, Zero, Neg]);
+    ///
+    /// let custom_repr = ternary.to_string_repr(Digit::to_char_t);
+    /// assert_eq!(custom_repr, "10T");
+    /// let custom_repr = ternary.to_string_repr(Digit::to_char_theta);
+    /// assert_eq!(custom_repr, "10Θ");
+    /// let custom_repr = ternary.to_string_repr(Digit::to_char);
+    /// assert_eq!(custom_repr, "+0-");
+    /// ```
+    ///
+    /// # Notes
+    ///
+    /// * The function provides flexibility to define custom string representations
+    ///   for the ternary number digits.
+    /// * Call to `Ternary::to_string()` is equivalent to `Ternary::to_string_repr(Digit::to_char)`.
+    pub fn to_string_repr<F: Fn(&Digit) -> char>(&self, transform: F) -> String {
+        let mut str = String::new();
+        for digit in self.digits.iter() {
+            str.push(transform(digit));
+        }
+        str
+    }
 }
 
 impl Display for Ternary {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        let mut str = String::new();
-        for digit in self.digits.iter() {
-            str.push(digit.to_char());
-        }
-        write!(f, "{}", str)
+        write!(f, "{}", self.to_string_repr(Digit::to_char))
     }
 }
 

@@ -114,6 +114,98 @@ pub enum Digit {
 }
 
 impl Digit {
+
+    /// Converts the `Digit` into a character representation.
+    ///
+    /// - Returns:
+    ///     - `Θ` for `Digit::Neg`
+    ///     - `0` for `Digit::Zero`
+    ///     - `1` for `Digit::Pos`
+    pub const fn to_char_theta(&self) -> char {
+        match self {
+            Digit::Neg => 'Θ',
+            Digit::Zero => '0',
+            Digit::Pos => '1',
+        }
+    }
+
+
+    /// Converts the `Digit` into a character representation.
+    ///
+    /// - Returns:
+    ///     - `Z` for `Digit::Neg`
+    ///     - `0` for `Digit::Zero`
+    ///     - `1` for `Digit::Pos`
+    pub const fn to_char_z(&self) -> char {
+        match self {
+            Digit::Neg => 'Z',
+            Digit::Zero => '0',
+            Digit::Pos => '1',
+        }
+    }
+
+    /// Converts the `Digit` into a character representation.
+    ///
+    /// - Returns:
+    ///     - `T` for `Digit::Neg`
+    ///     - `0` for `Digit::Zero`
+    ///     - `1` for `Digit::Pos`
+    pub const fn to_char_t(&self) -> char {
+        match self {
+            Digit::Neg => 'T',
+            Digit::Zero => '0',
+            Digit::Pos => '1',
+        }
+    }
+
+    /// Creates a `Digit` from a character representation.
+    ///
+    /// - Accepts:
+    ///     - `Θ` for `Digit::Neg`
+    ///     - `0` for `Digit::Zero`
+    ///     - `1` for `Digit::Pos`
+    /// - Panics if the input character is invalid.
+    pub const fn from_char_theta(c: char) -> Digit {
+        match c { 
+            'Θ' => Digit::Neg,
+            '0' => Digit::Zero,
+            '1' => Digit::Pos,
+            _ => panic!("Invalid value. Expected 'Θ', '0', or '1'."),
+        }
+    }
+
+    /// Creates a `Digit` from a character representation.
+    ///
+    /// - Accepts:
+    ///     - `Z` for `Digit::Neg`
+    ///     - `0` for `Digit::Zero`
+    ///     - `1` for `Digit::Pos`
+    /// - Panics if the input character is invalid.
+    pub const fn from_char_z(c: char) -> Digit {
+        match c {
+            'Z' => Digit::Neg,
+            '0' => Digit::Zero,
+            '1' => Digit::Pos,
+            _ => panic!("Invalid value. Expected 'Z', '0', or '1'."),
+        }
+    }
+
+    /// Creates a `Digit` from a character representation.
+    ///
+    /// - Accepts:
+    ///     - `T` for `Digit::Neg`
+    ///     - `0` for `Digit::Zero`
+    ///     - `1` for `Digit::Pos`
+    /// - Panics if the input character is invalid.
+    pub const fn from_char_t(c: char) -> Digit {
+        match c {
+            'T' => Digit::Neg,
+            '0' => Digit::Zero,
+            '1' => Digit::Pos,
+            _ => panic!("Invalid value. Expected 'T', '0', or '1'."),
+        }
+    }
+    
     /// Converts the `Digit` into its character representation.
     ///
     /// - Returns:
