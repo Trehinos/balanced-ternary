@@ -18,7 +18,7 @@ properties.
     - Support for bitwise and, or, xor, and not (in Kleene algebra (K3)).
     - **Advanced logic**: Implementation of K3, BI3, L3, RM3, paraconsistent-logic and HT imply operation,
       and some more HT, BI3, L3 and post-logic operations.
-- **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols.
+- **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols by default, or custom ones.
 - Provides the types:
     - `Digit` (`Neg`, `Zero` or `Pos`),
     - `Ternary` (heap allocated variable-length balanced-ternary number),
