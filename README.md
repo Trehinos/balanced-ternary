@@ -153,7 +153,7 @@ balanced-ternary = "1.0.2"
 ```
 
 ## Documentation
-The complete API documentation can be found [on crate.io](https://docs.rs/balanced-ternary).
+The complete API documentation can be found [on docs.rs](https://docs.rs/balanced-ternary).
 There you can find descriptions and examples of available types and methods.
 
 ## License
