@@ -6,23 +6,28 @@
 **[balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary)**
 numbers, a numeral system with digits `-1`, `0`, and `+1`.
 
-This system is particularly useful in specialized computing applications such as reversible computing, digital signal processing, and three-valued logic modeling.
+This system is particularly useful in specialized computing applications such as reversible computing, digital signal
+processing, and three-valued logic modeling.
 
 ## Three-valued logic
+
 The library supports numerous three-valued logic operations, each of them having its own specificities:
+
 - **K3** (Kleene logic) – A three-valued logic that introduces an "unknown" (0) state,
   useful for dealing with partial information.
-- **BI3** (Bochvar logic) – A logic designed to handle "nonsense" or meaningless statements, 
+- **BI3** (Bochvar logic) – A logic designed to handle "nonsense" or meaningless statements,
   where 0 represents an invalid or undefined value.
-- **L3** (Łukasiewicz logic) – A non-classical logic allowing for degrees of truth, 
+- **L3** (Łukasiewicz logic) – A non-classical logic allowing for degrees of truth,
   often used in fuzzy logic and multi-valued reasoning.
-- **RM3** (Routley-Meyer paraconsistent logic) – A logic that tolerates contradictions without collapsing into triviality,
+- **RM3** (Routley-Meyer paraconsistent logic) – A logic that tolerates contradictions without collapsing into
+  triviality,
   useful in paraconsistent reasoning.
-- **HT** (Heyting logic-inspired ternary system) – A variant of intermediate logic, 
+- **HT** (Heyting logic-inspired ternary system) – A variant of intermediate logic,
   often related to intuitionistic logic and constructive reasoning.
 - **Paraconsistent logic** – A logic framework that avoids the principle of explosion,
   allowing systems to work with contradictory information.
-- **Post logic** – A logical system that extends classical logic with additional operators to handle uncertainty in a structured way.
+- **Post logic** – A logical system that extends classical logic with additional operators to handle uncertainty in a
+  structured way.
 
 ## Features
 
@@ -31,7 +36,7 @@ The library supports numerous three-valued logic operations, each of them having
 - **Arithmetic Operations:** Support for addition, subtraction, multiplication, and division.
 - **[Three-value Logic Operations](https://en.wikipedia.org/wiki/Three-valued_logic):**
     - Support for bitwise and, or, xor, and not (in Kleene algebra (K3)).
-    - **Advanced logic**: Implementation of 
+    - **Advanced logic**: Implementation of
       [K3](https://en.wikipedia.org/wiki/De_Morgan_algebra#Kleene_algebra),
       [BI3](https://en.wikipedia.org/wiki/Many-valued_logic#Bochvar's_internal_three-valued_logic),
       [L3](https://en.wikipedia.org/wiki/%C5%81ukasiewicz_logic),
@@ -47,44 +52,68 @@ The library supports numerous three-valued logic operations, each of them having
 
 ### Digits operations
 
-| Unary operations                                   | -    | 0 | +    |
-|----------------------------------------------------|------|---|------|
-| possibly (**L3**)                                  | -    | + | +    |
-| necessary (**L3**)                                 | -    | - | +    |
-| contingently (**L3**)                              | -    | + | -    |
-| ht_not (**HT**)                                    | +    | - | -    |
-| post (**post logic**)<br>eqv. `self.pre().pre()`   | 0    | + | -    |
-| pre (inverse of post)<br>eqv. `self.post().post()` | +    | - | 0    |
-| `!` (not) / `-` (neg) (**K3**)                     | +    | 0 | -    |
-| absolute_positive                                  | +    | 0 | +    |
-| positive                                           | 0    | 0 | +    |
-| not_negative                                       | 0    | + | +    |
-| not_positive                                       | -    | - | 0    |
-| negative                                           | -    | 0 | 0    |
-| absolute_negative                                  | -    | 0 | -    |
-| inc                                                | 0    | + | `+-` |
-| dec                                                | `-+` | - | 0    |
+### Digits operations
 
-| Binary operations               | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
-|---------------------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-| `+` (add)                       | `-+`   | -      | 0      | -      | 0      | +      | 0      | +      | `+-`   |
-| `-` (sub)                       | 0      | -      | `-+`   | +      | 0      | -      | `+-`   | +      | 0      |
-| `/` (div)                       | +      |        | -      | 0      |        | 0      | -      |        | +      |
-| `*` (mul)                       | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-| `&` (bitand) (**K3**)           | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
-| bi3_and (**BI3**)               | -      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-| `\|` (bitor) (**K3**)           | -      | 0      | +      | 0      | 0      | +      | +      | +      | +      |
-| bi3_or (**BI3**)                | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | +      |
-| `^` (bitxor) (**K3**)           | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | -      |
-| k3_equiv (**K3**)               | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-| k3_imply (**K3**)               | +      | +      | +      | 0      | 0      | +      | -      | 0      | +      |
-| bi3_imply (**BI3**)             | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
-| l3_imply (**L3**)               | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
-| rm3_imply (**RM3**)             | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
-| para_imply (**paraconsistent**) | +      | +      | +      | -      | 0      | +      | -      | 0      | +      |
-| ht_imply (**HT**)               | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
+The library provides a variety of operations that can be performed on individual balanced ternary digits. These
+operations include logical operations, arithmetic operations, and utility functions that are useful for manipulating
+ternary numbers at the digit level. Below are some examples of how these operations can be used:
 
-> `add`, `sub`, `inc` and `dec` return `Ternary` while other operations return `Digit`.
+```rust
+fn test_ternary_eq(a: Ternary, b: &str) {
+    let repr = Ternary::parse(b);
+    assert_eq!(a.to_string(), repr.to_string());
+}
+fn test_binary_op(a: &Ternary, f: impl Fn(Digit, Digit) -> Digit, b: &Ternary, c: &str) {
+    test_ternary_eq(a.each_zip(f, b.clone()), c);
+}
+fn test_operations() {
+    use core::ops::{BitAnd, BitOr, BitXor, Mul, Not};
+
+    let short = Ternary::parse("-0+");
+    let long = Ternary::parse("---000+++");
+    let other = Ternary::parse("-0+-0+-0+");
+
+    // K3
+    test_ternary_eq(short.each(Digit::not), "+0-");
+    test_binary_op(&long, Digit::bitand, &other, "----00-0+");
+    test_binary_op(&long, Digit::bitor, &other, "-0+00++++");
+    test_binary_op(&long, Digit::bitxor, &other, "-0+000+0-");
+    test_binary_op(&long, Digit::k3_equiv, &other, "+0-000-0+");
+    test_binary_op(&long, Digit::k3_imply, &other, "+++00+-0+");
+
+    // HT
+    test_ternary_eq(short.each(Digit::ht_not), "+--");
+    test_binary_op(&long, Digit::ht_imply, &other, "+++-++-0+");
+
+    // BI3
+    test_binary_op(&long, Digit::bi3_and, &other, "-0-000-0+");
+    test_binary_op(&long, Digit::bi3_or, &other, "-0+000+0+");
+    test_binary_op(&long, Digit::bi3_imply, &other, "+0+000-0+");
+
+    // L3
+    test_ternary_eq(short.each(Digit::possibly), "-++");
+    test_ternary_eq(short.each(Digit::necessary), "--+");
+    test_ternary_eq(short.each(Digit::contingently), "-+-");
+    test_binary_op(&long, Digit::l3_imply, &other, "+++0++-0+");
+
+    // PARA / RM3
+    test_binary_op(&long, Digit::rm3_imply, &other, "+++-0+--+");
+    test_binary_op(&long, Digit::para_imply, &other, "+++-0+-0+");
+
+    // Other operations
+    test_ternary_eq(short.each(Digit::post), "0+-");
+    test_ternary_eq(short.each(Digit::pre), "+-0");
+    test_ternary_eq(short.each(Digit::absolute_positive), "+0+");
+    test_ternary_eq(short.each(Digit::positive), "00+");
+    test_ternary_eq(short.each(Digit::not_negative), "0++");
+    test_ternary_eq(short.each(Digit::not_positive), "--0");
+    test_ternary_eq(short.each(Digit::negative), "-00");
+    test_ternary_eq(short.each(Digit::absolute_negative), "-0-");
+
+    test_binary_op(&long, Digit::mul, &other, "+0-000-0+");
+}
+
+```
 
 ## Examples
 
@@ -153,6 +182,7 @@ balanced-ternary = "1.0.2"
 ```
 
 ## Documentation
+
 The complete API documentation can be found [on docs.rs](https://docs.rs/balanced-ternary).
 There you can find descriptions and examples of available types and methods.
 
