@@ -443,11 +443,11 @@ impl Ternary {
     ///
     /// * `Digit::mul`
     /// * `Digit::div`
-    /// * `Digit::bitand` (k3/p3 and)
+    /// * `Digit::bitand` (k3/l3 and)
     /// * [Digit::bi3_and]
-    /// * `Digit::bitor`  (k3/p3 or)
+    /// * `Digit::bitor`  (k3/l3 or)
     /// * [Digit::bi3_or]
-    /// * `Digit::bitxor` (k3/p3 xor)
+    /// * `Digit::bitxor` (k3/l3 xor)
     /// * [Digit::k3_imply]
     /// * [Digit::k3_equiv]
     /// * [Digit::bi3_imply]
@@ -709,6 +709,38 @@ impl Ternary {
             str.push(transform(digit));
         }
         str
+    }
+    
+
+    /// Concatenates the current `Ternary` number with another `Ternary` number.
+    ///
+    /// This function appends the digits of the provided `Ternary` object to the digits
+    /// of the current `Ternary` object, creating a new `Ternary` number as the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - A reference to the `Ternary` number to be concatenated to the current one.
+    ///
+    /// # Returns
+    ///
+    /// * `Ternary` - A new `Ternary` object formed by concatenating the digits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::{Ternary, Pos, Zero, Neg};
+    ///
+    /// let ternary1 = Ternary::new(vec![Pos, Zero]);
+    /// let ternary2 = Ternary::new(vec![Neg, Pos]);
+    ///
+    /// let concatenated = ternary1.concat(&ternary2);
+    /// assert_eq!(concatenated.to_string(), "+0-+");
+    /// ```
+    pub fn concat(&self, other: &Ternary) -> Ternary {
+        let mut t = Ternary::new(vec![]);
+        t.digits.extend(self.digits.iter().cloned());
+        t.digits.extend(other.digits.iter().cloned());
+        t
     }
 }
 
