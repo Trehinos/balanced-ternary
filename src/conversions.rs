@@ -10,8 +10,13 @@
 //!
 //! The primary goal of these conversions is to simplify working with `Digit` and `Ternary` types by leveraging Rust's `From` and `Into` traits.
 
-use crate::{Digit, Ternary};
+use crate::Digit;
+
+#[cfg(feature = "ternary-string")]
 use alloc::string::{String, ToString};
+
+#[cfg(feature = "ternary-string")]
+use crate::Ternary;
 
 impl From<char> for Digit {
     fn from(value: char) -> Self {
@@ -37,30 +42,35 @@ impl From<Digit> for i8 {
     }
 }
 
+#[cfg(feature = "ternary-string")]
 impl From<&str> for Ternary {
     fn from(value: &str) -> Self {
         Self::parse(value)
     }
 }
 
+#[cfg(feature = "ternary-string")]
 impl From<String> for Ternary {
     fn from(value: String) -> Self {
         Self::from(value.as_str())
     }
 }
 
+#[cfg(feature = "ternary-string")]
 impl From<i64> for Ternary {
     fn from(value: i64) -> Self {
         Self::from_dec(value)
     }
 }
 
+#[cfg(feature = "ternary-string")]
 impl From<Ternary> for String {
     fn from(value: Ternary) -> Self {
         value.to_string()
     }
 }
 
+#[cfg(feature = "ternary-string")]
 impl From<Ternary> for i64 {
     fn from(value: Ternary) -> Self {
         value.to_dec()

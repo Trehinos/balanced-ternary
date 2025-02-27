@@ -9,26 +9,6 @@ numbers, a numeral system with digits `-1`, `0`, and `+1`.
 This system is particularly useful in specialized computing applications such as reversible computing, digital signal
 processing, and three-valued logic modeling.
 
-## Three-valued logic
-
-The library supports numerous three-valued logic operations, each of them having its own specificities:
-
-- **K3** (Kleene logic) – A three-valued logic that introduces an "unknown" (0) state,
-  useful for dealing with partial information.
-- **BI3** (Bochvar logic) – A logic designed to handle "nonsense" or meaningless statements,
-  where 0 represents an invalid or undefined value.
-- **L3** (Łukasiewicz logic) – A non-classical logic allowing for degrees of truth,
-  often used in fuzzy logic and multi-valued reasoning.
-- **RM3** (Routley-Meyer paraconsistent logic) – A logic that tolerates contradictions without collapsing into
-  triviality,
-  useful in paraconsistent reasoning.
-- **HT** (Heyting logic-inspired ternary system) – A variant of intermediate logic,
-  often related to intuitionistic logic and constructive reasoning.
-- **Paraconsistent logic** – A logic framework that avoids the principle of explosion,
-  allowing systems to work with contradictory information.
-- **Post logic** – A logical system that extends classical logic with additional operators to handle uncertainty in a
-  structured way.
-
 ## Features
 
 - **No Standard Library:** Suitable for `#![no_std]` environments.
@@ -49,6 +29,25 @@ The library supports numerous three-valued logic operations, each of them having
     - `Digit` (`Neg`, `Zero` or `Pos`),
     - `Ternary` (heap allocated variable-length balanced-ternary number),
     - `Tryte<S>` (S characters long copy-type ternary number).
+
+## Three-valued logic
+
+The library supports numerous three-valued logic operations, each of them having its own specificities:
+
+- **K3** (Kleene logic)  
+  A three-valued logic that introduces an "unknown" (0) state, useful for dealing with partial information.
+- **BI3** (Bochvar logic)  
+  A logic designed to handle "nonsense" or meaningless statements, where 0 represents an invalid or undefined value.
+- **L3** (Łukasiewicz logic)  
+  A non-classical logic allowing for degrees of truth, often used in fuzzy logic and multi-valued reasoning.
+- **RM3** (Routley-Meyer paraconsistent logic)  
+  A logic that tolerates contradictions without collapsing into triviality, useful in paraconsistent reasoning.
+- **HT** (Heyting logic-inspired ternary system)  
+  A variant of intermediate logic, often related to intuitionistic logic and constructive reasoning.
+- **Paraconsistent logic**  
+  A logic framework that avoids the principle of explosion, allowing systems to work with contradictory information.
+- **Post logic**  
+  A logical system that extends classical logic with additional operators to handle uncertainty in a structured way.
 
 ### Digits operations
 
@@ -178,7 +177,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-balanced-ternary = "1.0.2"
+balanced-ternary = "1.0.4"
 ```
 
 ## Documentation

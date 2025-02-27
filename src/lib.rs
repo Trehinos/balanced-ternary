@@ -162,6 +162,7 @@ pub const fn trit(from: char) -> Digit {
 /// let ternary = ter("+-0+");
 /// assert_eq!(ternary.to_string(), "+-0+");
 /// ```
+#[cfg(feature = "ternary-string")]
 pub fn ter(from: &str) -> Ternary {
     Ternary::parse(from)
 }
@@ -202,10 +203,12 @@ pub fn tryte(from: &str) -> Tryte {
 ///
 /// Provides functions for creating, parsing, converting, and manipulating balanced ternary numbers.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg(feature = "ternary-string")]
 pub struct Ternary {
     digits: Vec<Digit>,
 }
 
+#[cfg(feature = "ternary-string")]
 impl Ternary {
     /// Creates a new balanced ternary number from a vector of `Digit`s.
     pub fn new(digits: Vec<Digit>) -> Ternary {
@@ -710,7 +713,6 @@ impl Ternary {
         }
         str
     }
-    
 
     /// Concatenates the current `Ternary` number with another `Ternary` number.
     ///
@@ -744,12 +746,14 @@ impl Ternary {
     }
 }
 
+#[cfg(feature = "ternary-string")]
 impl Display for Ternary {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.to_string_repr(Digit::to_char))
     }
 }
 
+#[cfg(feature = "ternary-string")]
 pub mod operations;
 
 pub mod conversions;
@@ -761,6 +765,7 @@ pub mod tryte;
 pub use crate::tryte::Tryte;
 
 #[cfg(test)]
+#[cfg(feature = "ternary-string")]
 #[test]
 fn test_ternary() {
     use crate::*;
@@ -817,6 +822,7 @@ fn test_ternary() {
 }
 
 #[cfg(test)]
+#[cfg(feature = "ternary-string")]
 #[test]
 fn test_operations() {
     fn test_ternary_eq(a: Ternary, b: &str) {
