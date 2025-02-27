@@ -177,7 +177,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-balanced-ternary = "1.0.4"
+balanced-ternary = "^1"
 ```
 
 ## Documentation
