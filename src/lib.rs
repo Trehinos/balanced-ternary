@@ -13,79 +13,18 @@
 //!     - `Neg` for -1
 //!     - `Zero` for 0
 //!     - `Pos` for +1
-//!
-//! - **`Ternary` Struct**:
-//!     Represents a balanced ternary number as a collection of `Digit`s.
-//!     Provides utility functions for conversion, parsing, and manipulation.
-//!
-//! # Examples
-//!
-//! ## Converting between representations:
-//! ```rust
-//! use balanced_ternary::*;
-//!
-//! let ternary = Ternary::from_dec(5);
-//! assert_eq!(ternary.to_string(), "+--");
-//! assert_eq!(ternary.to_dec(), 5);
-//!
-//! let parsed = Ternary::parse("+--");
-//! assert_eq!(parsed.to_string(), "+--");
-//! assert_eq!(parsed.to_dec(), 5);
-//! ```
-//!
-//! ## Negative numbers:
-//! ```rust
-//! use balanced_ternary::*;
-//!
-//! let neg_five = Ternary::from_dec(-5);
-//! assert_eq!(neg_five.to_string(), "-++");
-//! assert_eq!(neg_five.to_dec(), -5);
-//!
-//! let negated = -&neg_five;
-//! assert_eq!(negated.to_string(), "+--");
-//! assert_eq!(negated.to_dec(), 5);
-//! ```
-//!
-//! ## Larger numbers:
-//! ```rust
-//! use balanced_ternary::*;
-//!
-//! let big = Ternary::from_dec(121);
-//! assert_eq!(big.to_string(), "+++++");
-//! assert_eq!(big.to_dec(), 121);
-//!
-//! let neg_big = Ternary::from_dec(-121);
-//! assert_eq!(neg_big.to_string(), "-----");
-//! assert_eq!(neg_big.to_dec(), -121);
-//! ```
-//!
-//! ## Operations
-//! ```
-//! use balanced_ternary::Ternary;
-//!
-//! let repr9 = Ternary::parse("+00");
-//! let repr4 = Ternary::parse("++");
-//! let repr13 = &repr9 + &repr4;
-//! let repr17 = &repr13 + &repr4;
-//! let repr34 = &repr17 + &repr17;
-//!
-//! assert_eq!(repr13.to_string(), "+++");
-//! assert_eq!(repr17.to_string(), "+-0-");
-//! assert_eq!(repr34.to_string(), "++-+");
-//!
-//! let repr30 = &repr34 - &repr4;
-//! assert_eq!(repr30.to_dec(), 30);
-//! assert_eq!(repr30.to_string(), "+0+0");
-//! ```
-//!
+
 #![no_std]
 extern crate alloc;
 
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
-use alloc::{format, vec};
-use core::fmt::{Display, Formatter};
-use core::str::FromStr;
+#[cfg(feature = "ternary-string")]
+use alloc::{format, string::String, string::ToString, vec, vec::Vec};
+
+#[cfg(feature = "ternary-string")]
+use core::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
 /// Provides helper functions for formatting integers in a given radix.
 ///
@@ -94,6 +33,7 @@ use core::str::FromStr;
 /// - `radix`: The base of the numeral system.
 ///
 /// Returns a string representation of the number in the specified base.
+#[cfg(feature = "ternary-string")]
 fn format_radix(x: i64, radix: u32) -> String {
     let mut result = vec![];
     let sign = x.signum();

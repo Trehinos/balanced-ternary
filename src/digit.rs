@@ -91,9 +91,11 @@
 //! Do so to `add` and `sub` ternaries, too.
 //!
 
-use crate::Ternary;
 use alloc::vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
+
+#[cfg(feature = "ternary-string")]
+use crate::Ternary;
 
 /// Represents a digit in the balanced ternary numeral system.
 ///
@@ -713,6 +715,7 @@ impl Digit {
     ///
     /// - Returns:
     ///   - A `Ternary` instance representing the result of the increment operation.
+    #[cfg(feature = "ternary-string")]
     pub fn inc(self) -> Ternary {
         match self {
             Digit::Neg => Ternary::parse("0"),
@@ -733,6 +736,7 @@ impl Digit {
     ///
     /// - Returns:
     ///   - A `Ternary` instance representing the result of the decrement operation.
+    #[cfg(feature = "ternary-string")]
     pub fn dec(self) -> Ternary {
         match self {
             Digit::Neg => Ternary::parse("-+"),
@@ -766,6 +770,7 @@ impl Not for Digit {
     }
 }
 
+#[cfg(feature = "ternary-string")]
 impl Add<Digit> for Digit {
     type Output = Ternary;
 
@@ -797,6 +802,7 @@ impl Add<Digit> for Digit {
     }
 }
 
+#[cfg(feature = "ternary-string")]
 impl Sub<Digit> for Digit {
     type Output = Ternary;
 
