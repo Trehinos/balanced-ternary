@@ -1,14 +1,3 @@
-//! A module defining the `Tryte` structure and its associated functionality.
-//!
-//! The `Tryte<S>` struct represents a Copy type balanced ternary number with exactly S digits (6 by default).
-//! Each digit in a balanced ternary system can have one of three values: -1, 0, or 1.
-//!
-//! This module provides utilities to convert between `Tryte` and various
-//! representations such as `Ternary`, `i64`. It ensures that the `Tryte`
-//! always consists of exactly `S` ternary digits.
-//!
-//! A [Tryte<6>] can holds value between `-364` and `+364`.
-
 use crate::{
     Digit,
     Digit::{Neg, Pos, Zero},
@@ -18,7 +7,10 @@ use alloc::string::{String, ToString};
 use core::fmt::{Display, Formatter};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
 
-/// A struct representing a balanced ternary number with a fixed length of SIZE digits.
+/// The `Tryte<S>` struct represents a Copy type balanced ternary number with exactly S digits (6 by default).
+/// Each digit in a balanced ternary system can have one of three values: -1, 0, or 1.
+///
+/// A [Tryte<6>] can holds value between `-364` and `+364`.
 ///
 /// The underlying representation of the number is an array of SIZE `Digit` values.
 /// This struct provides conversion methods to and from other formats.

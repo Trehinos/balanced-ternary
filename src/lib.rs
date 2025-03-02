@@ -53,7 +53,7 @@ fn format_radix(x: i64, radix: u32) -> String {
     )
 }
 
-pub mod digit;
+mod digit;
 
 pub use crate::digit::{
     Digit,
@@ -694,12 +694,12 @@ impl Display for Ternary {
 }
 
 #[cfg(feature = "ternary-string")]
-pub mod operations;
+mod operations;
 
-pub mod conversions;
+mod conversions;
 
 #[cfg(feature = "tryte")]
-pub mod tryte;
+mod tryte;
 
 #[cfg(feature = "tryte")]
 pub use crate::tryte::Tryte;

@@ -1,102 +1,14 @@
-//! ## Module: Balanced Ternary `Digit`
-//!
-//! This module defines the `Digit` type for the balanced ternary numeral system,
-//! along with its associated operations and functionality.
-//!
-//! ### Key Features
-//!
-//! - **`Digit` Type**: Represents a digit in the balanced ternary numeral system.
-//!     - Possible values: `Neg` (-1), `Zero` (0), `Pos` (+1).
-//!     - Provides utility functions for converting between characters, integers, and other formats.
-//! - **Arithmetic Operators**: Implements arithmetic operations for digits, including:
-//!     - Negation (`Neg`) and Bitwise Not (`Not`).
-//!     - Addition (`Add`) and Subtraction (`Sub`).
-//!     - Multiplication (`Mul`) and Division (`Div`), with safe handling of divisors (division by zero panics).
-//! - **Logical Operators**: Supports bitwise logical operations (AND, OR, XOR) based on ternary logic rules.
-//! - **Custom Methods**: Additional utility methods implementing balanced ternary logic principles.
-//!
-//! ### Supported Use Cases
-//!
-//! - Arithmetic in balanced ternary numeral systems.
-//! - Logic operations in custom numeral systems.
-//! - Conversion between balanced ternary representation and more common formats like integers and characters.
-//!
-//! ## `Digit` type arithmetical and logical operations
-//!
-//! - `Neg` and `Not` for `Digit`: Negates the digit value, adhering to balanced ternary rules.
-//! - `Add<Digit>` for `Digit`: Adds two `Digit` values and returns a `Ternary`.
-//! - `Sub<Digit>` for `Digit`: Subtracts one `Digit` from another and returns a `Ternary`.
-//! - `Mul<Digit>` for `Digit`: Multiplies two `Digit` values and returns a `Digit`.
-//! - `Div<Digit>` for `Digit`: Divides one `Digit` by another and returns a `Digit`. Division by zero panics.
-//!
-//! ### Logical Operations for `Digit`
-//!
-//! The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
-//!
-//! ### Digits operations
-//!
-//! #### Unary operations
-//!
-//! These operations (except inc & dec) can be applied for `Ternary` with `Ternary::each(operator)`:
-//!
-//! | Unary operations      | - | 0 | + |
-//! |-----------------------|---|---|---|
-//! | possibly              | - | + | + |
-//! | necessary             | - | - | + |
-//! | contingently          | - | + | - |
-//! | ht_not                | + | - | - |
-//! | post                  | 0 | + | - |
-//! | pre                   | + | - | 0 |
-//! | `!` (not) / `-` (neg) | + | 0 | - |
-//! | absolute_positive     | + | 0 | + |
-//! | positive              | 0 | 0 | + |
-//! | not_negative          | 0 | + | + |
-//! | not_positive          | - | - | 0 |
-//! | negative              | - | 0 | 0 |
-//! | absolute_negative     | - | 0 | - |
-//! | inc                   | 0 | + | `+-` |
-//! | dec                   | `-+` | - | 0 |
-//!
-//! `inc` and `dec` can respectively be replaced by `post` and `pre` which are the same operations without the carry digit.
-//!
-//! #### Binary operations
-//!
-//! These operations (except add & sub) can be applied for `Ternary` with:
-//!
-//! - `Ternary::each_with(operator, with)`, or,
-//! - `Ternary::each_zip(operator, other)`:
-//!
-//! | Binary operations | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
-//! |------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-//! | `+` (add)        | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
-//! | `-` (sub)        | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
-//! | `/` (div)        | +      |        | -      | 0      |        | 0      | -      |        | +      |
-//! | `*` (mul)        | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-//! | `&` (bitand)     | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
-//! | bi3_and          | -      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-//! | `\|` (bitor)     | -      | 0      | +      | 0      | 0      | +      | +      | +      | +      |
-//! | bi3_or           | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | +      |
-//! | `^` (bitxor)     | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | -      |
-//! | k3_equiv         | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-//! | k3_imply         | +      | +      | +      | 0      | 0      | +      | -      | 0      | +      |
-//! | bi3_imply        | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
-//! | l3_imply         | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
-//! | rm3_imply        | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
-//! | para_imply       | +      | +      | +      | -      | 0      | +      | -      | 0      | +      |
-//! | ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
-//!
-//! `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.  
-//! Instead, use these operators from `Ternary` directly.
-//!
-//! Do so to `add` and `sub` ternaries, too.
-//!
-
 use alloc::vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
 
 #[cfg(feature = "ternary-string")]
 use crate::Ternary;
 
+/// ## Module: Balanced Ternary `Digit`
+///
+/// This module defines the `Digit` type for the balanced ternary numeral system,
+/// along with its associated operations and functionality.
+///
 /// Represents a digit in the balanced ternary numeral system.
 ///
 /// A digit can have one of three values:
@@ -105,6 +17,93 @@ use crate::Ternary;
 /// - `Pos` (+1): Represents the value +1 in the balanced ternary system.
 ///
 /// Provides utility functions for converting to/from characters, integers, and negation.
+///
+/// ### Key Features
+///
+/// - **`Digit` Type**: Represents a digit in the balanced ternary numeral system.
+///     - Possible values: `Neg` (-1), `Zero` (0), `Pos` (+1).
+///     - Provides utility functions for converting between characters, integers, and other formats.
+/// - **Arithmetic Operators**: Implements arithmetic operations for digits, including:
+///     - Negation (`Neg`) and Bitwise Not (`Not`).
+///     - Addition (`Add`) and Subtraction (`Sub`).
+///     - Multiplication (`Mul`) and Division (`Div`), with safe handling of divisors (division by zero panics).
+/// - **Logical Operators**: Supports bitwise logical operations (AND, OR, XOR) based on ternary logic rules.
+/// - **Custom Methods**: Additional utility methods implementing balanced ternary logic principles.
+///
+/// ### Supported Use Cases
+///
+/// - Arithmetic in balanced ternary numeral systems.
+/// - Logic operations in custom numeral systems.
+/// - Conversion between balanced ternary representation and more common formats like integers and characters.
+///
+/// ## `Digit` type arithmetical and logical operations
+///
+/// - `Neg` and `Not` for `Digit`: Negates the digit value, adhering to balanced ternary rules.
+/// - `Add<Digit>` for `Digit`: Adds two `Digit` values and returns a `Ternary`.
+/// - `Sub<Digit>` for `Digit`: Subtracts one `Digit` from another and returns a `Ternary`.
+/// - `Mul<Digit>` for `Digit`: Multiplies two `Digit` values and returns a `Digit`.
+/// - `Div<Digit>` for `Digit`: Divides one `Digit` by another and returns a `Digit`. Division by zero panics.
+///
+/// ### Logical Operations for `Digit`
+///
+/// The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
+///
+/// ### Digits operations
+///
+/// #### Unary operations
+///
+/// These operations (except inc & dec) can be applied for `Ternary` with `Ternary::each(operator)`:
+///
+/// | Unary operations      | - | 0 | + |
+/// |-----------------------|---|---|---|
+/// | possibly              | - | + | + |
+/// | necessary             | - | - | + |
+/// | contingently          | - | + | - |
+/// | ht_not                | + | - | - |
+/// | post                  | 0 | + | - |
+/// | pre                   | + | - | 0 |
+/// | `!` (not) / `-` (neg) | + | 0 | - |
+/// | absolute_positive     | + | 0 | + |
+/// | positive              | 0 | 0 | + |
+/// | not_negative          | 0 | + | + |
+/// | not_positive          | - | - | 0 |
+/// | negative              | - | 0 | 0 |
+/// | absolute_negative     | - | 0 | - |
+/// | inc                   | 0 | + | `+-` |
+/// | dec                   | `-+` | - | 0 |
+///
+/// `inc` and `dec` can respectively be replaced by `post` and `pre` which are the same operations without the carry digit.
+///
+/// #### Binary operations
+///
+/// These operations (except add & sub) can be applied for `Ternary` with:
+///
+/// - `Ternary::each_with(operator, with)`, or,
+/// - `Ternary::each_zip(operator, other)`:
+///
+/// | Binary operations | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
+/// |------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
+/// | `+` (add)        | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
+/// | `-` (sub)        | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
+/// | `/` (div)        | +      |        | -      | 0      |        | 0      | -      |        | +      |
+/// | `*` (mul)        | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+/// | `&` (bitand)     | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
+/// | bi3_and          | -      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+/// | `\|` (bitor)     | -      | 0      | +      | 0      | 0      | +      | +      | +      | +      |
+/// | bi3_or           | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | +      |
+/// | `^` (bitxor)     | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | -      |
+/// | k3_equiv         | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
+/// | k3_imply         | +      | +      | +      | 0      | 0      | +      | -      | 0      | +      |
+/// | bi3_imply        | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
+/// | l3_imply         | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
+/// | rm3_imply        | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
+/// | para_imply       | +      | +      | +      | -      | 0      | +      | -      | 0      | +      |
+/// | ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
+///
+/// `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.  
+/// Instead, use these operators from `Ternary` directly.
+///
+/// Do so to `add` and `sub` ternaries, too.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Digit {
     /// Represents -1
