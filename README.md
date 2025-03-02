@@ -187,5 +187,5 @@ There you can find descriptions and examples of available types and methods.
 
 ## License
 
-Copyright (c) 2025 Sébastien GELDREICH  
+Copyright (c) 2025 [Sébastien GELDREICH](mailto:dev@trehinos.eu)  
 `Balanced Ternary` is licensed under the [MIT License](LICENSE).
