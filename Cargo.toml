@@ -2,7 +2,7 @@
 name = "balanced-ternary"
 description = "A library to manipulate balanced ternary values."
 authors = ["Sébastien GELDREICH <trehinos@gmail.com>"]
-version = "1.2.1"
+version = "2.0.0"
 edition = "2021"
 license = "MIT"
 keywords = ["ternary", "balanced_ternary", "base3", "three_value_logic", "logic"]
