@@ -55,64 +55,9 @@ The library supports numerous three-valued logic operations, each of them having
 
 The library provides a variety of operations that can be performed on individual balanced ternary digits. These
 operations include logical operations, arithmetic operations, and utility functions that are useful for manipulating
-ternary numbers at the digit level. Below are some examples of how these operations can be used:
+ternary numbers at the digit level. Below are the truth table of these operations:
 
-```rust
-fn test_ternary_eq(a: Ternary, b: &str) {
-    let repr = Ternary::parse(b);
-    assert_eq!(a.to_string(), repr.to_string());
-}
-fn test_binary_op(a: &Ternary, f: impl Fn(Digit, Digit) -> Digit, b: &Ternary, c: &str) {
-    test_ternary_eq(a.each_zip(f, b.clone()), c);
-}
-fn test_operations() {
-    use core::ops::{BitAnd, BitOr, BitXor, Mul, Not};
-
-    let short = Ternary::parse("-0+");
-    let long = Ternary::parse("---000+++");
-    let other = Ternary::parse("-0+-0+-0+");
-
-    // K3
-    test_ternary_eq(short.each(Digit::not), "+0-");
-    test_binary_op(&long, Digit::bitand, &other, "----00-0+");
-    test_binary_op(&long, Digit::bitor, &other, "-0+00++++");
-    test_binary_op(&long, Digit::bitxor, &other, "-0+000+0-");
-    test_binary_op(&long, Digit::k3_equiv, &other, "+0-000-0+");
-    test_binary_op(&long, Digit::k3_imply, &other, "+++00+-0+");
-
-    // HT
-    test_ternary_eq(short.each(Digit::ht_not), "+--");
-    test_binary_op(&long, Digit::ht_imply, &other, "+++-++-0+");
-
-    // BI3
-    test_binary_op(&long, Digit::bi3_and, &other, "-0-000-0+");
-    test_binary_op(&long, Digit::bi3_or, &other, "-0+000+0+");
-    test_binary_op(&long, Digit::bi3_imply, &other, "+0+000-0+");
-
-    // L3
-    test_ternary_eq(short.each(Digit::possibly), "-++");
-    test_ternary_eq(short.each(Digit::necessary), "--+");
-    test_ternary_eq(short.each(Digit::contingently), "-+-");
-    test_binary_op(&long, Digit::l3_imply, &other, "+++0++-0+");
-
-    // PARA / RM3
-    test_binary_op(&long, Digit::rm3_imply, &other, "+++-0+--+");
-    test_binary_op(&long, Digit::para_imply, &other, "+++-0+-0+");
-
-    // Other operations
-    test_ternary_eq(short.each(Digit::post), "0+-");
-    test_ternary_eq(short.each(Digit::pre), "+-0");
-    test_ternary_eq(short.each(Digit::absolute_positive), "+0+");
-    test_ternary_eq(short.each(Digit::positive), "00+");
-    test_ternary_eq(short.each(Digit::not_negative), "0++");
-    test_ternary_eq(short.each(Digit::not_positive), "--0");
-    test_ternary_eq(short.each(Digit::negative), "-00");
-    test_ternary_eq(short.each(Digit::absolute_negative), "-0-");
-
-    test_binary_op(&long, Digit::mul, &other, "+0-000-0+");
-}
-
-```
+![Digit operations](digit-operations.png)
 
 ## Examples
 
