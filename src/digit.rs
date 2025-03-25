@@ -1,4 +1,3 @@
-use alloc::vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
 
 #[cfg(feature = "ternary-string")]
@@ -772,7 +771,7 @@ impl Not for Digit {
 
 #[cfg(feature = "ternary-string")]
 impl Add<Digit> for Digit {
-    type Output = Ternary;
+    type Output = Digit;
 
     /// Adds two `Digit` values together and returns a `Ternary` result.
     ///
@@ -795,16 +794,16 @@ impl Add<Digit> for Digit {
     ///   - This method does not panic under any circumstances.
     fn add(self, other: Digit) -> Self::Output {
         match self {
-            Digit::Neg => other.dec(),
-            Digit::Zero => Ternary::new(vec![other]),
-            Digit::Pos => other.inc(),
+            Digit::Neg => other.pre(),
+            Digit::Zero => other,
+            Digit::Pos => other.post(),
         }
     }
 }
 
 #[cfg(feature = "ternary-string")]
 impl Sub<Digit> for Digit {
-    type Output = Ternary;
+    type Output = Digit;
 
     /// Subtracts two `Digit` values and returns a `Ternary` result.
     ///
@@ -827,9 +826,9 @@ impl Sub<Digit> for Digit {
     ///   - This method does not panic under any circumstances.
     fn sub(self, other: Digit) -> Self::Output {
         match self {
-            Digit::Neg => other.inc(),
-            Digit::Zero => Ternary::new(vec![-other]),
-            Digit::Pos => other.dec(),
+            Digit::Neg => other.post(),
+            Digit::Zero => -other,
+            Digit::Pos => other.pre(),
         }
     }
 }
