@@ -21,11 +21,15 @@ impl TritsChunk {
     }
 
     pub fn to_ternary(&self) -> Ternary {
+        Ternary::from_dec(self.0 as i64)
+    }
+
+    pub fn to_fixed_ternary(&self) -> Ternary {
         Ternary::from_dec(self.0 as i64).with_length(5)
     }
 
     pub fn to_digits(&self) -> Vec<Digit> {
-        self.to_ternary().to_digit_slice().to_vec()
+        self.to_fixed_ternary().to_digit_slice().to_vec()
     }
 
     pub fn from_ternary(ternary: Ternary) -> Self {
@@ -41,8 +45,8 @@ impl TritsChunk {
 
 /// Offers a compact structure to store a ternary number.
 ///
-/// - A [Ternary] is 1 byte long per [Digit]. An 8 digits ternary number is 8 bytes long.
-/// - A [DataTernary] is stored into [TritsChunk]. An 8 digits ternary number with this structure is 2 bytes long (1 byte for 5 digits).
+/// - A [Ternary] is 1 byte long per [Digit]. An 8 (16, 32, 64) digits ternary number is 8 (16, 32, 64) bytes long.
+/// - A [DataTernary] is stored into [TritsChunk]. An 8 (16, 32, 64) digits ternary number with this structure is 2 (4, 7, 13) bytes long (1 byte for 5 digits).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct DataTernary {
     chunks: Vec<TritsChunk>,
@@ -64,15 +68,27 @@ impl DataTernary {
     pub fn to_ternary(&self) -> Ternary {
         let mut digits = Vec::new();
         for chunk in &self.chunks {
+            digits.extend(chunk.to_ternary().to_digit_slice());
+        }
+        Ternary::new(digits).trim()
+    }
+
+    pub fn to_fixed_ternary(&self) -> Ternary {
+        let mut digits = Vec::new();
+        for chunk in &self.chunks {
             digits.extend(chunk.to_digits());
         }
-        Ternary::new(digits)
+        Ternary::new(digits).trim()
     }
-    
+
+    pub fn to_digits(&self) -> Vec<Digit> {
+        self.to_ternary().trim().to_digit_slice().to_vec()
+    }
+
     pub fn from_dec(from: i64) -> Self {
         Self::from_ternary(Ternary::from_dec(from))
     }
-    
+
     pub fn to_dec(&self) -> i64 {
         self.to_ternary().to_dec()
     }
