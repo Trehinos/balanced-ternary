@@ -105,6 +105,7 @@ use crate::Ternary;
 ///
 /// Do so to `add` and `sub` ternaries, too.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[repr(u8)]
 pub enum Digit {
     /// Represents -1
     Neg,

@@ -698,6 +698,12 @@ mod operations;
 
 mod conversions;
 
+#[cfg(feature = "ternary-store")]
+mod store;
+
+#[cfg(feature = "ternary-store")]
+pub use crate::store::{DataTernary, TritsChunk};
+
 #[cfg(feature = "tryte")]
 mod tryte;
 
