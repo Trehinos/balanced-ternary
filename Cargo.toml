@@ -10,9 +10,9 @@ categories = ["data-structures", "mathematics", "science", "no-std"]
 repository = "https://github.com/Trehinos/balanced-ternary"
 
 [features]
-default = ["tryte"]
+default = ["tryte", "ternary-store"]
+ternary-store = ["ternary-string"]
 tryte = ["ternary-string"]
 ternary-string = []
-ternary-store = []
 
 [dependencies]

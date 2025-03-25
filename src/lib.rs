@@ -139,6 +139,37 @@ pub fn tryte(from: &str) -> Tryte {
     Tryte::from_ternary(&ter(from))
 }
 
+/// Creates a `DataTernary` object from a string representation of a balanced ternary number.
+///
+/// This function converts the provided string representation of a balanced ternary number
+/// into a `DataTernary` object. It first parses the input string into a `Ternary`
+/// using the `ter` function, and then constructs the `DataTernary`.
+///
+/// # Arguments
+///
+/// * `from` - A string slice that contains a valid balanced ternary number.
+///   Valid characters are `+`, `0`, and `-`.
+///
+/// # Panics
+///
+/// * Panics if the input contains invalid balanced ternary characters.
+///
+/// # Returns
+///
+/// A `DataTernary` object constructed from the input string.
+///
+/// # Example
+/// ```
+/// use balanced_ternary::{dter, DataTernary};
+///
+/// let data_ternary = dter("+-0-");
+/// assert_eq!(data_ternary.to_string(), "0+-0-");
+/// ```
+#[cfg(feature = "ternary-store")]
+pub fn dter(from: &str) -> DataTernary {
+    DataTernary::from_ternary(ter(from))
+}
+
 /// Represents a balanced ternary number using a sequence of `Digit`s.
 ///
 /// Provides functions for creating, parsing, converting, and manipulating balanced ternary numbers.
