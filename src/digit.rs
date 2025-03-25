@@ -38,8 +38,8 @@ use crate::Ternary;
 /// ## `Digit` type arithmetical and logical operations
 ///
 /// - `Neg` and `Not` for `Digit`: Negates the digit value, adhering to balanced ternary rules.
-/// - `Add<Digit>` for `Digit`: Adds two `Digit` values and returns a `Ternary`.
-/// - `Sub<Digit>` for `Digit`: Subtracts one `Digit` from another and returns a `Ternary`.
+/// - `Add<Digit>` for `Digit`: Adds two `Digit` values and returns a `Digit`.
+/// - `Sub<Digit>` for `Digit`: Subtracts one `Digit` from another and returns a `Digit`.
 /// - `Mul<Digit>` for `Digit`: Multiplies two `Digit` values and returns a `Digit`.
 /// - `Div<Digit>` for `Digit`: Divides one `Digit` by another and returns a `Digit`. Division by zero panics.
 ///
@@ -82,8 +82,8 @@ use crate::Ternary;
 ///
 /// | Binary operations | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
 /// |------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-/// | `+` (add)        | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
-/// | `-` (sub)        | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
+/// | `+` (add)        | -     | -      | 0      | -      | 0      | +      | 0      | +      | +     |
+/// | `-` (sub)        | 0      | -      | -     | +      | 0      | -      | +     | +      | 0      |
 /// | `/` (div)        | +      |        | -      | 0      |        | 0      | -      |        | +      |
 /// | `*` (mul)        | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
 /// | `&` (bitand)     | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
@@ -99,7 +99,7 @@ use crate::Ternary;
 /// | para_imply       | +      | +      | +      | -      | 0      | +      | -      | 0      | +      |
 /// | ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
 ///
-/// `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.  
+/// `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.
 /// Instead, use these operators from `Ternary` directly.
 ///
 /// Do so to `add` and `sub` ternaries, too.
@@ -769,23 +769,10 @@ impl Not for Digit {
     }
 }
 
-#[cfg(feature = "ternary-string")]
 impl Add<Digit> for Digit {
     type Output = Digit;
 
-    /// Adds two `Digit` values together and returns a `Ternary` result.
-    ///
-    /// - The rules for addition are based on ternary arithmetic:
-    ///   - For `Digit::Neg`:
-    ///     - Adding `Digit::Neg` results in "underflow" (`Ternary::parse("-+")`).
-    ///     - Adding `Digit::Zero` keeps the result as `Digit::Neg` (`Ternary::parse("-")`).
-    ///     - Adding `Digit::Pos` results in a balance (`Ternary::parse("0")`).
-    ///   - For `Digit::Zero`:
-    ///     - Simply returns the other operand wrapped in a `Ternary` object.
-    ///   - For `Digit::Pos`:
-    ///     - Adding `Digit::Neg` results in balance (`Ternary::parse("0")`).
-    ///     - Adding `Digit::Zero` keeps the result as `Digit::Pos` (`Ternary::parse("+")`).
-    ///     - Adding `Digit::Pos` results in "overflow" (`Ternary::parse("+-")`).
+    /// Adds two `Digit` values together and returns a `Digit` result.
     ///
     /// - Returns:
     ///   - A `Ternary` instance that holds the result of the addition.
@@ -801,23 +788,10 @@ impl Add<Digit> for Digit {
     }
 }
 
-#[cfg(feature = "ternary-string")]
 impl Sub<Digit> for Digit {
     type Output = Digit;
 
-    /// Subtracts two `Digit` values and returns a `Ternary` result.
-    ///
-    /// - The rules for subtraction are based on ternary arithmetic:
-    ///   - For `Digit::Neg`:
-    ///     - Subtracting `Digit::Neg` results in balance (`Ternary::parse("0")`).
-    ///     - Subtracting `Digit::Zero` keeps the result as `Digit::Neg` (`Ternary::parse("-")`).
-    ///     - Subtracting `Digit::Pos` results in "underflow" (`Ternary::parse("-+")`).
-    ///   - For `Digit::Zero`:
-    ///     - Simply negates the other operand and returns it wrapped in a `Ternary` object.
-    ///   - For `Digit::Pos`:
-    ///     - Subtracting `Digit::Neg` results in "overflow" (`Ternary::parse("+-")`).
-    ///     - Subtracting `Digit::Zero` keeps the result as `Digit::Pos` (`Ternary::parse("+")`).
-    ///     - Subtracting `Digit::Pos` results in balance (`Ternary::parse("0")`).
+    /// Subtracts two `Digit` values and returns a `Digit` result.
     ///
     /// - Returns:
     ///   - A `Ternary` instance that holds the result of the subtraction.
