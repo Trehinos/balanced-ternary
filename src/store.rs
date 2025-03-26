@@ -1,3 +1,4 @@
+use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
 use alloc::string::ToString;
 use alloc::vec::Vec;
@@ -333,5 +334,65 @@ impl Display for DataTernary {
             write!(f, "{}", chunk.to_fixed_ternary())?;
         }
         Ok(())
+    }
+}
+
+/// A struct to store 40 ternary digits (~63.398 bits) value into one `i64`.
+pub struct Big(i64);
+
+impl Big {
+    pub fn from_dec(from: i64) -> Self {
+        Self(from)
+    }
+    pub fn to_dec(&self) -> i64 {
+        self.0
+    }
+    pub fn from_ternary(ternary: Ternary) -> Self {
+        Self(ternary.to_dec())
+    }
+    pub fn to_ternary(&self) -> Ternary {
+        Ternary::from_dec(self.0).with_length(40)
+    }
+}
+
+impl DigitOperate for Big {
+    fn to_digits(&self) -> Vec<Digit> {
+        self.to_ternary().to_digits()
+    }
+
+    fn digit(&self, index: usize) -> Option<Digit> {
+        self.to_ternary().digit(index)
+    }
+
+    fn each(&self, f: impl Fn(Digit) -> Digit) -> Self
+    where
+        Self: Sized,
+    {
+        Self(self.to_ternary().each(f).to_dec())
+    }
+
+    fn each_with(&self, f: impl Fn(Digit, Digit) -> Digit, other: Digit) -> Self
+    where
+        Self: Sized,
+    {
+        Self(self.to_ternary().each_with(f, other).to_dec())
+    }
+
+    fn each_zip(&self, f: impl Fn(Digit, Digit) -> Digit, other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        Self(self.to_ternary().each_zip(f, other.to_ternary()).to_dec())
+    }
+
+    fn each_zip_carry(&self, f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit), other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        Self(
+            self.to_ternary()
+                .each_zip_carry(f, other.to_ternary())
+                .to_dec(),
+        )
     }
 }

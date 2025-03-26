@@ -4,8 +4,10 @@ use crate::{
     Ternary,
 };
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 use core::fmt::{Display, Formatter};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
+use crate::concepts::DigitOperate;
 
 /// The `Tryte<S>` struct represents a Copy type balanced ternary number with exactly S digits (6 by default).
 /// Each digit in a balanced ternary system can have one of three values: -1, 0, or 1.
@@ -141,6 +143,13 @@ impl<const SIZE: usize> Tryte<SIZE> {
         Self::from_ternary(&Ternary::from_dec(v))
     }
 
+}
+
+impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
+    fn to_digits(&self) -> Vec<Digit> {
+        self.to_digit_slice().to_vec()
+    }
+
     /// Retrieves the digit at the specified index in the `Tryte`.
     ///
     /// # Arguments
@@ -149,38 +158,32 @@ impl<const SIZE: usize> Tryte<SIZE> {
     ///
     /// # Returns
     ///
-    /// The `Digit` at the specified index.
-    ///
-    /// # Panics
-    ///
-    /// This function panics if the index is greater than 5.
-    pub fn digit(&self, index: usize) -> Digit {
+    /// The `Digit` at the specified index or None.
+    fn digit(&self, index: usize) -> Option<Digit> {
         if index > SIZE - 1 {
-            panic!(
-                "Cannot access a digit at index {}. Tryte<{}> has only {} digits.",
-                index, SIZE, SIZE
-            );
+            None
+        } else {
+            Some(*self.raw.iter().rev().nth(index).unwrap())
         }
-        *self.raw.iter().rev().nth(index).unwrap()
     }
 
     /// See [Ternary::each].
-    pub fn each(&self, f: impl Fn(Digit) -> Digit) -> Self {
+    fn each(&self, f: impl Fn(Digit) -> Digit) -> Self {
         Self::from_ternary(&self.to_ternary().each(f))
     }
 
     /// See [Ternary::each_with].
-    pub fn each_with(&self, f: impl Fn(Digit, Digit) -> Digit, with: Digit) -> Self {
+    fn each_with(&self, f: impl Fn(Digit, Digit) -> Digit, with: Digit) -> Self {
         Self::from_ternary(&self.to_ternary().each_with(f, with))
     }
 
     /// See [Ternary::each_zip].
-    pub fn each_zip(&self, f: impl Fn(Digit, Digit) -> Digit, other: Self) -> Self {
+    fn each_zip(&self, f: impl Fn(Digit, Digit) -> Digit, other: Self) -> Self {
         Self::from_ternary(&self.to_ternary().each_zip(f, other.to_ternary()))
     }
 
     /// See [Ternary::each_zip_carry].
-    pub fn each_zip_carry(
+    fn each_zip_carry(
         &self,
         f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit),
         other: Self,
@@ -188,6 +191,7 @@ impl<const SIZE: usize> Tryte<SIZE> {
         Self::from_ternary(&self.to_ternary().each_zip_carry(f, other.to_ternary()))
     }
 }
+
 
 impl<const SIZE: usize> Display for Tryte<SIZE> {
     /// Formats the `Tryte` for display.
