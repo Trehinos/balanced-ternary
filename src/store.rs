@@ -3,6 +3,7 @@ use crate::{Digit, Ternary};
 use alloc::string::ToString;
 use alloc::vec::Vec;
 use core::fmt::Display;
+use core::ops::{Add, Div, Mul, Neg, Sub};
 
 /// A struct to store 5 ternary digits (~7.8 bits) value into one byte.
 ///
@@ -337,7 +338,22 @@ impl Display for DataTernary {
     }
 }
 
+impl From<Ternary> for DataTernary {
+    fn from(value: Ternary) -> Self {
+        Self::from_ternary(value)
+    }
+}
+
+impl From<DataTernary> for Ternary {
+    fn from(value: DataTernary) -> Self {
+        value.to_ternary()
+    }
+}
+
+
 /// A struct to store 40 ternary digits (~63.398 bits) value into one `i64`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[repr(transparent)]
 pub struct Big(i64);
 
 impl Big {
@@ -394,5 +410,67 @@ impl DigitOperate for Big {
                 .each_zip_carry(f, other.to_ternary())
                 .to_dec(),
         )
+    }
+}
+
+impl Display for Big {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.to_ternary())
+    }
+}
+
+impl Add for Big {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Self(self.0 + other.0)
+    }
+}
+impl Sub for Big {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self::Output {
+        Self(self.0 - other.0)
+    }
+}
+impl Mul for Big {
+    type Output = Self;
+    fn mul(self, other: Self) -> Self::Output {
+        Self(self.0 * other.0)
+    }
+}
+impl Div for Big {
+    type Output = Self;
+    fn div(self, other: Self) -> Self::Output {
+        Self(self.0 / other.0)
+    }
+}
+
+impl Neg for Big {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        Self(-self.0)
+    }
+}
+
+impl From<i64> for Big {
+    fn from(value: i64) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Big> for i64 {
+    fn from(value: Big) -> Self {
+        value.0
+    }
+}
+
+impl From<Ternary> for Big {
+    fn from(value: Ternary) -> Self {
+        Self::from_ternary(value)
+    }
+}
+
+impl From<Big> for Ternary {
+    fn from(value: Big) -> Self {
+        value.to_ternary()
     }
 }

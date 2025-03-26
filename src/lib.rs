@@ -13,6 +13,29 @@
 //!     - `Neg` for -1
 //!     - `Zero` for 0
 //!     - `Pos` for +1
+//!
+//! ## Features
+//!
+//! ### `ternary-string`
+//!
+//! Add the structure [Ternary] which is a vector of [Digits] and a lot of utilities
+//! to manipulate digits into the ternary number. Implements [DigitOperate].
+//!
+//! ### `tryte`
+//!
+//! > Needs the feature `ternary-string`.
+//!
+//! Add the type [Tryte]`<N>` which is a fixed size copy-type ternary number. Implements [DigitOperate].
+//!
+//! ### `ternary-store`
+//!
+//! > Needs the feature `ternary-string`.
+//!
+//! Add structures to store ternaries efficiently. These types are provided:
+//! - [DataTernary]: a variable length ternary number stored into [TritsChunk]s,
+//! - [TritsChunk]: a fixed size copy-type 5 digits stored into one byte,
+//! - [Big]: a fixed size copy-type 40 digits stored into one 64 bits integer. Implements [DigitOperate].
+//!
 
 #![no_std]
 extern crate alloc;
@@ -22,12 +45,12 @@ pub mod concepts;
 #[cfg(feature = "ternary-string")]
 use alloc::{format, string::String, string::ToString, vec, vec::Vec};
 
+use crate::concepts::DigitOperate;
 #[cfg(feature = "ternary-string")]
 use core::{
     fmt::{Display, Formatter},
     str::FromStr,
 };
-use crate::concepts::DigitOperate;
 
 /// Provides helper functions for formatting integers in a given radix.
 ///
@@ -491,6 +514,7 @@ impl Ternary {
     }
 }
 
+#[cfg(feature = "ternary-string")]
 impl DigitOperate for Ternary {
     fn to_digits(&self) -> Vec<Digit> {
         self.to_digit_slice().to_vec()
@@ -733,9 +757,7 @@ impl DigitOperate for Ternary {
         repr.digits.reverse();
         repr
     }
-
 }
-
 
 #[cfg(feature = "ternary-string")]
 impl Display for Ternary {
