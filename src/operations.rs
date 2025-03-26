@@ -30,8 +30,8 @@
 
 use crate::{Digit, Ternary};
 use alloc::vec;
-use alloc::vec::Vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
+use crate::concepts::DigitOperate;
 
 impl Neg for &Ternary {
     type Output = Ternary;
@@ -100,16 +100,7 @@ impl BitAnd<&Ternary> for &Ternary {
     type Output = Ternary;
 
     fn bitand(self, rhs: &Ternary) -> Self::Output {
-        if self.log() < rhs.log() {
-            return rhs & self;
-        }
-        let mut digits = Vec::new();
-        for (i, d) in self.digits.iter().rev().enumerate() {
-            let other = rhs.get_digit(i).unwrap_or(&Digit::Zero);
-            digits.push(*d & *other);
-        }
-        digits.reverse();
-        Ternary::new(digits)
+        self.each_zip(Digit::bitand, rhs.clone())
     }
 }
 
@@ -117,16 +108,7 @@ impl BitOr<&Ternary> for &Ternary {
     type Output = Ternary;
 
     fn bitor(self, rhs: &Ternary) -> Self::Output {
-        if self.log() < rhs.log() {
-            return rhs | self;
-        }
-        let mut digits = Vec::new();
-        for (i, d) in self.digits.iter().rev().enumerate() {
-            let other = rhs.get_digit(i).unwrap_or(&Digit::Zero);
-            digits.push(*d | *other);
-        }
-        digits.reverse();
-        Ternary::new(digits)
+        self.each_zip(Digit::bitor, rhs.clone())
     }
 }
 
@@ -134,16 +116,7 @@ impl BitXor<&Ternary> for &Ternary {
     type Output = Ternary;
 
     fn bitxor(self, rhs: &Ternary) -> Self::Output {
-        if self.log() < rhs.log() {
-            return rhs ^ self;
-        }
-        let mut digits = Vec::new();
-        for (i, d) in self.digits.iter().rev().enumerate() {
-            let other = rhs.get_digit(i).unwrap_or(&Digit::Zero);
-            digits.push(*d ^ *other);
-        }
-        digits.reverse();
-        Ternary::new(digits)
+        self.each_zip(Digit::bitxor, rhs.clone())
     }
 }
 

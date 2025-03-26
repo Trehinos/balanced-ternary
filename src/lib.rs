@@ -34,7 +34,7 @@
 //! Add structures to store ternaries efficiently. These types are provided:
 //! - [DataTernary]: a variable length ternary number stored into [TritsChunk]s,
 //! - [TritsChunk]: a fixed size copy-type 5 digits stored into one byte,
-//! - [Big]: a fixed size copy-type 40 digits stored into one 64 bits integer. Implements [DigitOperate].
+//! - [Ter40]: a fixed size copy-type 40 digits stored into one 64 bits integer. Implements [DigitOperate].
 //!
 
 #![no_std]
@@ -746,6 +746,7 @@ impl DigitOperate for Ternary {
         if self.digits.len() < other.digits.len() {
             return other.each_zip_carry(f, self.clone());
         }
+        let other = other.with_length(self.digits.len());
         let mut repr = Ternary::new(vec![]);
         let mut carry = Zero;
         for (i, digit) in self.digits.iter().rev().enumerate() {
@@ -775,7 +776,7 @@ mod conversions;
 mod store;
 
 #[cfg(feature = "ternary-store")]
-pub use crate::store::{Big, DataTernary, TritsChunk};
+pub use crate::store::{Ter40, DataTernary, TritsChunk};
 
 #[cfg(feature = "tryte")]
 mod tryte;
