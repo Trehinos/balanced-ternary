@@ -28,10 +28,10 @@
 //! - `BitOr<&Ternary>` for `&Ternary`: Computes the bitwise OR operation on two `Ternary` operands.
 //! - `BitXor<&Ternary>` for `&Ternary`: Computes the bitwise XOR operation on two `Ternary` operands.
 
+use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
 use alloc::vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
-use crate::concepts::DigitOperate;
 
 impl Neg for &Ternary {
     type Output = Ternary;
@@ -60,6 +60,18 @@ impl Add<&Ternary> for &Ternary {
     }
 }
 
+impl Add<Digit> for &Ternary {
+    type Output = Ternary;
+
+    fn add(self, rhs: Digit) -> Self::Output {
+        Ternary::from_dec(
+            self.to_dec()
+                .checked_add(rhs.to_i8() as i64)
+                .expect("Overflow in addition."),
+        )
+    }
+}
+
 impl Sub<&Ternary> for &Ternary {
     type Output = Ternary;
 
@@ -67,6 +79,17 @@ impl Sub<&Ternary> for &Ternary {
         Ternary::from_dec(
             self.to_dec()
                 .checked_sub(rhs.to_dec())
+                .expect("Overflow in subtraction."),
+        )
+    }
+}
+
+impl Sub<Digit> for &Ternary {
+    type Output = Ternary;
+    fn sub(self, rhs: Digit) -> Self::Output {
+        Ternary::from_dec(
+            self.to_dec()
+                .checked_sub(rhs.to_i8() as i64)
                 .expect("Overflow in subtraction."),
         )
     }
