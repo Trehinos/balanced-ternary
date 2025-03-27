@@ -16,6 +16,24 @@
 //!
 //! ## Features
 //!
+//! All features are enabled by default.
+//!
+//! To enable only some features, use the `default-features` option
+//! in your [dependency declaration](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features):
+//!
+//! ```toml
+//! [dependencies.balanced-ternary]
+//! version = "*.*"
+//! default-features = false
+//! 
+//! # Choose which one to enable
+//! features = ["ternary-string", "tryte", "ternary-store"]
+//! ```
+//!
+//! ### Featureless
+//!
+//! Without any feature, this library provide the type `Digit` and all its operations and the trait `DigitOperate`.
+//!
 //! ### `ternary-string`
 //!
 //! Add the structure [Ternary] which is a vector of [Digit]s and a lot of utilities

@@ -49,7 +49,7 @@ use crate::Ternary;
 ///
 /// ### Digits operations
 /// 
-/// ![Digit operations](https://raw.githubusercontent.com/Trehinos/balanced-ternary/refs/heads/dev-2.0.0/digit-operations.png)
+/// ![Digit operations](https://raw.githubusercontent.com/Trehinos/balanced-ternary/refs/heads/master/digit-operations.png)
 ///
 /// `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.
 /// Instead, use these operators from `Ternary` directly.

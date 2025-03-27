@@ -101,10 +101,7 @@ You can use these operations with the `DigitOperate` trait methods,
 `each_*` (`with`, `zip`, `zip_carry`):
 
 ```rust
-
-#[cfg(test)]
 #[cfg(feature = "ternary-string")]
-#[test]
 fn test_each() {
     use crate::*;
     let ternary = Ternary::parse("+0-");
