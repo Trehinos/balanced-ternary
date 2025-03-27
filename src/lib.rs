@@ -18,7 +18,7 @@
 //!
 //! ### `ternary-string`
 //!
-//! Add the structure [Ternary] which is a vector of [Digits] and a lot of utilities
+//! Add the structure [Ternary] which is a vector of [Digit]s and a lot of utilities
 //! to manipulate digits into the ternary number. Implements [DigitOperate].
 //!
 //! ### `tryte`

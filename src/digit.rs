@@ -48,56 +48,8 @@ use crate::Ternary;
 /// The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
 ///
 /// ### Digits operations
-///
-/// #### Unary operations
-///
-/// These operations (except inc & dec) can be applied for `Ternary` with `Ternary::each(operator)`:
-///
-/// | Unary operations      | - | 0 | + |
-/// |-----------------------|---|---|---|
-/// | possibly              | - | + | + |
-/// | necessary             | - | - | + |
-/// | contingently          | - | + | - |
-/// | ht_not                | + | - | - |
-/// | post                  | 0 | + | - |
-/// | pre                   | + | - | 0 |
-/// | `!` (not) / `-` (neg) | + | 0 | - |
-/// | absolute_positive     | + | 0 | + |
-/// | positive              | 0 | 0 | + |
-/// | not_negative          | 0 | + | + |
-/// | not_positive          | - | - | 0 |
-/// | negative              | - | 0 | 0 |
-/// | absolute_negative     | - | 0 | - |
-/// | inc                   | 0 | + | `+-` |
-/// | dec                   | `-+` | - | 0 |
-///
-/// `inc` and `dec` can respectively be replaced by `post` and `pre` which are the same operations without the carry digit.
-///
-/// #### Binary operations
-///
-/// These operations (except add & sub) can be applied for `Ternary` with:
-///
-/// - `Ternary::each_with(operator, with)`, or,
-/// - `Ternary::each_zip(operator, other)`:
-///
-/// | Binary operations | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
-/// |------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-/// | `+` (add)        | -     | -      | 0      | -      | 0      | +      | 0      | +      | +     |
-/// | `-` (sub)        | 0      | -      | -     | +      | 0      | -      | +     | +      | 0      |
-/// | `/` (div)        | +      |        | -      | 0      |        | 0      | -      |        | +      |
-/// | `*` (mul)        | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-/// | `&` (bitand)     | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
-/// | bi3_and          | -      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-/// | `\|` (bitor)     | -      | 0      | +      | 0      | 0      | +      | +      | +      | +      |
-/// | bi3_or           | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | +      |
-/// | `^` (bitxor)     | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | -      |
-/// | k3_equiv         | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-/// | k3_imply         | +      | +      | +      | 0      | 0      | +      | -      | 0      | +      |
-/// | bi3_imply        | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
-/// | l3_imply         | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
-/// | rm3_imply        | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
-/// | para_imply       | +      | +      | +      | -      | 0      | +      | -      | 0      | +      |
-/// | ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
+/// 
+/// ![Digit operations](https://raw.githubusercontent.com/Trehinos/balanced-ternary/refs/heads/dev-2.0.0/digit-operations.png)
 ///
 /// `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.
 /// Instead, use these operators from `Ternary` directly.
