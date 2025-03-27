@@ -844,6 +844,15 @@ fn test_ternary() {
 #[cfg(test)]
 #[cfg(feature = "ternary-string")]
 #[test]
+fn test_each() {
+    use crate::*;
+    let ternary = Ternary::parse("+0-");
+    assert_eq!(ternary.each(Digit::possibly).to_string(), "++-");
+}
+
+#[cfg(test)]
+#[cfg(feature = "ternary-string")]
+#[test]
 fn test_operations() {
     fn test_ternary_eq(a: Ternary, b: &str) {
         let repr = Ternary::parse(b);

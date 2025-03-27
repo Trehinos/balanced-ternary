@@ -25,10 +25,48 @@ processing, and three-valued logic modeling.
       and [HT](https://en.wikipedia.org/wiki/Intermediate_logic) imply operation,
       and some more HT, BI3, L3 and post-logic operations.
 - **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols by default, or custom ones.
-- Provides the types:
-    - `Digit` (`Neg`, `Zero` or `Pos`),
-    - `Ternary` (heap allocated variable-length balanced-ternary number),
-    - `Tryte<S>` (S characters long copy-type ternary number).
+
+### Library `features`
+
+All features are enabled by default.
+
+To enable only some features, use the `default-features` option
+in your [dependency declaration](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features):
+
+```toml
+[dependencies.balanced-ternary]
+version = "*.*"
+default-features = false
+# Choose which one to enable
+features = ["ternary-string", "tryte", "ternary-store"]
+```
+
+#### Featureless
+
+Without any feature, this library provide the type `Digit` and all its operations and the trait `DigitOperate`.
+
+#### Feature `ternary-string`
+
+Add the structure `Ternary` which is a vector of `Digits` and a lot of utilities
+to manipulate digits into the ternary number.
+Implements `DigitOperate`.
+
+#### Feature `tryte`
+
+> Needs the feature `ternary-string`.
+
+Add the type `Tryte<N>` which is a fixed size copy-type ternary number.
+Implements `DigitOperate`.
+
+#### Feature `ternary-store`
+
+> Needs the feature `ternary-string`.
+
+Add structures to store ternaries efficiently. These types are provided:
+
+- `DataTernary`: a variable length ternary number stored into `TritsChunk`s,
+- `TritsChunk`: a fixed size copy-type 5 digits stored into one byte,
+- `Ter40`: a fixed size copy-type 40 digits stored into one 64 bits integer. Implements `DigitOperate`.
 
 ## Three-valued logic
 
@@ -58,6 +96,21 @@ operations include logical operations, arithmetic operations, and utility functi
 ternary numbers at the digit level. Below are the truth table of these operations:
 
 ![Digit operations](digit-operations.png)
+
+You can use these operations with the `DigitOperate` trait methods,  
+`each_*` (`with`, `zip`, `zip_carry`):
+
+```rust
+
+#[cfg(test)]
+#[cfg(feature = "ternary-string")]
+#[test]
+fn test_each() {
+    use crate::*;
+    let ternary = Ternary::parse("+0-");
+    assert_eq!(ternary.each(Digit::possibly).to_string(), "++-");
+}
+```
 
 ## Examples
 
@@ -114,15 +167,6 @@ fn test() {
     let negative = Ternary::from_dec(-5);
     assert_eq!(negative.to_string(), "-++");
 }
-```
-
-## Installation
-
-Add the following to your `Cargo.toml`:
-
-```toml
-[dependencies]
-balanced-ternary = "^1"
 ```
 
 ## Documentation
