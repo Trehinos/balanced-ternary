@@ -1,7 +1,9 @@
+use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
 use alloc::string::ToString;
 use alloc::vec::Vec;
 use core::fmt::Display;
+use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Sub};
 
 /// A struct to store 5 ternary digits (~7.8 bits) value into one byte.
 ///
@@ -333,5 +335,162 @@ impl Display for DataTernary {
             write!(f, "{}", chunk.to_fixed_ternary())?;
         }
         Ok(())
+    }
+}
+
+impl From<Ternary> for DataTernary {
+    fn from(value: Ternary) -> Self {
+        Self::from_ternary(value)
+    }
+}
+
+impl From<DataTernary> for Ternary {
+    fn from(value: DataTernary) -> Self {
+        value.to_ternary()
+    }
+}
+
+/// A struct to store 40 ternary digits (~63.398 bits) value into one `i64`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[repr(transparent)]
+pub struct Ter40(i64);
+
+impl Ter40 {
+    pub fn from_dec(from: i64) -> Self {
+        Self(from)
+    }
+    pub fn to_dec(&self) -> i64 {
+        self.0
+    }
+    pub fn from_ternary(ternary: Ternary) -> Self {
+        Self(ternary.to_dec())
+    }
+    pub fn to_ternary(&self) -> Ternary {
+        Ternary::from_dec(self.0).with_length(40)
+    }
+}
+
+impl DigitOperate for Ter40 {
+    fn to_digits(&self) -> Vec<Digit> {
+        self.to_ternary().to_digits()
+    }
+
+    fn digit(&self, index: usize) -> Option<Digit> {
+        self.to_ternary().digit(index)
+    }
+
+    fn each(&self, f: impl Fn(Digit) -> Digit) -> Self
+    where
+        Self: Sized,
+    {
+        Self(self.to_ternary().each(f).to_dec())
+    }
+
+    fn each_with(&self, f: impl Fn(Digit, Digit) -> Digit, other: Digit) -> Self
+    where
+        Self: Sized,
+    {
+        Self(self.to_ternary().each_with(f, other).to_dec())
+    }
+
+    fn each_zip(&self, f: impl Fn(Digit, Digit) -> Digit, other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        Self(self.to_ternary().each_zip(f, other.to_ternary()).to_dec())
+    }
+
+    fn each_zip_carry(&self, f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit), other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        Self(
+            self.to_ternary()
+                .each_zip_carry(f, other.to_ternary())
+                .to_dec(),
+        )
+    }
+}
+
+impl Display for Ter40 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.to_ternary())
+    }
+}
+
+impl Add for Ter40 {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Self(self.0 + other.0)
+    }
+}
+impl Sub for Ter40 {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self::Output {
+        Self(self.0 - other.0)
+    }
+}
+impl Mul for Ter40 {
+    type Output = Self;
+    fn mul(self, other: Self) -> Self::Output {
+        Self(self.0 * other.0)
+    }
+}
+impl Div for Ter40 {
+    type Output = Self;
+    fn div(self, other: Self) -> Self::Output {
+        Self(self.0 / other.0)
+    }
+}
+
+impl Neg for Ter40 {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        Self(-self.0)
+    }
+}
+
+impl BitAnd for Ter40 {
+    type Output = Self;
+    fn bitand(self, other: Self) -> Self::Output {
+        self.each_zip(Digit::bitand, other)
+    }
+}
+
+impl BitOr for Ter40 {
+    type Output = Self;
+    fn bitor(self, other: Self) -> Self::Output {
+        self.each_zip(Digit::bitor, other)
+    }
+}
+
+impl BitXor for Ter40 {
+    type Output = Self;
+    fn bitxor(self, other: Self) -> Self::Output {
+        self.each_zip(Digit::bitxor, other)
+    }
+}
+
+impl From<i64> for Ter40 {
+    fn from(value: i64) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Ter40> for i64 {
+    fn from(value: Ter40) -> Self {
+        value.0
+    }
+}
+
+impl From<Ternary> for Ter40 {
+    fn from(value: Ternary) -> Self {
+        Self::from_ternary(value)
+    }
+}
+
+impl From<Ter40> for Ternary {
+    fn from(value: Ter40) -> Self {
+        value.to_ternary()
     }
 }

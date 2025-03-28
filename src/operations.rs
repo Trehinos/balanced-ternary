@@ -28,9 +28,9 @@
 //! - `BitOr<&Ternary>` for `&Ternary`: Computes the bitwise OR operation on two `Ternary` operands.
 //! - `BitXor<&Ternary>` for `&Ternary`: Computes the bitwise XOR operation on two `Ternary` operands.
 
+use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
 use alloc::vec;
-use alloc::vec::Vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
 
 impl Neg for &Ternary {
@@ -60,6 +60,18 @@ impl Add<&Ternary> for &Ternary {
     }
 }
 
+impl Add<Digit> for &Ternary {
+    type Output = Ternary;
+
+    fn add(self, rhs: Digit) -> Self::Output {
+        Ternary::from_dec(
+            self.to_dec()
+                .checked_add(rhs.to_i8() as i64)
+                .expect("Overflow in addition."),
+        )
+    }
+}
+
 impl Sub<&Ternary> for &Ternary {
     type Output = Ternary;
 
@@ -67,6 +79,17 @@ impl Sub<&Ternary> for &Ternary {
         Ternary::from_dec(
             self.to_dec()
                 .checked_sub(rhs.to_dec())
+                .expect("Overflow in subtraction."),
+        )
+    }
+}
+
+impl Sub<Digit> for &Ternary {
+    type Output = Ternary;
+    fn sub(self, rhs: Digit) -> Self::Output {
+        Ternary::from_dec(
+            self.to_dec()
+                .checked_sub(rhs.to_i8() as i64)
                 .expect("Overflow in subtraction."),
         )
     }
@@ -100,16 +123,7 @@ impl BitAnd<&Ternary> for &Ternary {
     type Output = Ternary;
 
     fn bitand(self, rhs: &Ternary) -> Self::Output {
-        if self.log() < rhs.log() {
-            return rhs & self;
-        }
-        let mut digits = Vec::new();
-        for (i, d) in self.digits.iter().rev().enumerate() {
-            let other = rhs.get_digit(i).unwrap_or(&Digit::Zero);
-            digits.push(*d & *other);
-        }
-        digits.reverse();
-        Ternary::new(digits)
+        self.each_zip(Digit::bitand, rhs.clone())
     }
 }
 
@@ -117,16 +131,7 @@ impl BitOr<&Ternary> for &Ternary {
     type Output = Ternary;
 
     fn bitor(self, rhs: &Ternary) -> Self::Output {
-        if self.log() < rhs.log() {
-            return rhs | self;
-        }
-        let mut digits = Vec::new();
-        for (i, d) in self.digits.iter().rev().enumerate() {
-            let other = rhs.get_digit(i).unwrap_or(&Digit::Zero);
-            digits.push(*d | *other);
-        }
-        digits.reverse();
-        Ternary::new(digits)
+        self.each_zip(Digit::bitor, rhs.clone())
     }
 }
 
@@ -134,16 +139,7 @@ impl BitXor<&Ternary> for &Ternary {
     type Output = Ternary;
 
     fn bitxor(self, rhs: &Ternary) -> Self::Output {
-        if self.log() < rhs.log() {
-            return rhs ^ self;
-        }
-        let mut digits = Vec::new();
-        for (i, d) in self.digits.iter().rev().enumerate() {
-            let other = rhs.get_digit(i).unwrap_or(&Digit::Zero);
-            digits.push(*d ^ *other);
-        }
-        digits.reverse();
-        Ternary::new(digits)
+        self.each_zip(Digit::bitxor, rhs.clone())
     }
 }
 

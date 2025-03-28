@@ -1,4 +1,3 @@
-use alloc::vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
 
 #[cfg(feature = "ternary-string")]
@@ -39,8 +38,8 @@ use crate::Ternary;
 /// ## `Digit` type arithmetical and logical operations
 ///
 /// - `Neg` and `Not` for `Digit`: Negates the digit value, adhering to balanced ternary rules.
-/// - `Add<Digit>` for `Digit`: Adds two `Digit` values and returns a `Ternary`.
-/// - `Sub<Digit>` for `Digit`: Subtracts one `Digit` from another and returns a `Ternary`.
+/// - `Add<Digit>` for `Digit`: Adds two `Digit` values and returns a `Digit`.
+/// - `Sub<Digit>` for `Digit`: Subtracts one `Digit` from another and returns a `Digit`.
 /// - `Mul<Digit>` for `Digit`: Multiplies two `Digit` values and returns a `Digit`.
 /// - `Div<Digit>` for `Digit`: Divides one `Digit` by another and returns a `Digit`. Division by zero panics.
 ///
@@ -49,58 +48,10 @@ use crate::Ternary;
 /// The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
 ///
 /// ### Digits operations
+/// 
+/// ![Digit operations](https://raw.githubusercontent.com/Trehinos/balanced-ternary/refs/heads/master/digit-operations.png)
 ///
-/// #### Unary operations
-///
-/// These operations (except inc & dec) can be applied for `Ternary` with `Ternary::each(operator)`:
-///
-/// | Unary operations      | - | 0 | + |
-/// |-----------------------|---|---|---|
-/// | possibly              | - | + | + |
-/// | necessary             | - | - | + |
-/// | contingently          | - | + | - |
-/// | ht_not                | + | - | - |
-/// | post                  | 0 | + | - |
-/// | pre                   | + | - | 0 |
-/// | `!` (not) / `-` (neg) | + | 0 | - |
-/// | absolute_positive     | + | 0 | + |
-/// | positive              | 0 | 0 | + |
-/// | not_negative          | 0 | + | + |
-/// | not_positive          | - | - | 0 |
-/// | negative              | - | 0 | 0 |
-/// | absolute_negative     | - | 0 | - |
-/// | inc                   | 0 | + | `+-` |
-/// | dec                   | `-+` | - | 0 |
-///
-/// `inc` and `dec` can respectively be replaced by `post` and `pre` which are the same operations without the carry digit.
-///
-/// #### Binary operations
-///
-/// These operations (except add & sub) can be applied for `Ternary` with:
-///
-/// - `Ternary::each_with(operator, with)`, or,
-/// - `Ternary::each_zip(operator, other)`:
-///
-/// | Binary operations | -<br>- | -<br>0 | -<br>+ | 0<br>- | 0<br>0 | 0<br>+ | +<br>- | +<br>0 | +<br>+ |
-/// |------------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-/// | `+` (add)        | -+     | -      | 0      | -      | 0      | +      | 0      | +      | +-     |
-/// | `-` (sub)        | 0      | -      | -+     | +      | 0      | -      | +-     | +      | 0      |
-/// | `/` (div)        | +      |        | -      | 0      |        | 0      | -      |        | +      |
-/// | `*` (mul)        | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-/// | `&` (bitand)     | -      | -      | -      | -      | 0      | 0      | -      | 0      | +      |
-/// | bi3_and          | -      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-/// | `\|` (bitor)     | -      | 0      | +      | 0      | 0      | +      | +      | +      | +      |
-/// | bi3_or           | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | +      |
-/// | `^` (bitxor)     | -      | 0      | +      | 0      | 0      | 0      | +      | 0      | -      |
-/// | k3_equiv         | +      | 0      | -      | 0      | 0      | 0      | -      | 0      | +      |
-/// | k3_imply         | +      | +      | +      | 0      | 0      | +      | -      | 0      | +      |
-/// | bi3_imply        | +      | 0      | +      | 0      | 0      | 0      | -      | 0      | +      |
-/// | l3_imply         | +      | +      | +      | 0      | +      | +      | -      | 0      | +      |
-/// | rm3_imply        | +      | +      | +      | -      | 0      | +      | -      | -      | +      |
-/// | para_imply       | +      | +      | +      | -      | 0      | +      | -      | 0      | +      |
-/// | ht_imply         | +      | +      | +      | -      | +      | +      | -      | 0      | +      |
-///
-/// `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.  
+/// `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.
 /// Instead, use these operators from `Ternary` directly.
 ///
 /// Do so to `add` and `sub` ternaries, too.
@@ -770,23 +721,10 @@ impl Not for Digit {
     }
 }
 
-#[cfg(feature = "ternary-string")]
 impl Add<Digit> for Digit {
-    type Output = Ternary;
+    type Output = Digit;
 
-    /// Adds two `Digit` values together and returns a `Ternary` result.
-    ///
-    /// - The rules for addition are based on ternary arithmetic:
-    ///   - For `Digit::Neg`:
-    ///     - Adding `Digit::Neg` results in "underflow" (`Ternary::parse("-+")`).
-    ///     - Adding `Digit::Zero` keeps the result as `Digit::Neg` (`Ternary::parse("-")`).
-    ///     - Adding `Digit::Pos` results in a balance (`Ternary::parse("0")`).
-    ///   - For `Digit::Zero`:
-    ///     - Simply returns the other operand wrapped in a `Ternary` object.
-    ///   - For `Digit::Pos`:
-    ///     - Adding `Digit::Neg` results in balance (`Ternary::parse("0")`).
-    ///     - Adding `Digit::Zero` keeps the result as `Digit::Pos` (`Ternary::parse("+")`).
-    ///     - Adding `Digit::Pos` results in "overflow" (`Ternary::parse("+-")`).
+    /// Adds two `Digit` values together and returns a `Digit` result.
     ///
     /// - Returns:
     ///   - A `Ternary` instance that holds the result of the addition.
@@ -795,30 +733,17 @@ impl Add<Digit> for Digit {
     ///   - This method does not panic under any circumstances.
     fn add(self, other: Digit) -> Self::Output {
         match self {
-            Digit::Neg => other.dec(),
-            Digit::Zero => Ternary::new(vec![other]),
-            Digit::Pos => other.inc(),
+            Digit::Neg => other.pre(),
+            Digit::Zero => other,
+            Digit::Pos => other.post(),
         }
     }
 }
 
-#[cfg(feature = "ternary-string")]
 impl Sub<Digit> for Digit {
-    type Output = Ternary;
+    type Output = Digit;
 
-    /// Subtracts two `Digit` values and returns a `Ternary` result.
-    ///
-    /// - The rules for subtraction are based on ternary arithmetic:
-    ///   - For `Digit::Neg`:
-    ///     - Subtracting `Digit::Neg` results in balance (`Ternary::parse("0")`).
-    ///     - Subtracting `Digit::Zero` keeps the result as `Digit::Neg` (`Ternary::parse("-")`).
-    ///     - Subtracting `Digit::Pos` results in "underflow" (`Ternary::parse("-+")`).
-    ///   - For `Digit::Zero`:
-    ///     - Simply negates the other operand and returns it wrapped in a `Ternary` object.
-    ///   - For `Digit::Pos`:
-    ///     - Subtracting `Digit::Neg` results in "overflow" (`Ternary::parse("+-")`).
-    ///     - Subtracting `Digit::Zero` keeps the result as `Digit::Pos` (`Ternary::parse("+")`).
-    ///     - Subtracting `Digit::Pos` results in balance (`Ternary::parse("0")`).
+    /// Subtracts two `Digit` values and returns a `Digit` result.
     ///
     /// - Returns:
     ///   - A `Ternary` instance that holds the result of the subtraction.
@@ -827,9 +752,9 @@ impl Sub<Digit> for Digit {
     ///   - This method does not panic under any circumstances.
     fn sub(self, other: Digit) -> Self::Output {
         match self {
-            Digit::Neg => other.inc(),
-            Digit::Zero => Ternary::new(vec![-other]),
-            Digit::Pos => other.dec(),
+            Digit::Neg => other.post(),
+            Digit::Zero => -other,
+            Digit::Pos => other.pre(),
         }
     }
 }
