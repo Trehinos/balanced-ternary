@@ -7,6 +7,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::fmt::{Display, Formatter};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
+use core::str::FromStr;
 use crate::concepts::DigitOperate;
 
 /// The `Tryte<S>` struct represents a Copy type balanced ternary number with exactly S digits (6 by default).
@@ -312,7 +313,7 @@ impl<const SIZE: usize> From<Tryte<SIZE>> for i64 {
     }
 }
 
-impl<const SIZE: usize> core::str::FromStr for Tryte<SIZE> {
+impl<const SIZE: usize> FromStr for Tryte<SIZE> {
     type Err = core::convert::Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {

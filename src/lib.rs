@@ -67,6 +67,7 @@ use crate::concepts::DigitOperate;
 #[cfg(feature = "ternary-string")]
 use core::{
     fmt::{Display, Formatter},
+    str::FromStr,
 };
 
 /// Provides helper functions for formatting integers in a given radix.
@@ -307,7 +308,7 @@ impl Ternary {
         let mut carry = 0u8;
         let mut repr = Ternary::new(vec![]);
         for digit in str.chars().rev() {
-            let digit = <u8 as core::str::FromStr>::from_str(&digit.to_string()).unwrap() + carry;
+            let digit = <u8 as FromStr>::from_str(&digit.to_string()).unwrap() + carry;
             if digit < 2 {
                 repr.digits.push(Digit::from_i8(digit as i8));
                 carry = 0;
@@ -612,7 +613,7 @@ impl Display for Ternary {
 }
 
 #[cfg(feature = "ternary-string")]
-impl core::str::FromStr for Ternary {
+impl FromStr for Ternary {
     type Err = core::convert::Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -636,8 +637,6 @@ mod tryte;
 
 #[cfg(feature = "tryte")]
 pub use crate::tryte::Tryte;
-
-pub use core::str::FromStr;
 
 #[cfg(test)]
 #[cfg(feature = "ternary-string")]
