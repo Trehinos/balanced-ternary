@@ -31,7 +31,7 @@
 use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
 use alloc::vec;
-use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
+use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub, Shl, Shr};
 
 impl Neg for &Ternary {
     type Output = Ternary;
@@ -143,6 +143,33 @@ impl BitXor<&Ternary> for &Ternary {
     }
 }
 
+impl Shl<usize> for &Ternary {
+    type Output = Ternary;
+
+    fn shl(self, rhs: usize) -> Self::Output {
+        let mut repr = Ternary::new(vec![]);
+        repr.digits.extend(self.digits.iter().cloned());
+        repr.digits.extend(core::iter::repeat(Digit::Zero).take(rhs));
+        repr
+    }
+}
+
+impl Shr<usize> for &Ternary {
+    type Output = Ternary;
+
+    fn shr(self, rhs: usize) -> Self::Output {
+        if rhs >= self.digits.len() {
+            return Ternary::parse("0");
+        }
+        let len = self.digits.len() - rhs;
+        let mut repr = Ternary::new(self.digits[..len].to_vec());
+        if repr.digits.is_empty() {
+            repr.digits.push(Digit::Zero);
+        }
+        repr
+    }
+}
+
 impl Not for &Ternary {
     type Output = Ternary;
     fn not(self) -> Self::Output {
@@ -191,4 +218,16 @@ fn test_ternary_ops() {
 
     let bitwise = &Ternary::parse("+000") | &Ternary::parse("000+");
     assert_eq!(bitwise.to_string(), "+00+");
+}
+
+#[cfg(test)]
+#[test]
+fn test_shift_ops() {
+    use alloc::string::ToString;
+    let t = Ternary::parse("+0-");
+    assert_eq!((&t << 2).to_string(), "+0-00");
+    let back = &(&t << 2) >> 2;
+    assert_eq!(back.to_string(), "+0-");
+    let zero = &t >> 5;
+    assert_eq!(zero.to_string(), "0");
 }

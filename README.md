@@ -13,7 +13,7 @@ processing, and three-valued logic modeling.
 
 - **No Standard Library:** Suitable for `#![no_std]` environments.
 - **Number Conversions:** Convert between decimal and balanced ternary representations.
-- **Arithmetic Operations:** Support for addition, subtraction, multiplication, and division.
+- **Arithmetic Operations:** Support for addition, subtraction, multiplication, division, and bit shifting (`<<`, `>>`).
 - **[Three-value Logic Operations](https://en.wikipedia.org/wiki/Three-valued_logic):**
     - Support for bitwise and, or, xor, and not (in Kleene algebra (K3)).
     - **Advanced logic**: Implementation of
@@ -155,6 +155,11 @@ fn test() {
 
     let bitwise = &Ternary::parse("+000") | &Ternary::parse("000+");
     assert_eq!(bitwise.to_string(), "+00+");
+
+    let shifted = &Ternary::parse("+0-") << 2;
+    assert_eq!(shifted.to_string(), "+0-00");
+    let back = &shifted >> 2;
+    assert_eq!(back.to_string(), "+0-");
 }
 ```
 
