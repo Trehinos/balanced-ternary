@@ -266,6 +266,11 @@ impl Ternary {
         self.digits.as_slice()
     }
 
+    /// Returns an iterator over the digits from most significant to least significant.
+    pub fn iter(&self) -> core::slice::Iter<'_, Digit> {
+        self.digits.iter()
+    }
+
     /// Returns a reference to the [Digit] indexed by `index` if it exists.
     ///
     /// Digits are indexed **from the right**:
@@ -657,6 +662,16 @@ impl PartialOrd for Ternary {
 }
 
 #[cfg(feature = "ternary-string")]
+impl IntoIterator for Ternary {
+    type Item = Digit;
+    type IntoIter = alloc::vec::IntoIter<Digit>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.digits.into_iter()
+    }
+}
+
+#[cfg(feature = "ternary-string")]
 mod operations;
 
 mod conversions;
@@ -843,4 +858,17 @@ fn test_ordering_additional() {
     values.sort();
     let expected = vec![ter("--"), ter("-0"), ter("-"), ter("0"), ter("+"), ter("+-"), ter("++")];
     assert_eq!(values, expected);
+}
+
+#[cfg(test)]
+#[cfg(feature = "ternary-string")]
+#[test]
+fn test_iterators() {
+    use crate::*;
+
+    let ternary = Ternary::parse("+0-");
+    let expected = vec![Pos, Zero, Neg];
+    assert_eq!(ternary.iter().cloned().collect::<Vec<_>>(), expected);
+    let collected: Vec<Digit> = Ternary::parse("+0-").into_iter().collect();
+    assert_eq!(collected, expected);
 }
