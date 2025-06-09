@@ -763,6 +763,10 @@ fn test_operations() {
 fn test_ordering() {
     use crate::*;
 
+    // ordering of negative numbers
+    assert!(ter("-0") < ter("-+"));
+    assert!(ter("-0") < ter("0"));
+
     assert!(ter("-+") < ter("0"));
     assert!(ter("0") < ter("++"));
     assert!(ter("-+") < ter("++"));
