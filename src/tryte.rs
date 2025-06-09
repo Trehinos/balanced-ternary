@@ -29,7 +29,7 @@ use crate::concepts::DigitOperate;
 ///
 /// Because arithmetic operations are performed in with 64 bits integers, `SIZE` cannot be > 40.
 ///
-/// > **40 trits ~= 63,398 bits**
+/// > **40 trits ~= 63.398 bits**
 /// >
 /// > `-6 078 832 729 528 464 400` to `6 078 832 729 528 464 400`
 ///
