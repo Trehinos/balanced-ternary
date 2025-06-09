@@ -69,6 +69,7 @@ use core::{
     fmt::{Display, Formatter},
     str::FromStr,
     error::Error,
+    cmp::Ordering,
 };
 
 #[cfg(feature = "ternary-string")]
@@ -642,6 +643,20 @@ impl FromStr for Ternary {
 }
 
 #[cfg(feature = "ternary-string")]
+impl Ord for Ternary {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.to_dec().cmp(&other.to_dec())
+    }
+}
+
+#[cfg(feature = "ternary-string")]
+impl PartialOrd for Ternary {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[cfg(feature = "ternary-string")]
 mod operations;
 
 mod conversions;
@@ -799,4 +814,14 @@ fn test_from_str() {
         assert_eq!(tryte.to_string(), "000+-0");
         assert!(<crate::Tryte>::from_str("+-x").is_err());
     }
+}
+
+#[cfg(test)]
+#[cfg(feature = "ternary-string")]
+#[test]
+fn test_ordering() {
+    use crate::ter;
+
+    assert!(ter("-+") < ter("0"));
+    assert!(ter("0") < ter("++"));
 }
