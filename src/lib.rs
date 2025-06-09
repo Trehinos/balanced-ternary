@@ -70,6 +70,21 @@ use core::{
     str::FromStr,
 };
 
+#[cfg(feature = "ternary-string")]
+/// Error returned when parsing a string into a [`Ternary`] fails.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParseTernaryError;
+
+#[cfg(feature = "ternary-string")]
+impl Display for ParseTernaryError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "invalid character in balanced ternary string")
+    }
+}
+
+#[cfg(all(feature = "ternary-string", feature = "std"))]
+impl std::error::Error for ParseTernaryError {}
+
 /// Provides helper functions for formatting integers in a given radix.
 ///
 /// Used internally to convert decimal numbers into their ternary representation.
@@ -614,10 +629,14 @@ impl Display for Ternary {
 
 #[cfg(feature = "ternary-string")]
 impl FromStr for Ternary {
-    type Err = core::convert::Infallible;
+    type Err = ParseTernaryError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Ternary::parse(s))
+        if s.chars().all(|c| matches!(c, '+' | '0' | '-')) {
+            Ok(Ternary::parse(s))
+        } else {
+            Err(ParseTernaryError)
+        }
     }
 }
 
@@ -771,9 +790,12 @@ fn test_from_str() {
     let ternary = Ternary::from_str("+-0").unwrap();
     assert_eq!(ternary.to_string(), "+-0");
 
+    assert!(Ternary::from_str("+-x").is_err());
+
     #[cfg(feature = "tryte")]
     {
         let tryte = <crate::Tryte>::from_str("+-0").unwrap();
         assert_eq!(tryte.to_string(), "000+-0");
+        assert!(<crate::Tryte>::from_str("+-x").is_err());
     }
 }

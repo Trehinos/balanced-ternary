@@ -314,10 +314,10 @@ impl<const SIZE: usize> From<Tryte<SIZE>> for i64 {
 }
 
 impl<const SIZE: usize> FromStr for Tryte<SIZE> {
-    type Err = core::convert::Infallible;
+    type Err = crate::ParseTernaryError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Tryte::from_ternary(&Ternary::parse(s)))
+        Ok(Tryte::from_ternary(&Ternary::from_str(s)?))
     }
 }
 
@@ -347,4 +347,6 @@ pub fn test_tryte_from_str() {
 
     let tryte = Tryte::<6>::from_str("+-0").unwrap();
     assert_eq!(tryte.to_string(), "000+-0");
+
+    assert!(Tryte::<6>::from_str("+-x").is_err());
 }
