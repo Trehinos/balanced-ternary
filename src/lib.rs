@@ -603,6 +603,20 @@ impl Display for Ternary {
 }
 
 #[cfg(feature = "ternary-string")]
+impl PartialOrd for Ternary {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[cfg(feature = "ternary-string")]
+impl Ord for Ternary {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        self.to_dec().cmp(&other.to_dec())
+    }
+}
+
+#[cfg(feature = "ternary-string")]
 mod operations;
 
 mod conversions;
@@ -741,4 +755,17 @@ fn test_operations() {
     test_ternary_eq(short.each(Digit::absolute_negative), "-0-");
 
     test_binary_op(&long, Digit::mul, &other, "+0-000-0+");
+}
+
+#[cfg(test)]
+#[cfg(feature = "ternary-string")]
+#[test]
+fn test_ordering() {
+    use crate::*;
+
+    assert!(ter("-+") < ter("0"));
+    assert!(ter("0") < ter("++"));
+    assert!(ter("-+") < ter("++"));
+    assert!(ter("-+") <= ter("-+"));
+    assert!(ter("++") >= ter("0"));
 }
