@@ -68,6 +68,7 @@ use crate::concepts::DigitOperate;
 use core::{
     fmt::{Display, Formatter},
     str::FromStr,
+    error::Error,
 };
 
 #[cfg(feature = "ternary-string")]
@@ -82,8 +83,8 @@ impl Display for ParseTernaryError {
     }
 }
 
-#[cfg(all(feature = "ternary-string", feature = "std"))]
-impl std::error::Error for ParseTernaryError {}
+#[cfg(feature = "ternary-string")]
+impl Error for ParseTernaryError {}
 
 /// Provides helper functions for formatting integers in a given radix.
 ///
