@@ -187,7 +187,7 @@ impl DataTernary {
     /// ```
     pub fn from_ternary(ternary: Ternary) -> Self {
         let len = ternary.log();
-        let diff = 5 - (len % 5);
+        let diff = (5 - len % 5) % 5;
         let ternary = ternary.with_length(len + diff);
         let mut chunks = Vec::new();
         for i in 0..(ternary.log() / 5) {
@@ -493,4 +493,27 @@ impl From<Ter40> for Ternary {
     fn from(value: Ter40) -> Self {
         value.to_ternary()
     }
+}
+
+#[cfg(test)]
+#[test]
+fn single_chunk_creation() {
+    use crate::Ternary;
+
+    let ternary = Ternary::parse("+-0-+");
+    let data = DataTernary::from_ternary(ternary.clone());
+
+    assert_eq!(data.chunks.len(), 1);
+    assert_eq!(data.to_ternary(), ternary);
+}
+
+#[cfg(test)]
+#[test]
+fn round_trip() {
+    use crate::Ternary;
+
+    let ternary = Ternary::parse("+0-0++-");
+    let data = DataTernary::from_ternary(ternary.clone());
+
+    assert_eq!(data.to_ternary(), ternary);
 }
