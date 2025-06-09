@@ -122,6 +122,9 @@ fn test() {
 
     let ternary = Ternary::parse("+--");
     assert_eq!(ternary.to_dec(), 5);
+
+    let ternary = "+-0".parse::<Ternary>().unwrap();
+    assert_eq!(ternary.to_string(), "+-0");
 }
 ```
 

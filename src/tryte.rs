@@ -312,6 +312,14 @@ impl<const SIZE: usize> From<Tryte<SIZE>> for i64 {
     }
 }
 
+impl<const SIZE: usize> core::str::FromStr for Tryte<SIZE> {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Tryte::from_ternary(&Ternary::parse(s)))
+    }
+}
+
 #[cfg(test)]
 #[test]
 pub fn test_tryte() {
@@ -329,4 +337,13 @@ pub fn test_tryte() {
     assert_eq!(Tryte::<6>::MIN.to_i64(), -364);
     assert_eq!(Tryte::<6>::ZERO.to_string(), "000000");
     assert_eq!(Tryte::<6>::ZERO.to_i64(), 0);
+}
+
+#[cfg(test)]
+#[test]
+pub fn test_tryte_from_str() {
+    use core::str::FromStr;
+
+    let tryte = Tryte::<6>::from_str("+-0").unwrap();
+    assert_eq!(tryte.to_string(), "000+-0");
 }

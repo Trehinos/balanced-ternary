@@ -67,7 +67,6 @@ use crate::concepts::DigitOperate;
 #[cfg(feature = "ternary-string")]
 use core::{
     fmt::{Display, Formatter},
-    str::FromStr,
 };
 
 /// Provides helper functions for formatting integers in a given radix.
@@ -144,6 +143,8 @@ pub const fn trit(from: char) -> Digit {
 /// use balanced_ternary::{ter, Ternary};
 ///
 /// let ternary = ter("+-0+");
+/// assert_eq!(ternary.to_string(), "+-0+");
+/// let ternary = "+-0+".parse::<Ternary>().unwrap();
 /// assert_eq!(ternary.to_string(), "+-0+");
 /// ```
 #[cfg(feature = "ternary-string")]
@@ -269,6 +270,14 @@ impl Ternary {
     /// Parses a string representation of a balanced ternary number into a `Ternary` object.
     ///
     /// Each character in the string must be one of `+`, `0`, or `-`.
+    ///
+    /// # Example
+    /// ```
+    /// use balanced_ternary::Ternary;
+    ///
+    /// let ternary = "+-0".parse::<Ternary>().unwrap();
+    /// assert_eq!(ternary.to_string(), "+-0");
+    /// ```
     pub fn parse(str: &str) -> Self {
         let mut repr = Ternary::new(vec![]);
         for c in str.chars() {
@@ -298,7 +307,7 @@ impl Ternary {
         let mut carry = 0u8;
         let mut repr = Ternary::new(vec![]);
         for digit in str.chars().rev() {
-            let digit = u8::from_str(&digit.to_string()).unwrap() + carry;
+            let digit = <u8 as core::str::FromStr>::from_str(&digit.to_string()).unwrap() + carry;
             if digit < 2 {
                 repr.digits.push(Digit::from_i8(digit as i8));
                 carry = 0;
@@ -603,6 +612,15 @@ impl Display for Ternary {
 }
 
 #[cfg(feature = "ternary-string")]
+impl core::str::FromStr for Ternary {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Ternary::parse(s))
+    }
+}
+
+#[cfg(feature = "ternary-string")]
 mod operations;
 
 mod conversions;
@@ -618,6 +636,8 @@ mod tryte;
 
 #[cfg(feature = "tryte")]
 pub use crate::tryte::Tryte;
+
+pub use core::str::FromStr;
 
 #[cfg(test)]
 #[cfg(feature = "ternary-string")]
@@ -741,4 +761,20 @@ fn test_operations() {
     test_ternary_eq(short.each(Digit::absolute_negative), "-0-");
 
     test_binary_op(&long, Digit::mul, &other, "+0-000-0+");
+}
+
+#[cfg(test)]
+#[cfg(feature = "ternary-string")]
+#[test]
+fn test_from_str() {
+    use core::str::FromStr;
+
+    let ternary = Ternary::from_str("+-0").unwrap();
+    assert_eq!(ternary.to_string(), "+-0");
+
+    #[cfg(feature = "tryte")]
+    {
+        let tryte = <crate::Tryte>::from_str("+-0").unwrap();
+        assert_eq!(tryte.to_string(), "000+-0");
+    }
 }
