@@ -825,3 +825,22 @@ fn test_ordering() {
     assert!(ter("-+") < ter("0"));
     assert!(ter("0") < ter("++"));
 }
+
+#[cfg(test)]
+#[cfg(feature = "ternary-string")]
+#[test]
+fn test_ordering_additional() {
+    use crate::ter;
+
+    // Validate comparisons across a range of values
+    assert!(ter("--") < ter("-0"));
+    assert!(ter("-0") < ter("-"));
+    assert!(ter("+") < ter("+-"));
+    assert!(ter("+-") < ter("++"));
+
+    // Sorting should arrange values by their decimal value
+    let mut values = vec![ter("+"), ter("--"), ter("+-"), ter("-"), ter("0"), ter("-0"), ter("++")];
+    values.sort();
+    let expected = vec![ter("--"), ter("-0"), ter("-"), ter("0"), ter("+"), ter("+-"), ter("++")];
+    assert_eq!(values, expected);
+}
