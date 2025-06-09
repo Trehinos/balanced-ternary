@@ -169,6 +169,24 @@ fn test() {
 }
 ```
 
+### Iterate through digits
+
+```rust
+use balanced_ternary::*;
+
+fn test() {
+    let ternary = Ternary::parse("+0-");
+
+    // Using `.iter()`
+    let v: Vec<Digit> = ternary.iter().cloned().collect();
+    assert_eq!(v, vec![Pos, Zero, Neg]);
+
+    // Using `IntoIterator`
+    let v: Vec<Digit> = Ternary::parse("+0-").into_iter().collect();
+    assert_eq!(v, vec![Pos, Zero, Neg]);
+}
+```
+
 ## Documentation
 
 The complete API documentation can be found [on docs.rs](https://docs.rs/balanced-ternary).
