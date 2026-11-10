@@ -1,6 +1,7 @@
 use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
 use alloc::string::ToString;
+use alloc::vec;
 use alloc::vec::Vec;
 use core::fmt::Display;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Sub};
@@ -15,6 +16,10 @@ use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Sub};
 pub struct TritsChunk(i8);
 
 impl TritsChunk {
+    pub const ZERO: Self = Self(0);
+    pub const MIN: Self = Self(-121);
+    pub const MAX: Self = Self(121);
+
     /// Creates a `TritsChunk` from a given decimal value.
     ///
     /// # Arguments
@@ -219,11 +224,13 @@ impl DataTernary {
     /// assert_eq!(data_ternary.to_ternary(), ternary);
     /// ```
     pub fn to_ternary(&self) -> Ternary {
-        let mut digits = Vec::new();
-        for chunk in &self.chunks {
-            digits.extend(chunk.to_ternary().to_digit_slice());
+        let fixed = self.to_fixed_ternary();
+        let digits = fixed.to_digit_slice();
+
+        match digits.iter().position(|d| *d != Digit::Zero) {
+            Some(index) => Ternary::new(digits[index..].to_vec()),
+            None => Ternary::new(vec![Digit::Zero]),
         }
-        Ternary::new(digits).trim()
     }
 
     /// Converts the `DataTernary` into its fixed-length `Ternary` representation.
@@ -248,11 +255,11 @@ impl DataTernary {
     /// assert_eq!(fixed_ternary.to_dec(), 42); // When properly encoded
     /// ```
     pub fn to_fixed_ternary(&self) -> Ternary {
-        let mut digits = Vec::new();
+        let mut digits = Vec::with_capacity(self.chunks.len() * 5);
         for chunk in &self.chunks {
             digits.extend(chunk.to_digits());
         }
-        Ternary::new(digits).trim()
+        Ternary::new(digits)
     }
 
     /// Converts the `DataTernary` into a vector of ternary digits.
@@ -356,6 +363,10 @@ impl From<DataTernary> for Ternary {
 pub struct Ter40(i64);
 
 impl Ter40 {
+    pub const MIN: Self = Self(-6_078_832_729_528_464_400);
+    pub const MAX: Self = Self(6_078_832_729_528_464_400);
+    pub const ZERO: Self = Self(0);
+
     pub fn from_dec(from: i64) -> Self {
         Self(from)
     }
@@ -367,6 +378,57 @@ impl Ter40 {
     }
     pub fn to_ternary(&self) -> Ternary {
         Ternary::from_dec(self.0).with_length(40)
+    }
+    fn pop_trit(value: &mut i64) -> Digit {
+        let remainder = value.rem_euclid(3);
+        *value = value.div_euclid(3);
+
+        match remainder {
+            0 => Digit::Zero,
+            1 => Digit::Pos,
+            2 => {
+                *value += 1;
+                Digit::Neg
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn map_trits(
+        &self,
+        other: Self,
+        f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit),
+    ) -> (Self, Digit) {
+        assert!(
+            self.0 >= Self::MIN.0
+                && self.0 <= Self::MAX.0
+                && other.0 >= Self::MIN.0
+                && other.0 <= Self::MAX.0,
+            "Ter40 value out of range"
+        );
+
+        let mut lhs = self.0;
+        let mut rhs = other.0;
+
+        let mut carry = Digit::Zero;
+        let mut result = 0i64;
+        let mut power = 1i64;
+
+        for index in 0..40 {
+            let a = Self::pop_trit(&mut lhs);
+            let b = Self::pop_trit(&mut rhs);
+
+            let (next_carry, digit) = f(a, b, carry);
+
+            result += digit.to_i8() as i64 * power;
+            carry = next_carry;
+
+            if index < 39 {
+                power *= 3;
+            }
+        }
+
+        (Self(result), carry)
     }
 }
 
@@ -383,32 +445,29 @@ impl DigitOperate for Ter40 {
     where
         Self: Sized,
     {
-        Self(self.to_ternary().each(f).to_dec())
+        self.map_trits(Self(0), |a, _, _| (Digit::Zero, f(a))).0
     }
 
     fn each_with(&self, f: impl Fn(Digit, Digit) -> Digit, other: Digit) -> Self
     where
         Self: Sized,
     {
-        Self(self.to_ternary().each_with(f, other).to_dec())
+        self.map_trits(Self(0), |a, _, _| (Digit::Zero, f(a, other)))
+            .0
     }
 
     fn each_zip(&self, f: impl Fn(Digit, Digit) -> Digit, other: Self) -> Self
     where
         Self: Sized,
     {
-        Self(self.to_ternary().each_zip(f, other.to_ternary()).to_dec())
+        self.map_trits(other, |a, b, _| (Digit::Zero, f(a, b))).0
     }
 
     fn each_zip_carry(&self, f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit), other: Self) -> Self
     where
         Self: Sized,
     {
-        Self(
-            self.to_ternary()
-                .each_zip_carry(f, other.to_ternary())
-                .to_dec(),
-        )
+        self.map_trits(other, f).0
     }
 }
 
@@ -516,4 +575,29 @@ fn round_trip() {
     let data = DataTernary::from_ternary(ternary.clone());
 
     assert_eq!(data.to_ternary(), ternary);
+}
+
+#[cfg(test)]
+#[test]
+fn data_ternary_round_trip_zero_chunks() {
+    use crate::Ternary;
+
+    let cases = [
+        ("+", "0000+"),
+        ("+00000", "0000+00000"),
+        ("-00000", "0000-00000"),
+        ("+0000000000", "0000+0000000000"),
+        ("0000000000", "0000000000"),
+    ];
+
+    for (original, expected_fixed) in cases {
+        let data = DataTernary::from_ternary(Ternary::parse(original));
+
+        assert_eq!(data.to_fixed_ternary().to_string(), expected_fixed);
+
+        assert_eq!(
+            data.to_ternary().to_string(),
+            Ternary::parse(original).trim().to_string()
+        );
+    }
 }

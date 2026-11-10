@@ -2,10 +2,10 @@ use crate::Digit;
 use alloc::vec::Vec;
 
 pub trait DigitOperate {
-    /// Returns every individual [Digit] of this [DigitOperate] object.
+    /// Returns individual [Digit] of this [DigitOperate] object.
     fn to_digits(&self) -> Vec<Digit>;
 
-    /// Returns one individual [Digit] ot this [DigitOperate] object if it exists.
+    /// Returns one individual [Digit] of this [DigitOperate] object if it exists.
     fn digit(&self, index: usize) -> Option<Digit>;
 
     /// Applies a transformation function to each digit of the balanced ternary number,
@@ -176,7 +176,14 @@ pub trait DigitOperate {
     ///     // Simple example operation: this just illustrates transforming with carry.
     ///     // Replace with meaningful logic as needed for your application.
     ///     let sum = d1.to_i8() + d2.to_i8() + carry.to_i8();
-    ///     (Digit::from_i8(sum / 3), Digit::from_i8(sum % 3))
+    ///
+    ///     let next_carry = (sum + 1).div_euclid(3);
+    ///     let result = sum - next_carry * 3;
+    ///
+    ///     (
+    ///         Digit::from_i8(next_carry),
+    ///         Digit::from_i8(result),
+    ///     )
     /// };
     ///
     /// let result = ternary1.each_zip_carry(combine, ternary2.clone()).trim();

@@ -87,11 +87,7 @@ impl Sub<&Ternary> for &Ternary {
 impl Sub<Digit> for &Ternary {
     type Output = Ternary;
     fn sub(self, rhs: Digit) -> Self::Output {
-        Ternary::from_dec(
-            self.to_dec()
-                .checked_sub(rhs.to_i8() as i64)
-                .expect("Overflow in subtraction."),
-        )
+        self + (-rhs)
     }
 }
 

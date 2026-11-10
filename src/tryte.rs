@@ -1,3 +1,4 @@
+use crate::concepts::DigitOperate;
 use crate::{
     Digit,
     Digit::{Neg, Pos, Zero},
@@ -5,10 +6,10 @@ use crate::{
 };
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::array;
 use core::fmt::{Display, Formatter};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
 use core::str::FromStr;
-use crate::concepts::DigitOperate;
 
 /// The `Tryte<S>` struct represents a Copy type balanced ternary number with exactly S digits (6 by default).
 /// Each digit in a balanced ternary system can have one of three values: -1, 0, or 1.
@@ -143,7 +144,6 @@ impl<const SIZE: usize> Tryte<SIZE> {
     pub fn from_i64(v: i64) -> Self {
         Self::from_ternary(&Ternary::from_dec(v))
     }
-
 }
 
 impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
@@ -161,26 +161,26 @@ impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
     ///
     /// The `Digit` at the specified index or None.
     fn digit(&self, index: usize) -> Option<Digit> {
-        if index > SIZE - 1 {
-            None
+        if index < SIZE {
+            Some(self.raw[SIZE - 1 - index])
         } else {
-            Some(*self.raw.iter().rev().nth(index).unwrap())
+            None
         }
     }
 
     /// See [Ternary::each].
     fn each(&self, f: impl Fn(Digit) -> Digit) -> Self {
-        Self::from_ternary(&self.to_ternary().each(f))
+        Self::new(array::from_fn(|i| f(self.raw[i])))
     }
 
     /// See [Ternary::each_with].
     fn each_with(&self, f: impl Fn(Digit, Digit) -> Digit, with: Digit) -> Self {
-        Self::from_ternary(&self.to_ternary().each_with(f, with))
+        Self::new(array::from_fn(|i| f(self.raw[i], with)))
     }
 
     /// See [Ternary::each_zip].
     fn each_zip(&self, f: impl Fn(Digit, Digit) -> Digit, other: Self) -> Self {
-        Self::from_ternary(&self.to_ternary().each_zip(f, other.to_ternary()))
+        Self::new(array::from_fn(|i| f(self.raw[i], other.raw[i])))
     }
 
     /// See [Ternary::each_zip_carry].
@@ -189,10 +189,17 @@ impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
         f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit),
         other: Self,
     ) -> Self {
-        Self::from_ternary(&self.to_ternary().each_zip_carry(f, other.to_ternary()))
+        let mut result = [Zero; SIZE];
+        let mut carry = Zero;
+        for i in (0..SIZE).rev() {
+            let (next_carry, digit) = f(self.raw[i], other.raw[i], carry);
+
+            result[i] = digit;
+            carry = next_carry;
+        }
+        Self::new(result)
     }
 }
-
 
 impl<const SIZE: usize> Display for Tryte<SIZE> {
     /// Formats the `Tryte` for display.

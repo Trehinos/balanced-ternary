@@ -67,6 +67,9 @@ pub enum Digit {
 }
 
 impl Digit {
+    pub const MIN: Digit = Digit::Neg;
+    pub const MAX: Digit = Digit::Pos;
+    pub const ZERO: Digit = Digit::Zero;
 
     /// Converts the `Digit` into a character representation.
     ///
