@@ -42,8 +42,8 @@ impl Sub<Digit> for Digit {
 }
 ```
 
-This is subtraction in the same cyclic, modulo-3 digit algebra as the existing `Digit::add`; it is *
-*not** an unbounded integer subtraction of two trits.
+This is subtraction in the same cyclic, modulo-3 digit algebra as the existing `Digit::add`; it is **not** 
+an unbounded integer subtraction of two trits.
 
 **Acceptance:** Test all nine pairs of `Neg`, `Zero`, and `Pos`; compare the result with the unique
 representative in `{-1, 0, +1}` modulo 3. Include `Pos - Zero == Pos`, `Neg - Zero == Neg`,
@@ -83,10 +83,9 @@ inputs. Preserve the public `to_dec()` signature and its documented panic behavi
 **Acceptance tests:**
 
 ```rust
-for n in [i64::MIN, i64::MIN + 1, - 243, - 1, 0, 1, 243,
-i64::MAX - 1, i64::MAX] {
-let ternary = Ternary::from_dec(n);
-assert_eq ! (ternary.checked_to_dec(), Some(n)); assert_eq ! (ternary.to_dec(), n);
+for n in [i64::MIN, i64::MIN + 1, - 243, - 1, 0, 1, 243, i64::MAX - 1, i64::MAX] {
+    let ternary = Ternary::from_dec(n);
+    assert_eq ! (ternary.checked_to_dec(), Some(n)); assert_eq ! (ternary.to_dec(), n);
 }
 assert_eq!(Ternary::parse(&"0".repeat(150)).checked_to_dec(), Some(0));
 assert_eq!(Ternary::parse(&"+".repeat(150)).checked_to_dec(), None);
