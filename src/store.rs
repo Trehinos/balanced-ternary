@@ -367,15 +367,53 @@ impl Ter40 {
     pub const MAX: Self = Self(6_078_832_729_528_464_400);
     pub const ZERO: Self = Self(0);
 
-    pub fn from_dec(from: i64) -> Self {
-        Self(from)
+    /// Attempts to construct a Ter40 from an i64.
+    ///
+    /// Returns None if the value exceeds the
+    /// representable 40-trit signed range.
+    pub const fn checked_from_dec(value: i64) -> Option<Self> {
+        if value < Self::MIN.0 || value > Self::MAX.0 {
+            None
+        } else {
+            Some(Self(value))
+        }
     }
-    pub fn to_dec(&self) -> i64 {
+
+    /// Constructs a Ter40 from an i64.
+    ///
+    /// Panics if the value is out of range.
+    pub fn from_dec(value: i64) -> Self {
+        Self::checked_from_dec(value).expect("Ter40 value out of range")
+    }
+
+    pub const fn to_dec(&self) -> i64 {
         self.0
     }
-    pub fn from_ternary(ternary: Ternary) -> Self {
-        Self(ternary.to_dec())
+
+    /// Attempts to convert a Ternary into a Ter40.
+    ///
+    /// Leading zeros are accepted, as only the
+    /// numeric value determines representability.
+    pub fn checked_from_ternary(ternary: &Ternary) -> Option<Self> {
+        Self::checked_from_dec(ternary.checked_to_dec()?)
     }
+
+    /// Constructs a Ter40 from a Ternary.
+    ///
+    /// Panics if the numeric value is out of range.
+    pub fn from_ternary(ternary: Ternary) -> Self {
+        Self::checked_from_ternary(&ternary).expect("Ter40 value out of range")
+    }
+
+    /// Converts an i128 intermediate into Ter40.
+    fn checked_from_i128(value: i128) -> Option<Self> {
+        if value < Self::MIN.0 as i128 || value > Self::MAX.0 as i128 {
+            None
+        } else {
+            Some(Self(value as i64))
+        }
+    }
+
     pub fn to_ternary(&self) -> Ternary {
         Ternary::from_dec(self.0).with_length(40)
     }
@@ -430,6 +468,31 @@ impl Ter40 {
 
         (Self(result), carry)
     }
+    /// Adds two values without exceeding the 40-trit range.
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
+        Self::checked_from_i128(self.0 as i128 + rhs.0 as i128)
+    }
+
+    /// Subtracts two values without exceeding the 40-trit range.
+    pub fn checked_sub(self, rhs: Self) -> Option<Self> {
+        Self::checked_from_i128(self.0 as i128 - rhs.0 as i128)
+    }
+
+    /// Multiplies two values without exceeding the 40-trit range.
+    pub fn checked_mul(self, rhs: Self) -> Option<Self> {
+        Self::checked_from_i128(self.0 as i128 * rhs.0 as i128)
+    }
+
+    /// Divides two values, truncating toward zero.
+    ///
+    /// Returns None for division by zero.
+    pub fn checked_div(self, rhs: Self) -> Option<Self> {
+        if rhs.0 == 0 {
+            return None;
+        }
+
+        Self::checked_from_i128(self.0 as i128 / rhs.0 as i128)
+    }
 }
 
 impl DigitOperate for Ter40 {
@@ -479,32 +542,37 @@ impl Display for Ter40 {
 
 impl Add for Ter40 {
     type Output = Self;
-    fn add(self, other: Self) -> Self::Output {
-        Self(self.0 + other.0)
+    fn add(self, rhs: Self) -> Self::Output {
+        self.checked_add(rhs).expect("Ter40 addition overflow")
     }
 }
+
 impl Sub for Ter40 {
     type Output = Self;
-    fn sub(self, other: Self) -> Self::Output {
-        Self(self.0 - other.0)
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.checked_sub(rhs).expect("Ter40 subtraction overflow")
     }
 }
+
 impl Mul for Ter40 {
     type Output = Self;
-    fn mul(self, other: Self) -> Self::Output {
-        Self(self.0 * other.0)
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.checked_mul(rhs)
+            .expect("Ter40 multiplication overflow")
     }
 }
+
 impl Div for Ter40 {
     type Output = Self;
-    fn div(self, other: Self) -> Self::Output {
-        Self(self.0 / other.0)
+    fn div(self, rhs: Self) -> Self::Output {
+        self.checked_div(rhs).expect("Ter40 division by zero")
     }
 }
 
 impl Neg for Ter40 {
     type Output = Self;
     fn neg(self) -> Self::Output {
+        // The signed ternary range is symmetric.
         Self(-self.0)
     }
 }
@@ -532,7 +600,7 @@ impl BitXor for Ter40 {
 
 impl From<i64> for Ter40 {
     fn from(value: i64) -> Self {
-        Self(value)
+        Self::from_dec(value)
     }
 }
 
@@ -558,6 +626,7 @@ impl From<Ter40> for Ternary {
 mod tests {
     use crate::DataTernary;
     use alloc::string::ToString;
+    use alloc::vec;
 
     #[test]
     fn single_chunk_creation() {
@@ -602,5 +671,112 @@ mod tests {
                 Ternary::parse(original).trim().to_string()
             );
         }
+    }
+
+    #[test]
+    fn ter40_checked_construction() {
+        use crate::Ter40;
+
+        for value in [Ter40::MIN.to_dec(), -1, 0, 1, Ter40::MAX.to_dec()] {
+            assert_eq!(Ter40::checked_from_dec(value), Some(Ter40::from_dec(value)));
+
+            assert_eq!(Ter40::from(value).to_dec(), value);
+        }
+
+        for value in [
+            i64::MIN,
+            Ter40::MIN.to_dec() - 1,
+            Ter40::MAX.to_dec() + 1,
+            i64::MAX,
+        ] {
+            assert_eq!(Ter40::checked_from_dec(value), None);
+        }
+    }
+
+    #[test]
+    fn ter40_checked_ternary_conversion() {
+        use crate::{Digit, Ter40, Ternary};
+
+        // More than 40 digits, but a representable value.
+        let mut digits = vec![Digit::Zero; 100];
+        digits.push(Digit::Pos);
+
+        let padded = Ternary::new(digits);
+
+        assert_eq!(
+            Ter40::checked_from_ternary(&padded),
+            Some(Ter40::from_dec(1))
+        );
+
+        // Values outside the signed 40-trit range.
+        let positive = Ternary::parse(&"+".repeat(41));
+        let negative = Ternary::parse(&"-".repeat(41));
+
+        assert_eq!(Ter40::checked_from_ternary(&positive), None);
+        assert_eq!(Ter40::checked_from_ternary(&negative), None);
+
+        // Every valid boundary fits in exactly 40 trits.
+        for value in [Ter40::MIN, Ter40::MAX] {
+            let ternary = value.to_ternary();
+
+            assert_eq!(ternary.log(), 40);
+            assert_eq!(Ter40::checked_from_ternary(&ternary), Some(value));
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "Ter40 value out of range")]
+    fn ter40_constructor_overflow() {
+        use crate::Ter40;
+
+        let _ = Ter40::from_dec(i64::MAX);
+    }
+
+    #[test]
+    #[should_panic(expected = "Ter40 value out of range")]
+    fn ter40_from_i64_overflow() {
+        use crate::Ter40;
+
+        let _: Ter40 = i64::MIN.into();
+    }
+
+    #[test]
+    #[should_panic(expected = "Ter40 value out of range")]
+    fn ter40_from_ternary_overflow() {
+        use crate::{Ter40, Ternary};
+
+        let _: Ter40 = Ternary::from_dec(i64::MAX).into();
+    }
+
+    #[test]
+    #[should_panic(expected = "Ter40 addition overflow")]
+    fn ter40_add_overflow() {
+        use crate::Ter40;
+
+        let _ = Ter40::MAX + Ter40::from_dec(1);
+    }
+
+    #[test]
+    #[should_panic(expected = "Ter40 subtraction overflow")]
+    fn ter40_sub_overflow() {
+        use crate::Ter40;
+
+        let _ = Ter40::MIN - Ter40::from_dec(1);
+    }
+
+    #[test]
+    #[should_panic(expected = "Ter40 multiplication overflow")]
+    fn ter40_mul_overflow() {
+        use crate::Ter40;
+
+        let _ = Ter40::MAX * Ter40::from_dec(2);
+    }
+
+    #[test]
+    #[should_panic(expected = "Ter40 division by zero")]
+    fn ter40_div_by_zero() {
+        use crate::Ter40;
+
+        let _ = Ter40::from_dec(1) / Ter40::ZERO;
     }
 }

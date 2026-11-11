@@ -7,7 +7,7 @@
 | R01 | done                     | Repair `Digit::sub`: the current source still produces incorrect results                           | `src/digit.rs`                                                     |
 | R02 | done                     | Repair `checked_to_dec()` for `i64::MIN`: intermediate `i64` overflow                              | `src/lib.rs`                                                       |
 | R03 | done                     | Remove `i64` conversion from `Ternary::trim()`                                                     | `src/lib.rs`                                                       |
-| R04 | **P0 — invariants**      | Enforce `Ter40` range and define fixed-width overflow behavior                                     | `src/store.rs`                                                     |
+| R04 | done                     | Enforce `Ter40` range and define fixed-width overflow behavior                                     | `src/store.rs`                                                     |
 | R05 | **P1 — semantics**       | Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`                     | `src/tryte.rs`, `src/store.rs`                                     |
 | R06 | **P1 — architecture**    | Implement arbitrary-precision arithmetic directly on `Ternary` digits                              | `src/operations.rs`, `src/lib.rs`                                  |
 | R07 | **P1 — performance**     | Eliminate temporary `Ternary` and `String` objects in remaining fixed-width methods and formatting | `src/tryte.rs`, `src/store.rs`, `src/lib.rs`                       |
@@ -21,8 +21,7 @@
 
 ## R01 — Fix the still-incorrect `Digit::sub` [P0]
 
-**Source:** [
-`src/digit.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/digit.rs#L746-L761).
+**Source:** [`src/digit.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/digit.rs#L746-L761).
 
 **Verified from source:** The current subtraction implementation still dispatches to `other.post()`
 for `self == Neg` and `other.pre()` for `self == Pos`. For example, `Pos - Zero` returns `Neg`, but
