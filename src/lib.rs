@@ -103,7 +103,7 @@ fn format_radix(x: i64, radix: u32) -> String {
     loop {
         let m = (x % radix as u64) as u32;
         x /= radix as u64;
-        result.push(core::char::from_digit(m, radix).unwrap());
+        result.push(char::from_digit(m, radix).unwrap());
         if x == 0 {
             break;
         }
@@ -753,290 +753,264 @@ pub use crate::tryte::Tryte;
 
 #[cfg(test)]
 #[cfg(feature = "ternary-string")]
-#[test]
-fn test_ternary() {
-    use crate::*;
-    use alloc::string::ToString;
-
-    let repr5 = Ternary::new(vec![Pos, Neg, Neg]);
-    assert_eq!(repr5.to_dec(), 5);
-    let repr5 = Ternary::from_dec(5);
-    assert_eq!(repr5.to_dec(), 5);
-
-    let repr13 = Ternary::new(vec![Pos, Pos, Pos]);
-    assert_eq!(repr13.to_dec(), 13);
-
-    let repr14 = Ternary::parse("+---");
-    let repr15 = Ternary::parse("+--0");
-    assert_eq!(repr14.to_dec(), 14);
-    assert_eq!(repr15.to_dec(), 15);
-    assert_eq!(repr14.to_string(), "+---");
-    assert_eq!(repr15.to_string(), "+--0");
-
-    let repr120 = Ternary::from_dec(120);
-    assert_eq!(repr120.to_dec(), 120);
-    assert_eq!(repr120.to_string(), "++++0");
-    let repr121 = Ternary::from_dec(121);
-    assert_eq!(repr121.to_dec(), 121);
-    assert_eq!(repr121.to_string(), "+++++");
-
-    let repr_neg_5 = Ternary::parse("-++");
-    assert_eq!(repr_neg_5.to_dec(), -5);
-    assert_eq!(repr_neg_5.to_string(), "-++");
-
-    let repr_neg_5 = Ternary::from_dec(-5);
-    assert_eq!(repr_neg_5.to_dec(), -5);
-    assert_eq!(repr_neg_5.to_string(), "-++");
-
-    let repr_neg_121 = Ternary::from_dec(-121);
-    assert_eq!(repr_neg_121.to_dec(), -121);
-    assert_eq!(repr_neg_121.to_string(), "-----");
-
-    let test = Ternary::from_dec(18887455);
-    assert_eq!(test.to_dec(), 18887455);
-    assert_eq!(test.to_string(), "++00--0--+-0++0+");
-
-    let unbalanced = Ternary::from_unbalanced("12");
-    assert_eq!(unbalanced.to_dec(), 5);
-    assert_eq!(unbalanced.to_string(), "+--");
-
-    let unbalanced = Ternary::from_unbalanced("-12");
-    assert_eq!(unbalanced.to_dec(), -5);
-    assert_eq!(unbalanced.to_string(), "-++");
-
-    let unbalanced = Ternary::from_dec(121);
-    assert_eq!(unbalanced.to_unbalanced(), "11111");
-    assert_eq!(unbalanced.to_string(), "+++++");
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn test_each() {
-    use crate::*;
-    use alloc::string::ToString;
-    let ternary = Ternary::parse("+0-");
-    assert_eq!(ternary.each(Digit::possibly).to_string(), "++-");
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn test_operations() {
-    use alloc::string::ToString;
-    fn test_ternary_eq(a: Ternary, b: &str) {
-        let repr = Ternary::parse(b);
-        assert_eq!(a.to_string(), repr.to_string());
-    }
-    fn test_binary_op(a: &Ternary, f: impl Fn(Digit, Digit) -> Digit, b: &Ternary, c: &str) {
-        test_ternary_eq(a.each_zip(f, b.clone()), c);
-    }
-
-    use core::ops::{BitAnd, BitOr, BitXor, Mul, Not};
-
-    let short = Ternary::parse("-0+");
-    let long = Ternary::parse("---000+++");
-    let other = Ternary::parse("-0+-0+-0+");
-
-    // K3
-    test_ternary_eq(short.each(Digit::not), "+0-");
-    test_binary_op(&long, Digit::bitand, &other, "----00-0+");
-    test_binary_op(&long, Digit::bitor, &other, "-0+00++++");
-    test_binary_op(&long, Digit::bitxor, &other, "-0+000+0-");
-    test_binary_op(&long, Digit::k3_equiv, &other, "+0-000-0+");
-    test_binary_op(&long, Digit::k3_imply, &other, "+++00+-0+");
-
-    // HT
-    test_ternary_eq(short.each(Digit::ht_not), "+--");
-    test_binary_op(&long, Digit::ht_imply, &other, "+++-++-0+");
-
-    // BI3
-    test_binary_op(&long, Digit::bi3_and, &other, "-0-000-0+");
-    test_binary_op(&long, Digit::bi3_or, &other, "-0+000+0+");
-    test_binary_op(&long, Digit::bi3_imply, &other, "+0+000-0+");
-
-    // L3
-    test_ternary_eq(short.each(Digit::possibly), "-++");
-    test_ternary_eq(short.each(Digit::necessary), "--+");
-    test_ternary_eq(short.each(Digit::contingently), "-+-");
-    test_binary_op(&long, Digit::l3_imply, &other, "+++0++-0+");
-
-    // PARA / RM3
-    test_binary_op(&long, Digit::rm3_imply, &other, "+++-0+--+");
-    test_binary_op(&long, Digit::para_imply, &other, "+++-0+-0+");
-
-    // Other operations
-    test_ternary_eq(short.each(Digit::post), "0+-");
-    test_ternary_eq(short.each(Digit::pre), "+-0");
-    test_ternary_eq(short.each(Digit::absolute_positive), "+0+");
-    test_ternary_eq(short.each(Digit::positive), "00+");
-    test_ternary_eq(short.each(Digit::not_negative), "0++");
-    test_ternary_eq(short.each(Digit::not_positive), "--0");
-    test_ternary_eq(short.each(Digit::negative), "-00");
-    test_ternary_eq(short.each(Digit::absolute_negative), "-0-");
-
-    test_binary_op(&long, Digit::mul, &other, "+0-000-0+");
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn test_from_str() {
-    use alloc::string::ToString;
-    use core::str::FromStr;
-
-    let ternary = Ternary::from_str("+-0").unwrap();
-    assert_eq!(ternary.to_string(), "+-0");
-
-    assert!(Ternary::from_str("+-x").is_err());
-
-    #[cfg(feature = "tryte")]
-    {
-        let tryte = <crate::Tryte>::from_str("+-0").unwrap();
-        assert_eq!(tryte.to_string(), "000+-0");
-        assert!(<crate::Tryte>::from_str("+-x").is_err());
-    }
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn test_ordering() {
-    use crate::ter;
-
-    assert!(ter("-+") < ter("0"));
-    assert!(ter("0") < ter("++"));
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn test_ordering_additional() {
-    use crate::ter;
-
-    // Validate comparisons across a range of values
-    assert!(ter("--") < ter("-0"));
-    assert!(ter("-0") < ter("-"));
-    assert!(ter("+") < ter("+-"));
-    assert!(ter("+-") < ter("++"));
-
-    // Sorting should arrange values by their decimal value
-    let mut values = vec![
-        ter("+"),
-        ter("--"),
-        ter("+-"),
-        ter("-"),
-        ter("0"),
-        ter("-0"),
-        ter("++"),
-    ];
-    values.sort();
-    let expected = vec![
-        ter("--"),
-        ter("-0"),
-        ter("-"),
-        ter("0"),
-        ter("+"),
-        ter("+-"),
-        ter("++"),
-    ];
-    assert_eq!(values, expected);
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn test_iterators() {
-    use crate::*;
-
-    let ternary = Ternary::parse("+0-");
-    let expected = vec![Pos, Zero, Neg];
-    assert_eq!(ternary.iter().cloned().collect::<Vec<_>>(), expected);
-    let collected: Vec<Digit> = Ternary::parse("+0-").into_iter().collect();
-    assert_eq!(collected, expected);
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn test_i64_conversion_overflow() {
-    use crate::{Neg, Pos, Ternary, Zero};
-
-    let positive = Ternary::new(vec![Pos; 41]);
-    let negative = Ternary::new(vec![Neg; 41]);
-
-    assert_eq!(positive.checked_to_dec(), None);
-    assert_eq!(negative.checked_to_dec(), None);
-
-    // Leading zeros must not cause an overflow.
-    let zero = Ternary::new(vec![Zero; 100]);
-    assert_eq!(zero.checked_to_dec(), Some(0));
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn numeric_equality() {
-    assert_eq!(Ternary::parse("+"), Ternary::parse("000+"));
-    assert_eq!(Ternary::parse("-"), Ternary::parse("00-"));
-    assert_eq!(Ternary::parse("0"), Ternary::parse("000"));
-    assert_eq!(Ternary::parse("0"), Ternary::new(vec![]));
-
-    assert_ne!(Ternary::parse("+"), Ternary::parse("-"));
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn numeric_ordering() {
-    assert!(Ternary::parse("--") < Ternary::parse("-"));
-    assert!(Ternary::parse("-") < Ternary::parse("0"));
-    assert!(Ternary::parse("0") < Ternary::parse("+"));
-    assert!(Ternary::parse("+") < Ternary::parse("++"));
-
-    assert!(Ternary::parse("-+") < Ternary::parse("-"));
-    assert!(Ternary::parse("+") < Ternary::parse("+-"));
-
-    assert_eq!(
-        Ternary::parse("000+").cmp(&Ternary::parse("+")),
-        Ordering::Equal
-    );
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-#[test]
-fn arbitrary_precision_comparison() {
-    let positive = Ternary::parse(&"+".repeat(256));
-    let larger = Ternary::parse(&"+".repeat(257));
-
-    assert!(positive < larger);
-
-    let negative = Ternary::parse(&"-".repeat(256));
-    let smaller = Ternary::parse(&"-".repeat(257));
-
-    assert!(smaller < negative);
-}
-
-#[cfg(test)]
-#[cfg(feature = "ternary-string")]
-mod test_each {
-    use alloc::string::ToString;
-    use crate::{
-        Digit, Ternary,
-    };
-
-    use Digit::{Pos, Zero};
+mod tests {
     use crate::concepts::DigitOperate;
+    use crate::{Digit, Ternary};
+    use alloc::string::ToString;
+    use alloc::vec;
+    use core::cmp::Ordering;
+    use Digit::{Pos, Zero};
+
+    #[test]
+    fn test_ternary() {
+        use crate::*;
+        use alloc::string::ToString;
+
+        let repr5 = Ternary::new(vec![Pos, Neg, Neg]);
+        assert_eq!(repr5.to_dec(), 5);
+        let repr5 = Ternary::from_dec(5);
+        assert_eq!(repr5.to_dec(), 5);
+
+        let repr13 = Ternary::new(vec![Pos, Pos, Pos]);
+        assert_eq!(repr13.to_dec(), 13);
+
+        let repr14 = Ternary::parse("+---");
+        let repr15 = Ternary::parse("+--0");
+        assert_eq!(repr14.to_dec(), 14);
+        assert_eq!(repr15.to_dec(), 15);
+        assert_eq!(repr14.to_string(), "+---");
+        assert_eq!(repr15.to_string(), "+--0");
+
+        let repr120 = Ternary::from_dec(120);
+        assert_eq!(repr120.to_dec(), 120);
+        assert_eq!(repr120.to_string(), "++++0");
+        let repr121 = Ternary::from_dec(121);
+        assert_eq!(repr121.to_dec(), 121);
+        assert_eq!(repr121.to_string(), "+++++");
+
+        let repr_neg_5 = Ternary::parse("-++");
+        assert_eq!(repr_neg_5.to_dec(), -5);
+        assert_eq!(repr_neg_5.to_string(), "-++");
+
+        let repr_neg_5 = Ternary::from_dec(-5);
+        assert_eq!(repr_neg_5.to_dec(), -5);
+        assert_eq!(repr_neg_5.to_string(), "-++");
+
+        let repr_neg_121 = Ternary::from_dec(-121);
+        assert_eq!(repr_neg_121.to_dec(), -121);
+        assert_eq!(repr_neg_121.to_string(), "-----");
+
+        let test = Ternary::from_dec(18887455);
+        assert_eq!(test.to_dec(), 18887455);
+        assert_eq!(test.to_string(), "++00--0--+-0++0+");
+
+        let unbalanced = Ternary::from_unbalanced("12");
+        assert_eq!(unbalanced.to_dec(), 5);
+        assert_eq!(unbalanced.to_string(), "+--");
+
+        let unbalanced = Ternary::from_unbalanced("-12");
+        assert_eq!(unbalanced.to_dec(), -5);
+        assert_eq!(unbalanced.to_string(), "-++");
+
+        let unbalanced = Ternary::from_dec(121);
+        assert_eq!(unbalanced.to_unbalanced(), "11111");
+        assert_eq!(unbalanced.to_string(), "+++++");
+    }
+
+    #[test]
+    fn test_each() {
+        use crate::*;
+        use alloc::string::ToString;
+        let ternary = Ternary::parse("+0-");
+        assert_eq!(ternary.each(Digit::possibly).to_string(), "++-");
+    }
+
+    #[test]
+    fn test_operations() {
+        use alloc::string::ToString;
+        fn test_ternary_eq(a: Ternary, b: &str) {
+            let repr = Ternary::parse(b);
+            assert_eq!(a.to_string(), repr.to_string());
+        }
+        fn test_binary_op(a: &Ternary, f: impl Fn(Digit, Digit) -> Digit, b: &Ternary, c: &str) {
+            test_ternary_eq(a.each_zip(f, b.clone()), c);
+        }
+
+        use core::ops::{BitAnd, BitOr, BitXor, Mul, Not};
+
+        let short = Ternary::parse("-0+");
+        let long = Ternary::parse("---000+++");
+        let other = Ternary::parse("-0+-0+-0+");
+
+        // K3
+        test_ternary_eq(short.each(Digit::not), "+0-");
+        test_binary_op(&long, Digit::bitand, &other, "----00-0+");
+        test_binary_op(&long, Digit::bitor, &other, "-0+00++++");
+        test_binary_op(&long, Digit::bitxor, &other, "-0+000+0-");
+        test_binary_op(&long, Digit::k3_equiv, &other, "+0-000-0+");
+        test_binary_op(&long, Digit::k3_imply, &other, "+++00+-0+");
+
+        // HT
+        test_ternary_eq(short.each(Digit::ht_not), "+--");
+        test_binary_op(&long, Digit::ht_imply, &other, "+++-++-0+");
+
+        // BI3
+        test_binary_op(&long, Digit::bi3_and, &other, "-0-000-0+");
+        test_binary_op(&long, Digit::bi3_or, &other, "-0+000+0+");
+        test_binary_op(&long, Digit::bi3_imply, &other, "+0+000-0+");
+
+        // L3
+        test_ternary_eq(short.each(Digit::possibly), "-++");
+        test_ternary_eq(short.each(Digit::necessary), "--+");
+        test_ternary_eq(short.each(Digit::contingently), "-+-");
+        test_binary_op(&long, Digit::l3_imply, &other, "+++0++-0+");
+
+        // PARA / RM3
+        test_binary_op(&long, Digit::rm3_imply, &other, "+++-0+--+");
+        test_binary_op(&long, Digit::para_imply, &other, "+++-0+-0+");
+
+        // Other operations
+        test_ternary_eq(short.each(Digit::post), "0+-");
+        test_ternary_eq(short.each(Digit::pre), "+-0");
+        test_ternary_eq(short.each(Digit::absolute_positive), "+0+");
+        test_ternary_eq(short.each(Digit::positive), "00+");
+        test_ternary_eq(short.each(Digit::not_negative), "0++");
+        test_ternary_eq(short.each(Digit::not_positive), "--0");
+        test_ternary_eq(short.each(Digit::negative), "-00");
+        test_ternary_eq(short.each(Digit::absolute_negative), "-0-");
+
+        test_binary_op(&long, Digit::mul, &other, "+0-000-0+");
+    }
+
+    #[test]
+    fn test_from_str() {
+        use alloc::string::ToString;
+        use core::str::FromStr;
+
+        let ternary = Ternary::from_str("+-0").unwrap();
+        assert_eq!(ternary.to_string(), "+-0");
+
+        assert!(Ternary::from_str("+-x").is_err());
+
+        #[cfg(feature = "tryte")]
+        {
+            let tryte = <crate::Tryte>::from_str("+-0").unwrap();
+            assert_eq!(tryte.to_string(), "000+-0");
+            assert!(<crate::Tryte>::from_str("+-x").is_err());
+        }
+    }
+
+    #[test]
+    fn test_ordering() {
+        use crate::ter;
+
+        assert!(ter("-+") < ter("0"));
+        assert!(ter("0") < ter("++"));
+    }
+
+    #[test]
+    fn test_ordering_additional() {
+        use crate::ter;
+
+        // Validate comparisons across a range of values
+        assert!(ter("--") < ter("-0"));
+        assert!(ter("-0") < ter("-"));
+        assert!(ter("+") < ter("+-"));
+        assert!(ter("+-") < ter("++"));
+
+        // Sorting should arrange values by their decimal value
+        let mut values = vec![
+            ter("+"),
+            ter("--"),
+            ter("+-"),
+            ter("-"),
+            ter("0"),
+            ter("-0"),
+            ter("++"),
+        ];
+        values.sort();
+        let expected = vec![
+            ter("--"),
+            ter("-0"),
+            ter("-"),
+            ter("0"),
+            ter("+"),
+            ter("+-"),
+            ter("++"),
+        ];
+        assert_eq!(values, expected);
+    }
+
+    #[test]
+    fn test_iterators() {
+        use crate::*;
+
+        let ternary = Ternary::parse("+0-");
+        let expected = vec![Pos, Zero, Neg];
+        assert_eq!(ternary.iter().cloned().collect::<Vec<_>>(), expected);
+        let collected: Vec<Digit> = Ternary::parse("+0-").into_iter().collect();
+        assert_eq!(collected, expected);
+    }
+
+    #[test]
+    fn test_i64_conversion_overflow() {
+        use crate::{Neg, Pos, Ternary, Zero};
+
+        let positive = Ternary::new(vec![Pos; 41]);
+        let negative = Ternary::new(vec![Neg; 41]);
+
+        assert_eq!(positive.checked_to_dec(), None);
+        assert_eq!(negative.checked_to_dec(), None);
+
+        // Leading zeros must not cause an overflow.
+        let zero = Ternary::new(vec![Zero; 100]);
+        assert_eq!(zero.checked_to_dec(), Some(0));
+    }
+
+    #[test]
+    fn numeric_equality() {
+        assert_eq!(Ternary::parse("+"), Ternary::parse("000+"));
+        assert_eq!(Ternary::parse("-"), Ternary::parse("00-"));
+        assert_eq!(Ternary::parse("0"), Ternary::parse("000"));
+        assert_eq!(Ternary::parse("0"), Ternary::new(vec![]));
+
+        assert_ne!(Ternary::parse("+"), Ternary::parse("-"));
+    }
+
+    #[test]
+    fn numeric_ordering() {
+        assert!(Ternary::parse("--") < Ternary::parse("-"));
+        assert!(Ternary::parse("-") < Ternary::parse("0"));
+        assert!(Ternary::parse("0") < Ternary::parse("+"));
+        assert!(Ternary::parse("+") < Ternary::parse("++"));
+
+        assert!(Ternary::parse("-+") < Ternary::parse("-"));
+        assert!(Ternary::parse("+") < Ternary::parse("+-"));
+
+        assert_eq!(
+            Ternary::parse("000+").cmp(&Ternary::parse("+")),
+            Ordering::Equal
+        );
+    }
+
+    #[test]
+    fn arbitrary_precision_comparison() {
+        let positive = Ternary::parse(&"+".repeat(256));
+        let larger = Ternary::parse(&"+".repeat(257));
+
+        assert!(positive < larger);
+
+        let negative = Ternary::parse(&"-".repeat(256));
+        let smaller = Ternary::parse(&"-".repeat(257));
+
+        assert!(smaller < negative);
+    }
 
     fn add_digits(a: Digit, b: Digit, carry: Digit) -> (Digit, Digit) {
         let sum = a.to_i8() + b.to_i8() + carry.to_i8();
         let next = (sum + 1).div_euclid(3);
 
-        (
-            Digit::from_i8(next),
-            Digit::from_i8(sum - next * 3),
-        )
+        (Digit::from_i8(next), Digit::from_i8(sum - next * 3))
     }
 
     #[test]
@@ -1045,10 +1019,7 @@ mod test_each {
 
         assert_eq!(a.each(|d| d).to_string(), "00+-");
 
-        assert_eq!(
-            a.each_with(|d, _| d, Pos).to_string(),
-            "00+-"
-        );
+        assert_eq!(a.each_with(|d, _| d, Pos).to_string(), "00+-");
     }
 
     #[test]
@@ -1056,21 +1027,12 @@ mod test_each {
         let a = Ternary::parse("+");
         let b = Ternary::parse("--");
 
-        assert_eq!(
-            a.each_zip(|left, _| left, b.clone()).to_string(),
-            "0+"
-        );
+        assert_eq!(a.each_zip(|left, _| left, b.clone()).to_string(), "0+");
+
+        assert_eq!(a.each_zip(|_, right| right, b.clone()).to_string(), "--");
 
         assert_eq!(
-            a.each_zip(|_, right| right, b.clone()).to_string(),
-            "--"
-        );
-
-        assert_eq!(
-            a.each_zip_carry(
-                |left, _, _| (Zero, left),
-                b,
-            ).to_string(),
+            a.each_zip_carry(|left, _, _| (Zero, left), b,).to_string(),
             "0+"
         );
     }
@@ -1080,10 +1042,7 @@ mod test_each {
         let a = Ternary::parse("++");
         let b = Ternary::parse("+");
 
-        assert_eq!(
-            a.each_zip_carry(add_digits, b).to_string(),
-            "+--"
-        );
+        assert_eq!(a.each_zip_carry(add_digits, b).to_string(), "+--");
 
         assert_eq!(
             Ternary::parse("-")
@@ -1101,25 +1060,17 @@ mod test_each {
         let a = Tryte::<2>::new([Pos, Pos]);
         let b = Tryte::<2>::new([Zero, Pos]);
 
-        assert_eq!(
-            a.each_zip_carry(add_digits, b),
-            Tryte::<2>::MIN
-        );
+        assert_eq!(a.each_zip_carry(add_digits, b), Tryte::<2>::MIN);
 
         assert_eq!(Tryte::<0>::ZERO.digit(0), None);
     }
 
-    #[cfg(feature = "ternary-store")]
     #[test]
     fn ter40_carry_wraps_at_fixed_width() {
         use crate::Ter40;
 
-        let result = Ter40::MAX.each_zip_carry(
-            add_digits,
-            Ter40::from_dec(1),
-        );
+        let result = Ter40::MAX.each_zip_carry(add_digits, Ter40::from_dec(1));
 
         assert_eq!(result, Ter40::MIN);
     }
-
 }

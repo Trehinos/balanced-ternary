@@ -329,31 +329,35 @@ impl<const SIZE: usize> FromStr for Tryte<SIZE> {
 }
 
 #[cfg(test)]
-#[test]
-pub fn test_tryte() {
-    let tryte = Tryte::<6>::from_i64(255);
-    assert_eq!(tryte.to_i64(), 255);
-    assert_eq!(tryte.to_string(), "+00++0");
+mod tests {
+    use alloc::string::ToString;
+    use crate::Tryte;
 
-    let tryte = Tryte::<6>::from_i64(16);
-    assert_eq!(tryte.to_i64(), 16);
-    assert_eq!(tryte.to_string(), "00+--+");
+    #[test]
+    pub fn test_tryte() {
+        let tryte = Tryte::<6>::from_i64(255);
+        assert_eq!(tryte.to_i64(), 255);
+        assert_eq!(tryte.to_string(), "+00++0");
 
-    assert_eq!(Tryte::<6>::MAX.to_string(), "++++++");
-    assert_eq!(Tryte::<6>::MAX.to_i64(), 364);
-    assert_eq!(Tryte::<6>::MIN.to_string(), "------");
-    assert_eq!(Tryte::<6>::MIN.to_i64(), -364);
-    assert_eq!(Tryte::<6>::ZERO.to_string(), "000000");
-    assert_eq!(Tryte::<6>::ZERO.to_i64(), 0);
-}
+        let tryte = Tryte::<6>::from_i64(16);
+        assert_eq!(tryte.to_i64(), 16);
+        assert_eq!(tryte.to_string(), "00+--+");
 
-#[cfg(test)]
-#[test]
-pub fn test_tryte_from_str() {
-    use core::str::FromStr;
+        assert_eq!(Tryte::<6>::MAX.to_string(), "++++++");
+        assert_eq!(Tryte::<6>::MAX.to_i64(), 364);
+        assert_eq!(Tryte::<6>::MIN.to_string(), "------");
+        assert_eq!(Tryte::<6>::MIN.to_i64(), -364);
+        assert_eq!(Tryte::<6>::ZERO.to_string(), "000000");
+        assert_eq!(Tryte::<6>::ZERO.to_i64(), 0);
+    }
 
-    let tryte = Tryte::<6>::from_str("+-0").unwrap();
-    assert_eq!(tryte.to_string(), "000+-0");
+    #[test]
+    pub fn test_tryte_from_str() {
+        use core::str::FromStr;
 
-    assert!(Tryte::<6>::from_str("+-x").is_err());
+        let tryte = Tryte::<6>::from_str("+-0").unwrap();
+        assert_eq!(tryte.to_string(), "000+-0");
+
+        assert!(Tryte::<6>::from_str("+-x").is_err());
+    }
 }

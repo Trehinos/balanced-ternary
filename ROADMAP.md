@@ -4,7 +4,7 @@
 
 | ID  | Priority                 | Outstanding task                                                                                   | Primary files                                                      |
 |-----|--------------------------|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| R01 | **P0 — correctness**     | Repair `Digit::sub`: the current source still produces incorrect results                           | `src/digit.rs`                                                     |
+| R01 | done                     | Repair `Digit::sub`: the current source still produces incorrect results                           | `src/digit.rs`                                                     |
 | R02 | **P0 — correctness**     | Repair `checked_to_dec()` for `i64::MIN`: intermediate `i64` overflow                              | `src/lib.rs`                                                       |
 | R03 | **P0 — correctness**     | Remove `i64` conversion from `Ternary::trim()`                                                     | `src/lib.rs`                                                       |
 | R04 | **P0 — invariants**      | Enforce `Ter40` range and define fixed-width overflow behavior                                     | `src/store.rs`                                                     |

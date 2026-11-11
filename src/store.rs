@@ -555,49 +555,52 @@ impl From<Ter40> for Ternary {
 }
 
 #[cfg(test)]
-#[test]
-fn single_chunk_creation() {
-    use crate::Ternary;
+mod tests {
+    use crate::DataTernary;
+    use alloc::string::ToString;
 
-    let ternary = Ternary::parse("+-0-+");
-    let data = DataTernary::from_ternary(ternary.clone());
+    #[test]
+    fn single_chunk_creation() {
+        use crate::Ternary;
 
-    assert_eq!(data.chunks.len(), 1);
-    assert_eq!(data.to_ternary(), ternary);
-}
+        let ternary = Ternary::parse("+-0-+");
+        let data = DataTernary::from_ternary(ternary.clone());
 
-#[cfg(test)]
-#[test]
-fn round_trip() {
-    use crate::Ternary;
+        assert_eq!(data.chunks.len(), 1);
+        assert_eq!(data.to_ternary(), ternary);
+    }
 
-    let ternary = Ternary::parse("+0-0++-");
-    let data = DataTernary::from_ternary(ternary.clone());
+    #[test]
+    fn round_trip() {
+        use crate::Ternary;
 
-    assert_eq!(data.to_ternary(), ternary);
-}
+        let ternary = Ternary::parse("+0-0++-");
+        let data = DataTernary::from_ternary(ternary.clone());
 
-#[cfg(test)]
-#[test]
-fn data_ternary_round_trip_zero_chunks() {
-    use crate::Ternary;
+        assert_eq!(data.to_ternary(), ternary);
+    }
 
-    let cases = [
-        ("+", "0000+"),
-        ("+00000", "0000+00000"),
-        ("-00000", "0000-00000"),
-        ("+0000000000", "0000+0000000000"),
-        ("0000000000", "0000000000"),
-    ];
+    #[test]
+    fn data_ternary_round_trip_zero_chunks() {
+        use crate::Ternary;
 
-    for (original, expected_fixed) in cases {
-        let data = DataTernary::from_ternary(Ternary::parse(original));
+        let cases = [
+            ("+", "0000+"),
+            ("+00000", "0000+00000"),
+            ("-00000", "0000-00000"),
+            ("+0000000000", "0000+0000000000"),
+            ("0000000000", "0000000000"),
+        ];
 
-        assert_eq!(data.to_fixed_ternary().to_string(), expected_fixed);
+        for (original, expected_fixed) in cases {
+            let data = DataTernary::from_ternary(Ternary::parse(original));
 
-        assert_eq!(
-            data.to_ternary().to_string(),
-            Ternary::parse(original).trim().to_string()
-        );
+            assert_eq!(data.to_fixed_ternary().to_string(), expected_fixed);
+
+            assert_eq!(
+                data.to_ternary().to_string(),
+                Ternary::parse(original).trim().to_string()
+            );
+        }
     }
 }

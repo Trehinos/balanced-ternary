@@ -31,7 +31,7 @@
 use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
 use alloc::vec;
-use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub, Shl, Shr};
+use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Shl, Shr, Sub};
 
 impl Neg for &Ternary {
     type Output = Ternary;
@@ -145,7 +145,8 @@ impl Shl<usize> for &Ternary {
     fn shl(self, rhs: usize) -> Self::Output {
         let mut repr = Ternary::new(vec![]);
         repr.digits.extend(self.digits.iter().cloned());
-        repr.digits.extend(core::iter::repeat(Digit::Zero).take(rhs));
+        repr.digits
+            .extend(core::iter::repeat(Digit::Zero).take(rhs));
         repr
     }
 }
@@ -174,56 +175,59 @@ impl Not for &Ternary {
 }
 
 #[cfg(test)]
-#[test]
-fn test_ternary_ops() {
-    use alloc::string::ToString;
+mod tests {
+    use crate::Ternary;
 
-    let repr9 = Ternary::parse("+00");
-    let repr4 = Ternary::parse("++");
-    let repr13 = &repr9 + &repr4;
-    let repr17 = &repr13 + &repr4;
-    let repr34 = &repr17 + &repr17;
+    #[test]
+    fn test_ternary_ops() {
+        use alloc::string::ToString;
 
-    assert_eq!(repr13.to_string(), "+++");
-    assert_eq!(repr17.to_string(), "+-0-");
-    assert_eq!(repr34.to_string(), "++-+");
+        let repr9 = Ternary::parse("+00");
+        let repr4 = Ternary::parse("++");
+        let repr13 = &repr9 + &repr4;
+        let repr17 = &repr13 + &repr4;
+        let repr34 = &repr17 + &repr17;
 
-    let repr30 = &repr34 - &repr4;
-    assert_eq!(repr30.to_dec(), 30);
-    assert_eq!(repr30.to_string(), "+0+0");
+        assert_eq!(repr13.to_string(), "+++");
+        assert_eq!(repr17.to_string(), "+-0-");
+        assert_eq!(repr34.to_string(), "++-+");
 
-    let repr120 = &repr30 * &repr4;
-    assert_eq!(repr120.to_dec(), 120);
-    assert_eq!(repr120.to_string(), "++++0");
+        let repr30 = &repr34 - &repr4;
+        assert_eq!(repr30.to_dec(), 30);
+        assert_eq!(repr30.to_string(), "+0+0");
 
-    let repr_neg120 = -&repr120;
-    assert_eq!(repr_neg120.to_dec(), -120);
-    assert_eq!(repr_neg120.to_string(), "----0");
+        let repr120 = &repr30 * &repr4;
+        assert_eq!(repr120.to_dec(), 120);
+        assert_eq!(repr120.to_string(), "++++0");
 
-    let bitwise = &Ternary::parse("++00") & &Ternary::parse("0000");
-    assert_eq!(bitwise.to_string(), "0000");
+        let repr_neg120 = -&repr120;
+        assert_eq!(repr_neg120.to_dec(), -120);
+        assert_eq!(repr_neg120.to_string(), "----0");
 
-    let bitwise = &Ternary::parse("++00") & &Ternary::parse("0+00");
-    assert_eq!(bitwise.to_string(), "0+00");
+        let bitwise = &Ternary::parse("++00") & &Ternary::parse("0000");
+        assert_eq!(bitwise.to_string(), "0000");
 
-    let bitwise = &Ternary::parse("+000") | &Ternary::parse("000-");
-    assert_eq!(bitwise.to_string(), "+000");
+        let bitwise = &Ternary::parse("++00") & &Ternary::parse("0+00");
+        assert_eq!(bitwise.to_string(), "0+00");
 
-    let bitwise = &Ternary::parse("+000") & &Ternary::parse("000-");
-    assert_eq!(bitwise.to_string(), "000-");
+        let bitwise = &Ternary::parse("+000") | &Ternary::parse("000-");
+        assert_eq!(bitwise.to_string(), "+000");
 
-    let bitwise = &Ternary::parse("+000") | &Ternary::parse("000+");
-    assert_eq!(bitwise.to_string(), "+00+");
-}
+        let bitwise = &Ternary::parse("+000") & &Ternary::parse("000-");
+        assert_eq!(bitwise.to_string(), "000-");
 
-#[cfg(test)]
-#[test]
-fn test_shift_ops() {
-    use alloc::string::ToString;
-    let t = Ternary::parse("+0-");
-    assert_eq!((&t << 2).to_string(), "+0-00");
-    let back = &(&t << 2) >> 2;
-    assert_eq!(back.to_string(), "+0-");
-    let zero = &t >> 5;
-    assert_eq!(zero.to_string(), "0");
+        let bitwise = &Ternary::parse("+000") | &Ternary::parse("000+");
+        assert_eq!(bitwise.to_string(), "+00+");
+    }
+
+    #[test]
+    fn test_shift_ops() {
+        use alloc::string::ToString;
+        let t = Ternary::parse("+0-");
+        assert_eq!((&t << 2).to_string(), "+0-00");
+        let back = &(&t << 2) >> 2;
+        assert_eq!(back.to_string(), "+0-");
+        let zero = &t >> 5;
+        assert_eq!(zero.to_string(), "0");
+    }
 }

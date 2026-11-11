@@ -754,11 +754,7 @@ impl Sub<Digit> for Digit {
     /// - Panics:
     ///   - This method does not panic under any circumstances.
     fn sub(self, other: Digit) -> Self::Output {
-        match self {
-            Digit::Neg => other.post(),
-            Digit::Zero => -other,
-            Digit::Pos => other.pre(),
-        }
+        self + (-other)
     }
 }
 
@@ -919,6 +915,30 @@ impl BitXor for Digit {
             Digit::Neg => rhs,
             Digit::Zero => Digit::Zero,
             Digit::Pos => -rhs,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Digit::{Neg, Pos, Zero};
+
+    #[test]
+    fn subtraction_modulo_three() {
+        let cases = [
+            (Neg, Neg, Zero),
+            (Neg, Zero, Neg),
+            (Neg, Pos, Pos),
+            (Zero, Neg, Pos),
+            (Zero, Zero, Zero),
+            (Zero, Pos, Neg),
+            (Pos, Neg, Neg),
+            (Pos, Zero, Pos),
+            (Pos, Pos, Zero),
+        ];
+
+        for (a, b, expected) in cases {
+            assert_eq!(a - b, expected, "{a:?} - {b:?}");
         }
     }
 }
