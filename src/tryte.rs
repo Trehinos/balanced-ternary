@@ -14,7 +14,7 @@ use core::str::FromStr;
 /// The `Tryte<S>` struct represents a Copy type balanced ternary number with exactly S digits (6 by default).
 /// Each digit in a balanced ternary system can have one of three values: -1, 0, or 1.
 ///
-/// A [Tryte<6>] can holds value between `-364` and `+364`.
+/// A [Tryte<6>] can hold value between `-364` and `+364`.
 ///
 /// The underlying representation of the number is an array of SIZE `Digit` values.
 /// This struct provides conversion methods to and from other formats.

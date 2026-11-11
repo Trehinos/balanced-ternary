@@ -346,9 +346,10 @@ impl Ternary {
     }
 
     pub fn checked_to_dec(&self) -> Option<i64> {
-        self.digits.iter().try_fold(0i64, |acc, digit| {
-            acc.checked_mul(3)?.checked_add(digit.to_i8() as i64)
-        })
+        let value = self.digits.iter().try_fold(0i128, |acc, digit| {
+            acc.checked_mul(3)?.checked_add(digit.to_i8() as i128)
+        });
+        i64::try_from(value?).ok()
     }
 
     /// Converts the balanced ternary number to its unbalanced representation as a string.
@@ -408,42 +409,24 @@ impl Ternary {
         Self::from_dec(i64::from_str_radix(unbalanced, 3).unwrap())
     }
 
-    /// Removes leading `Zero` digits from the `Ternary` number, effectively trimming
-    /// it down to its simplest representation. The resulting `Ternary` number
-    /// will still represent the same value.
+    /// Removes leading zero digits.
     ///
-    /// # Returns
+    /// Returns a canonical representation containing
+    /// at least one digit.
     ///
-    /// * `Self` - A new `Ternary` object, trimmed of leading zeros.
+    /// An empty or all-zero representation becomes
+    /// a single zero digit.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use balanced_ternary::{ Neg, Pos, Ternary, Zero};
-    ///
-    /// let ternary = Ternary::new(vec![Zero, Zero, Pos, Neg]);
-    /// let trimmed = ternary.trim();
-    /// assert_eq!(trimmed.to_string(), "+-");
-    /// ```
-    ///
-    /// # Notes
-    ///
-    /// This method does not mutate the original `Ternary` object but returns a new representation.
+    /// This operation does not depend on integer
+    /// conversion and supports arbitrarily large values.
     pub fn trim(&self) -> Self {
-        if self.to_dec() == 0 {
-            return Ternary::parse("0");
+        let significant = self.significant_digits();
+
+        if significant.is_empty() {
+            Self::new(vec![Zero])
+        } else {
+            Self::new(significant.to_vec())
         }
-        let mut repr = Ternary::new(vec![]);
-        let mut first_digit = false;
-        for digit in self.digits.iter() {
-            if !first_digit && digit != &Zero {
-                first_digit = true;
-            }
-            if first_digit {
-                repr.digits.push(*digit);
-            }
-        }
-        repr
     }
 
     /// Adjusts the representation of the `Ternary` number to have a fixed number of digits.
@@ -965,6 +948,20 @@ mod tests {
         // Leading zeros must not cause an overflow.
         let zero = Ternary::new(vec![Zero; 100]);
         assert_eq!(zero.checked_to_dec(), Some(0));
+
+        // Long representations containing only zeros.
+        assert_eq!(Ternary::parse(&"0".repeat(150)).checked_to_dec(), Some(0));
+
+        // Values exceeding i128 must not panic.
+        assert_eq!(Ternary::parse(&"+".repeat(150)).checked_to_dec(), None);
+        assert_eq!(Ternary::parse(&"-".repeat(150)).checked_to_dec(), None);
+
+        // Leading zeros must not change a valid value.
+        let min = Ternary::from_dec(i64::MIN);
+        let mut padded = vec![Zero; 150];
+        padded.extend_from_slice(min.to_digit_slice());
+
+        assert_eq!(Ternary::new(padded).checked_to_dec(), Some(i64::MIN));
     }
 
     #[test]
@@ -1072,5 +1069,108 @@ mod tests {
         let result = Ter40::MAX.each_zip_carry(add_digits, Ter40::from_dec(1));
 
         assert_eq!(result, Ter40::MIN);
+    }
+
+    #[test]
+    fn test_i64_conversion_boundaries() {
+        let values = [
+            i64::MIN,
+            i64::MIN + 1,
+            -243,
+            -1,
+            0,
+            1,
+            243,
+            i64::MAX - 1,
+            i64::MAX,
+        ];
+
+        for value in values {
+            let ternary = Ternary::from_dec(value);
+
+            assert_eq!(
+                ternary.checked_to_dec(),
+                Some(value),
+                "Conversion failed for {value}"
+            );
+
+            assert_eq!(ternary.to_dec(), value);
+        }
+    }
+
+    #[test]
+    fn test_i64_conversion_roundtrip() {
+        for value in -10_000i64..=10_000 {
+            let ternary = Ternary::from_dec(value);
+            assert_eq!(ternary.checked_to_dec(), Some(value));
+        }
+
+        let mut seed = 0x9E3779B97F4A7C15u64;
+
+        for _ in 0..10_000 {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+
+            let value = seed as i64;
+            let ternary = Ternary::from_dec(value);
+
+            assert_eq!(ternary.checked_to_dec(), Some(value));
+        }
+    }
+
+    #[test]
+    fn test_ternary_trim() {
+        let cases = [
+            ("", "0"),
+            ("0", "0"),
+            ("000000", "0"),
+            ("+", "+"),
+            ("-", "-"),
+            ("000+", "+"),
+            ("000-", "-"),
+            ("000+-0", "+-0"),
+            ("000-0+", "-0+"),
+        ];
+
+        for (input, expected) in cases {
+            let value = Ternary::parse(input);
+            let trimmed = value.trim();
+
+            assert_eq!(
+                trimmed.to_string(),
+                expected,
+                "Trimming failed for {input:?}"
+            );
+
+            // Check structural idempotence, not only
+            // numeric equality.
+            assert_eq!(trimmed.to_digit_slice(), trimmed.trim().to_digit_slice());
+        }
+    }
+
+    #[test]
+    fn test_ternary_trim_arbitrary_precision() {
+        use crate::Digit::Neg;
+
+        for width in [256, 1024] {
+            for digit in [Pos, Neg] {
+                // Prepend zeros to a large nonzero value.
+                let mut digits = vec![Zero; 32];
+                digits.extend(vec![digit; width]);
+
+                let original = Ternary::new(digits.clone());
+                let trimmed = original.trim();
+
+                // The significant digits are preserved.
+                assert_eq!(trimmed.to_digit_slice(), &digits[32..]);
+
+                assert_eq!(trimmed.log(), width);
+
+                // The original representation is unchanged.
+                assert_eq!(original.to_digit_slice(), digits.as_slice());
+
+                // Trimming twice produces the same digits.
+                assert_eq!(trimmed.trim().to_digit_slice(), trimmed.to_digit_slice());
+            }
+        }
     }
 }
