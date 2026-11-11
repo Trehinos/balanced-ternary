@@ -4,10 +4,10 @@
 
 | ID  | Priority                 | Outstanding task                                                                                   | Primary files                                                      |
 |-----|--------------------------|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| R01 | done                     | Repair `Digit::sub`: the current source still produces incorrect results                           | `src/digit.rs`                                                     |
-| R02 | done                     | Repair `checked_to_dec()` for `i64::MIN`: intermediate `i64` overflow                              | `src/lib.rs`                                                       |
-| R03 | done                     | Remove `i64` conversion from `Ternary::trim()`                                                     | `src/lib.rs`                                                       |
-| R04 | done                     | Enforce `Ter40` range and define fixed-width overflow behavior                                     | `src/store.rs`                                                     |
+| R01 | done                     | ~~Repair `Digit::sub`: the current source still produces incorrect results~~                       | `src/digit.rs`                                                     |
+| R02 | done                     | ~~Repair `checked_to_dec()` for `i64::MIN`: intermediate `i64` overflow~~                          | `src/lib.rs`                                                       |
+| R03 | done                     | ~~Remove `i64` conversion from `Ternary::trim()`~~                                                 | `src/lib.rs`                                                       |
+| R04 | done                     | ~~Enforce `Ter40` range and define fixed-width overflow behavior~~                                 | `src/store.rs`                                                     |
 | R05 | **P1 — semantics**       | Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`                     | `src/tryte.rs`, `src/store.rs`                                     |
 | R06 | **P1 — architecture**    | Implement arbitrary-precision arithmetic directly on `Ternary` digits                              | `src/operations.rs`, `src/lib.rs`                                  |
 | R07 | **P1 — performance**     | Eliminate temporary `Ternary` and `String` objects in remaining fixed-width methods and formatting | `src/tryte.rs`, `src/store.rs`, `src/lib.rs`                       |
@@ -19,171 +19,40 @@
 
 ---
 
-## R01 — Fix the still-incorrect `Digit::sub` [P0]
-
-**Source:** [`src/digit.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/digit.rs#L746-L761).
-
-**Verified from source:** The current subtraction implementation still dispatches to `other.post()`
-for `self == Neg` and `other.pre()` for `self == Pos`. For example, `Pos - Zero` returns `Neg`, but
-it must return `Pos`. The `v2.1.1` changelog says this was fixed, but the implementation on the
-reviewed branch does **not** reflect that correction. Treat this as an outstanding defect,
-irrespective of the changelog.
-
-**Minimal fix:**
-
-```rust
-impl Sub<Digit> for Digit {
-    type Output = Digit;
-
-    fn sub(self, other: Digit) -> Self::Output {
-        self + (-other)
-    }
-}
-```
-
-This is subtraction in the same cyclic, modulo-3 digit algebra as the existing `Digit::add`; it is **not** 
-an unbounded integer subtraction of two trits.
-
-**Acceptance:** Test all nine pairs of `Neg`, `Zero`, and `Pos`; compare the result with the unique
-representative in `{-1, 0, +1}` modulo 3. Include `Pos - Zero == Pos`, `Neg - Zero == Neg`,
-`Zero - Pos == Neg`, and `Pos - Neg == Neg` (because `2 ≡ -1 (mod 3)`).
-
-## R02 — Fix a regression in `Ternary::checked_to_dec()` [P0]
-
-**Source:** [
-`src/lib.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/lib.rs#L315-L353).
-
-**Verified from source and arithmetic:** The implementation currently performs:
-
-```rust
-acc.checked_mul(3) ?.checked_add(digit.to_i8() as i64)
-```
-
-This is incorrect for at least `Ternary::from_dec(i64::MIN)`, even though its *final* value fits in
-`i64`. At the last step of Horner's algorithm, the previous accumulator is
-`-3_074_457_345_618_258_603`; multiplying by 3 temporarily gives `-9_223_372_036_854_775_809` (below
-`i64::MIN`) before adding the final `+1`. Therefore `checked_to_dec()` returns `None` and `to_dec()`
-panics for an otherwise valid value.
-
-**Recommended replacement:** Use a wider intermediate and check the final result:
-
-```rust
-pub fn checked_to_dec(&self) -> Option<i64> {
-    let value = self.digits.iter().try_fold(0i128, |acc, digit| {
-        acc.checked_mul(3)?.checked_add(digit.to_i8() as i128)
-    })?;
-    i64::try_from(value).ok()
-}
-```
-
-`i128` works in `no_std`. Checked `i128` arithmetic safely returns `None` for unrepresentably large
-inputs. Preserve the public `to_dec()` signature and its documented panic behavior.
-
-**Acceptance tests:**
-
-```rust
-for n in [i64::MIN, i64::MIN + 1, - 243, - 1, 0, 1, 243, i64::MAX - 1, i64::MAX] {
-    let ternary = Ternary::from_dec(n);
-    assert_eq ! (ternary.checked_to_dec(), Some(n)); assert_eq ! (ternary.to_dec(), n);
-}
-assert_eq!(Ternary::parse(&"0".repeat(150)).checked_to_dec(), Some(0));
-assert_eq!(Ternary::parse(&"+".repeat(150)).checked_to_dec(), None);
-```
-
-Add randomized tests over the full `i64` domain, plus an exhaustive small interval. **Do not assume
-the existing overflow test covers the `i64::MIN` boundary**: at the reviewed revision, it only
-checks 41 identical positive/negative digits and a long zero vector.
-
-## R03 — Make `Ternary::trim()` independent of `i64` [P0]
-
-**Source:** [
-`src/lib.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/lib.rs#L432-L451).
-
-Currently, `trim()` starts by calling `self.to_dec() == 0`. This means trimming a valid 100-trit
-nonzero value can panic, even though removing leading zeros is purely structural.
-
-The crate already defines `significant_digits() -> &[Digit]` for numeric equality and comparison.
-Reuse it:
-
-```rust
-pub fn trim(&self) -> Self {
-    let significant = self.significant_digits();
-    if significant.is_empty() {
-        Self::new(vec![Digit::Zero])
-    } else {
-        Self::new(significant.to_vec())
-    }
-}
-```
-
-**Acceptance:** Arbitrary 256/1024-trit positive and negative values trim successfully; `"000+"`
-becomes `"+"`; empty and all-zero inputs return the canonical single `Zero`; `trim()` is idempotent
-and does not change the numeric value.
-
-## R04 — Enforce the actual 40-trit invariant of `Ter40` [P0]
-
-**Source:** [
-`src/store.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/store.rs#L360-L380)
-and its arithmetic operator implementations.
-
-The associated bounds exist, but `Ter40::from_dec(i64)` still stores any `i64` unchanged.
-`Ter40::from_dec(i64::MAX)` is therefore constructible even though `i64::MAX` needs 41 balanced
-trits. `Ter40::to_ternary()` then calls `with_length(40)`, which **does not truncate** oversized
-representations, and `map_trits()` panics when this invalid object is used.
-
-**Required work:**
-
-1. Add `Ter40::checked_from_dec(value: i64) -> Option<Self>` that validates
-   `Self::MIN.0..=Self::MAX.0`.
-2. Change the existing `from_dec()` to enforce that range with an explicit panic, or adopt a
-   documented fallible constructor strategy in a breaking release.
-3. Make `from_ternary()` validate the **numeric** value, not merely the raw length; do not silently
-   accept out-of-range values.
-4. Audit `From<i64>` for `Ter40`: it must uphold the same invariant or be intentionally replaced by
-   `TryFrom<i64>` in a breaking release. Avoid implementing `TryFrom<i64>` while `From<i64>` is
-   present, because Rust already supplies a blanket `TryFrom` through `Into`.
-5. Audit `Add`, `Sub`, `Mul`, `Div`, `Neg`: they currently use primitive `i64` arithmetic and can
-   produce values outside the 40-trit interval. The current behavior may differ between debug and
-   release when `i64` itself overflows.
-
-**Acceptance:** Every publicly constructible `Ter40` value lies within its declared bounds; every
-successful arithmetic result also lies within the bounds; all invalid cases have deterministic
-behavior in debug and release. Test `MAX`, `MIN`, `MAX+1`, `MIN-1`, `MAX+MAX`, `MIN+MIN`, division
-by zero, and `MIN / -1` under the chosen overflow policy.
-
 ## R05 — Define fixed-width overflow and carry APIs [P1]
 
 **Sources:** `src/tryte.rs`, `src/store.rs`, `src/concepts.rs`.
 
-The repaired `each_zip_carry()` methods operate on a fixed number of trits for `Tryte<N>` and
-`Ter40`, but their public return type drops the final carry. This is acceptable as a *wrapping
-digit-array operation*, but it is not adequate for checked arithmetic.
 
-**Add explicit, non-ambiguous methods:**
+## R05 — Implement fixed-width wrapping arithmetic for Tryte<N> [P1]
 
-```rust
-// Illustrative API targets; choose consistent naming/signatures:
-Tryte::<N>::checked_add( self , rhs) -> Option< Self > Tryte::<N>::wrapping_add( self , rhs) -> Self Tryte::<N>::overflowing_add( self , rhs) -> ( Self, bool)
-Tryte::<N>::saturating_add( self , rhs) -> Self
+### Architectural decisions
 
-Ter40::checked_add( self , rhs) -> Option< Self > Ter40::wrapping_add( self , rhs) -> Self Ter40::overflowing_add( self , rhs) -> ( Self, bool)
-Ter40::saturating_add( self , rhs) -> Self
-```
+- `Ter40` is a bounded signed numeric type.
+- `Ter40` arithmetic is checked (completed in R04).
+- `Tryte<N>` represents a fixed-width ternary word.
+- `Tryte<N>` arithmetic must wrap modulo 3^N.
+- No separate `Ter40Word` structure is required.
+- `Tryte<40>` already represents a 40-trit word.
 
-Repeat as appropriate for subtraction, multiplication, and negation. For division, explicitly define
-division-by-zero behavior and the rounding convention. Use the type's **ternary** bounds, not the
-wider `i64` bounds. Consider `each_zip_carry_with_overflow()` or `each_zip_carry_full()` returning
-`(Self, Digit)`; the `Ter40::map_trits()` helper already calculates the outgoing carry.
+### Remaining work
 
-**Open architectural decision:** What should the `Add`, `Sub`, etc. operator overloads do by
-default: panic on overflow, wrap modulo `3^N`, or use another policy? Pick one and document it
-consistently. At present `Tryte<N>` arithmetic delegates through `Ternary`/`i64` and can panic on a
-representable 40-trit wraparound; `Ter40` uses ordinary `i64` arithmetic that can violate the
-40-trit range.
+1. Implement native wrapping addition for Tryte<N>.
+2. Implement wrapping subtraction and multiplication.
+3. Define explicit checked and overflowing operations.
+4. Expose outgoing carry where appropriate.
+5. Define division semantics separately.
+6. Resolve the behavior of Tryte<0>.
+7. Add exhaustive small-width and boundary tests.
 
-**Width-0 edge case:** Decide whether `Tryte<0>` is a supported, valid zero-width data word. The
-current constructor accepts it, and its only numeric value would be zero; document or reject it
-consistently.
+### Acceptance criteria
+
+- Fixed-width arithmetic never changes word width.
+- Addition, subtraction, and multiplication wrap modulo 3^N.
+- Overflow detection uses ternary bounds.
+- Arithmetic behavior is identical in debug and release.
+- No implicit conversion through bounded i64 arithmetic
+  is required for the core wrapping operations.
 
 ## R06 — Replace `i64`-based arithmetic in `Ternary` [P1]
 
@@ -396,8 +265,8 @@ behavior to silence warnings.
 
 ## Recommended implementation sequence
 
-1. **Correctness hotfix:** R01, R02, R03; add regression tests in the same commit(s). Explicitly
-   test `i64::MIN` and long `trim()`.
+1. ~~**Correctness hotfix:** R01, R02, R03; add regression tests in the same commit(s). Explicitly
+   test `i64::MIN` and long `trim()`.~~
 2. **Fixed-width safety:** R04, then decide R05 before changing operator overloads. Preserve or
    intentionally break compatibility with a documented release plan.
 3. **Arithmetic core:** R06. Start with add/sub and property tests; implement mul and div/rem
@@ -418,13 +287,3 @@ behavior to silence warnings.
 - Write regression tests before changing logic; run a complete feature matrix after changes.
 - Do not redo the merged `each*` changes unless a new failing test demonstrates a defect.
 - Prefer small, reviewable commits and document observable breaking changes.
-
-## Prompt to resume in a later session
-
-> Inspect the latest `Trehinos/balanced-ternary` repository and compare it against
-`balanced_ternary_remaining_work.md` (review baseline: `28614306f09289ddfaa19e6d7732ff452d97faf5`).
-> Only work on tasks that are **still outstanding** in the newest source. Begin with R01 (
-`Digit::sub`) and R02 (`checked_to_dec` on `i64::MIN`), then R03 (`trim`) unless those have been
-> fixed already. Keep `no_std + alloc`, show precise code changes and tests, and never assume a
-> changelog entry proves the source was corrected. Do not modify the repository without explicit
-> permission.

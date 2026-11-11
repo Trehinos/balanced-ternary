@@ -149,6 +149,21 @@ pub trait DigitOperate {
     /// Applies a transformation function to each digit of the balanced ternary number,
     /// along with a corresponding digit from another `DigitOperate` number, and a carry digit.
     ///
+    /// ### Carry behavior
+    ///
+    /// The callback is evaluated from the least significant
+    /// digit to the most significant digit.
+    ///
+    /// [crate::Ternary] preserves a nonzero outgoing carry by
+    /// extending the resulting representation.
+    ///
+    /// Fixed-width implementations ([crate::Tryte]<N> and [crate::Ter40])
+    /// discard the outgoing carry and preserve their width.
+    ///
+    /// The returned value therefore does not necessarily
+    /// represent an exact arithmetic result for fixed-width
+    /// types.
+    ///
     /// ### Arguments
     ///
     /// * `f` - A closure or function that takes three arguments:

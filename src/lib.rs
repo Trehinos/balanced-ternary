@@ -313,6 +313,13 @@ impl Ternary {
     /// Converts the `Ternary` object to its integer (decimal) representation.
     ///
     /// Calculates the sum of each digit's value multiplied by the appropriate power of 3.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the numeric value cannot be represented
+    /// by a signed 64-bit integer.
+    ///
+    /// Use `checked_to_dec()` for a non-panicking conversion.
     pub fn to_dec(&self) -> i64 {
         self.checked_to_dec()
             .expect("Ternary value does not fit in i64")
@@ -345,6 +352,30 @@ impl Ternary {
         Self::new(digits)
     }
 
+    /// Attempts to convert this balanced ternary value
+    /// into a signed 64-bit integer.
+    ///
+    /// Returns `Some(value)` if the complete numeric value
+    /// fits within the `i64` range, or `None` otherwise.
+    ///
+    /// Intermediate calculations use checked `i128`
+    /// arithmetic to avoid premature `i64` overflow.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::Ternary;
+    ///
+    /// assert_eq!(
+    ///     Ternary::from_dec(i64::MIN).checked_to_dec(),
+    ///     Some(i64::MIN)
+    /// );
+    ///
+    /// assert_eq!(
+    ///     Ternary::parse(&"+".repeat(100)).checked_to_dec(),
+    ///     None
+    /// );
+    /// ```
     pub fn checked_to_dec(&self) -> Option<i64> {
         let value = self.digits.iter().try_fold(0i128, |acc, digit| {
             acc.checked_mul(3)?.checked_add(digit.to_i8() as i128)

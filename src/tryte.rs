@@ -11,14 +11,20 @@ use core::fmt::{Display, Formatter};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
 use core::str::FromStr;
 
-/// The `Tryte<S>` struct represents a Copy type balanced ternary number with exactly S digits (6 by default).
-/// Each digit in a balanced ternary system can have one of three values: -1, 0, or 1.
+/// A fixed-width balanced ternary word containing exactly
+/// `SIZE` trits.
 ///
-/// A [Tryte<6>] can hold value between `-364` and `+364`.
+/// Each trit is represented by a `Digit` and can hold
+/// one of three values: -1, 0, or +1.
 ///
-/// The underlying representation of the number is an array of SIZE `Digit` values.
-/// This struct provides conversion methods to and from other formats.
+/// Unlike `Ter40`, which is a bounded numeric type,
+/// `Tryte<SIZE>` represents a fixed-width sequence of trits.
 ///
+/// Digit-wise operations preserve the word width and
+/// discard any outgoing carry.
+///
+/// The default width is 6 trits, representing values
+/// from -364 to +364.
 /// # Default SIZE
 ///
 /// `SIZE` is 6 by default (the size of a tryte in a Setun computer).
@@ -26,10 +32,6 @@ use core::str::FromStr;
 /// > **6 trits ~= 9.505 bits**
 ///
 /// > `-364` to `364`
-///
-/// # Warning
-///
-/// Because arithmetic operations are performed in with 64 bits integers, `SIZE` cannot be > 40.
 ///
 /// > **40 trits ~= 63.398 bits**
 /// >

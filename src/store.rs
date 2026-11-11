@@ -6,11 +6,12 @@ use alloc::vec::Vec;
 use core::fmt::Display;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Sub};
 
-/// A struct to store 5 ternary digits (~7.8 bits) value into one byte.
+/// A compact representation of five balanced ternary digits.
 ///
-/// `TritsChunks` helps store ternary numbers into a compact memory structure.
+/// The numeric value is stored in an `i8` and must
+/// be within the inclusive range -121..=121.
 ///
-/// From `0` to `± 121`.
+/// Five balanced trits represent 243 distinct values.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
 pub struct TritsChunk(i8);
@@ -148,19 +149,23 @@ impl TritsChunk {
         if ternary.log() > 5 {
             panic!(
                 "TritsChunk::from_ternary(): Ternary is too long: {}",
-                ternary.to_string()
+                ternary
             );
         }
         Self(ternary.to_dec() as i8)
     }
 }
 
-/// Offers a compact structure to store a ternary number.
+/// A variable-length balanced ternary representation
+/// stored as five-trit chunks.
 ///
-/// - A [Ternary] is 1 byte long per [Digit]. An 8 (16, 32, 64) digits ternary number is 8 (16, 32, 64) bytes long.
-/// - A [DataTernary] is stored into [TritsChunk]. An 8 (16, 32, 64) digits ternary number with this structure is 2 (4, 7, 13) bytes long (1 byte for 5 digits).
+/// Equality, hashing, and ordering currently operate
+/// on the stored chunk sequence, not on the normalized
+/// numeric value.
 ///
-/// Use the [Ternary] type to execute operations on numbers and [DataTernary] to store numbers.
+/// Consequently, representations with different leading
+/// zero chunks can compare as unequal even when they
+/// represent the same number.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct DataTernary {
     chunks: Vec<TritsChunk>,
@@ -357,7 +362,39 @@ impl From<DataTernary> for Ternary {
     }
 }
 
-/// A struct to store 40 ternary digits (~63.398 bits) value into one `i64`.
+/// A signed, bounded 40-trit balanced ternary integer.
+///
+/// Values are stored as an `i64`, with the representable range:
+///
+/// - MIN: -6_078_832_729_528_464_400
+/// - MAX:  6_078_832_729_528_464_400
+///
+/// Unlike `Tryte<40>`, `Ter40` uses checked numeric arithmetic.
+/// Arithmetic operators panic when their result exceeds the
+/// representable 40-trit range.
+///
+/// The `checked_*` arithmetic methods return `None` instead.
+///
+/// Construction from `i64` or `Ternary` validates the numeric value.
+/// Leading-zero padding in a `Ternary` representation is accepted.
+///
+/// Digit-wise operations provided by `DigitOperate` operate on
+/// exactly 40 trits and may discard the outgoing carry.
+///
+/// # Examples
+///
+/// ```
+/// use balanced_ternary::Ter40;
+///
+/// let a = Ter40::from_dec(42);
+/// let b = Ter40::from_dec(10);
+///
+/// assert_eq!((a + b).to_dec(), 52);
+/// assert_eq!(
+///     Ter40::MAX.checked_add(Ter40::from_dec(1)),
+///     None
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
 pub struct Ter40(i64);
@@ -414,9 +451,12 @@ impl Ter40 {
         }
     }
 
+    /// Converts this value into a balanced ternary representation
+    /// containing exactly 40 digits, including leading zeros.
     pub fn to_ternary(&self) -> Ternary {
         Ternary::from_dec(self.0).with_length(40)
     }
+
     fn pop_trit(value: &mut i64) -> Digit {
         let remainder = value.rem_euclid(3);
         *value = value.div_euclid(3);

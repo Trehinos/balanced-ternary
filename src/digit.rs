@@ -730,7 +730,7 @@ impl Add<Digit> for Digit {
     /// Adds two `Digit` values together and returns a `Digit` result.
     ///
     /// - Returns:
-    ///   - A `Ternary` instance that holds the result of the addition.
+    ///   - A `Digit` instance that holds the result of the addition.
     ///
     /// - Panics:
     ///   - This method does not panic under any circumstances.
@@ -749,7 +749,7 @@ impl Sub<Digit> for Digit {
     /// Subtracts two `Digit` values and returns a `Digit` result.
     ///
     /// - Returns:
-    ///   - A `Ternary` instance that holds the result of the subtraction.
+    ///   - A `Digit` instance that holds the result of the subtraction.
     ///
     /// - Panics:
     ///   - This method does not panic under any circumstances.
