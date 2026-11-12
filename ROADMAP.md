@@ -43,10 +43,9 @@ done
 
 ## R07 — Eliminate remaining allocations/conversions in fixed-width methods [P1]
 
-**Sources:** [
-`src/tryte.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/tryte.rs), [
-`src/store.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/store.rs), [
-`src/lib.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/lib.rs).
+**Sources:** [`src/tryte.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/tryte.rs),
+[`src/store.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/store.rs),
+[`src/lib.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/lib.rs).
 
 The `DigitOperate::each*` methods now work directly over the `Tryte<N>` array or `Ter40` scalar. *
 *Do not redo that work.** Remaining hotspots are elsewhere:
@@ -221,10 +220,10 @@ behavior to silence warnings.
 
 1. ~~**Correctness hotfix:** R01, R02, R03; add regression tests in the same commit(s). Explicitly
    test `i64::MIN` and long `trim()`.~~
-2. **Fixed-width safety:** R04, then decide R05 before changing operator overloads. Preserve or
-   intentionally break compatibility with a documented release plan.
-3. **Arithmetic core:** R06. Start with add/sub and property tests; implement mul and div/rem
-   separately.
+2. ~~**Fixed-width safety:** R04, then decide R05 before changing operator overloads. Preserve or
+   intentionally break compatibility with a documented release plan.~~
+3. ~~**Arithmetic core:** R06. Start with add/sub and property tests; implement mul and div/rem
+   separately.~~
 4. **Performance cleanup:** R07 with benchmarks rather than making speculative micro-optimizations.
 5. **Conversion semantics:** R08, with edge-case tests and clear error types.
 6. **Compact arithmetic and value semantics:** R09–R10, separately from bug fixes.
