@@ -768,7 +768,6 @@ mod tests {
     #[should_panic(expected = "Ter40 value out of range")]
     fn ter40_constructor_overflow() {
         use crate::Ter40;
-
         let _ = Ter40::from_dec(i64::MAX);
     }
 
@@ -776,7 +775,6 @@ mod tests {
     #[should_panic(expected = "Ter40 value out of range")]
     fn ter40_from_i64_overflow() {
         use crate::Ter40;
-
         let _: Ter40 = i64::MIN.into();
     }
 
@@ -784,7 +782,6 @@ mod tests {
     #[should_panic(expected = "Ter40 value out of range")]
     fn ter40_from_ternary_overflow() {
         use crate::{Ter40, Ternary};
-
         let _: Ter40 = Ternary::from_dec(i64::MAX).into();
     }
 
@@ -792,7 +789,6 @@ mod tests {
     #[should_panic(expected = "Ter40 addition overflow")]
     fn ter40_add_overflow() {
         use crate::Ter40;
-
         let _ = Ter40::MAX + Ter40::from_dec(1);
     }
 
@@ -800,7 +796,6 @@ mod tests {
     #[should_panic(expected = "Ter40 subtraction overflow")]
     fn ter40_sub_overflow() {
         use crate::Ter40;
-
         let _ = Ter40::MIN - Ter40::from_dec(1);
     }
 
@@ -808,7 +803,6 @@ mod tests {
     #[should_panic(expected = "Ter40 multiplication overflow")]
     fn ter40_mul_overflow() {
         use crate::Ter40;
-
         let _ = Ter40::MAX * Ter40::from_dec(2);
     }
 
@@ -816,7 +810,6 @@ mod tests {
     #[should_panic(expected = "Ter40 division by zero")]
     fn ter40_div_by_zero() {
         use crate::Ter40;
-
         let _ = Ter40::from_dec(1) / Ter40::ZERO;
     }
 }

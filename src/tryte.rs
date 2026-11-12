@@ -158,11 +158,9 @@ impl<const SIZE: usize> Tryte<SIZE> {
 
         for i in (0..SIZE).rev() {
             let sum = self.raw[i].to_i8() + rhs.raw[i].to_i8() + carry.to_i8();
-
             let next_carry = (sum + 1).div_euclid(3);
 
             digits[i] = Digit::from_i8(sum - next_carry * 3);
-
             carry = Digit::from_i8(next_carry);
         }
 
@@ -187,7 +185,6 @@ impl<const SIZE: usize> Tryte<SIZE> {
     /// the representable SIZE-trit range.
     pub fn checked_add(self, rhs: Self) -> Option<Self> {
         let (result, carry) = self.add_with_carry(rhs);
-
         if carry == Zero { Some(result) } else { None }
     }
 
@@ -195,12 +192,160 @@ impl<const SIZE: usize> Tryte<SIZE> {
     /// to MIN or MAX on overflow.
     pub fn saturating_add(self, rhs: Self) -> Self {
         let (result, carry) = self.add_with_carry(rhs);
-
         match carry {
             Neg => Self::MIN,
             Zero => result,
             Pos => Self::MAX,
         }
+    }
+
+    /// Subtracts two fixed-width ternary words.
+    ///
+    /// Returns the wrapped result and the outgoing
+    /// carry, which can be Neg, Zero or Pos.
+    pub fn sub_with_carry(self, rhs: Self) -> (Self, Digit) {
+        self.add_with_carry(-rhs)
+    }
+
+    /// Subtracts modulo 3^SIZE.
+    pub fn wrapping_sub(self, rhs: Self) -> Self {
+        self.sub_with_carry(rhs).0
+    }
+
+    /// Subtracts and reports signed ternary overflow.
+    pub fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
+        let (result, carry) = self.sub_with_carry(rhs);
+        (result, carry != Zero)
+    }
+
+    /// Returns None if the exact difference is
+    /// outside the signed SIZE-trit range.
+    pub fn checked_sub(self, rhs: Self) -> Option<Self> {
+        let (result, carry) = self.sub_with_carry(rhs);
+        if carry == Zero { Some(result) } else { None }
+    }
+
+    /// Subtracts, clamping to MIN or MAX on overflow.
+    pub fn saturating_sub(self, rhs: Self) -> Self {
+        let (result, carry) = self.sub_with_carry(rhs);
+        match carry {
+            Neg => Self::MIN,
+            Zero => result,
+            Pos => Self::MAX,
+        }
+    }
+
+    /// Evaluates the numeric value without allocation.
+    fn to_i128(self) -> i128 {
+        self.raw
+            .iter()
+            .fold(0i128, |acc, digit| acc * 3 + digit.to_i8() as i128)
+    }
+
+    /// Converts an i128 into a wrapped SIZE-trit word.
+    ///
+    /// Also reports whether the original value was
+    /// outside the signed SIZE-trit range.
+    fn from_i128_wrapping(value: i128) -> (Self, bool) {
+        let modulus = 3_i128.pow(SIZE as u32);
+        let max = (modulus - 1) / 2;
+
+        let overflow = value < -max || value > max;
+        let mut value = (value + max).rem_euclid(modulus) - max;
+        let mut digits = [Zero; SIZE];
+
+        for i in (0..SIZE).rev() {
+            let remainder = value.rem_euclid(3);
+            value = value.div_euclid(3);
+            digits[i] = match remainder {
+                0 => Zero,
+                1 => Pos,
+                2 => {
+                    value += 1;
+                    Neg
+                }
+                _ => unreachable!(),
+            };
+        }
+        debug_assert_eq!(value, 0);
+        (Self::new(digits), overflow)
+    }
+
+    /// Multiplies two words modulo 3^SIZE.
+    pub fn wrapping_mul(self, rhs: Self) -> Self {
+        self.overflowing_mul(rhs).0
+    }
+
+    /// Multiplies and reports signed ternary overflow.
+    pub fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
+        let product = self.to_i128() * rhs.to_i128();
+        Self::from_i128_wrapping(product)
+    }
+
+    /// Returns None if the exact product cannot
+    /// be represented using SIZE balanced trits.
+    pub fn checked_mul(self, rhs: Self) -> Option<Self> {
+        let (result, overflow) = self.overflowing_mul(rhs);
+        if overflow { None } else { Some(result) }
+    }
+
+    /// Multiplies, clamping to MIN or MAX on overflow.
+    pub fn saturating_mul(self, rhs: Self) -> Self {
+        let product = self.to_i128() * rhs.to_i128();
+        let max = (3_i128.pow(SIZE as u32) - 1) / 2;
+        if product > max {
+            Self::MAX
+        } else if product < -max {
+            Self::MIN
+        } else {
+            Self::from_i128_wrapping(product).0
+        }
+    }
+
+    /// Divides two signed ternary values.
+    ///
+    /// Division truncates toward zero.
+    /// Returns None if the divisor is zero.
+    ///
+    /// This is an integer division, not a modular division.
+    pub fn checked_div(self, rhs: Self) -> Option<Self> {
+        let divisor = rhs.to_i128();
+        if divisor == 0 {
+            return None;
+        }
+        let quotient = self.to_i128() / divisor;
+        Some(Self::from_i128_wrapping(quotient).0)
+    }
+
+    /// Performs signed integer division.
+    ///
+    /// Panics on division by zero.
+    /// A nonzero divisor cannot cause overflow
+    /// because the balanced range is symmetric.
+    ///
+    /// This is not multiplicative inversion modulo 3^SIZE.
+    pub fn wrapping_div(self, rhs: Self) -> Self {
+        self.checked_div(rhs).expect("Tryte division by zero")
+    }
+
+    /// Divides and reports overflow.
+    ///
+    /// The overflow flag is always false for
+    /// a nonzero divisor.
+    ///
+    /// Panics on division by zero.
+    pub fn overflowing_div(self, rhs: Self) -> (Self, bool) {
+        (self.wrapping_div(rhs), false)
+    }
+
+    /// Divides with saturating semantics.
+    ///
+    /// Saturation is never necessary for a nonzero
+    /// divisor, as the quotient always fits.
+    ///
+    /// Panics on division by zero.
+    pub fn saturating_div(self, rhs: Self) -> Self {
+        self.wrapping_div(rhs)
     }
 }
 
@@ -270,9 +415,10 @@ impl<const SIZE: usize> Display for Tryte<SIZE> {
 }
 
 impl<const SIZE: usize> StdNeg for Tryte<SIZE> {
-    type Output = Tryte<SIZE>;
+    type Output = Self;
+
     fn neg(self) -> Self::Output {
-        Self::from_ternary(&-&self.to_ternary())
+        Self::new(array::from_fn(|i| -self.raw[i]))
     }
 }
 
@@ -285,26 +431,26 @@ impl<const SIZE: usize> Add for Tryte<SIZE> {
 }
 
 impl<const SIZE: usize> Sub for Tryte<SIZE> {
-    type Output = Tryte<SIZE>;
+    type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self::from_ternary(&(&self.to_ternary() - &rhs.to_ternary()))
+        self.wrapping_sub(rhs)
     }
 }
 
 impl<const SIZE: usize> Mul for Tryte<SIZE> {
-    type Output = Tryte<SIZE>;
+    type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Self::from_ternary(&(&self.to_ternary() * &rhs.to_ternary()))
+        self.wrapping_mul(rhs)
     }
 }
 
 impl<const SIZE: usize> Div for Tryte<SIZE> {
-    type Output = Tryte<SIZE>;
+    type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Self::from_ternary(&(&self.to_ternary() / &rhs.to_ternary()))
+        self.wrapping_div(rhs)
     }
 }
 
@@ -432,11 +578,8 @@ mod tests {
                 for b in min..=max {
                     let lhs = Tryte::<N>::from_i64(a);
                     let rhs = Tryte::<N>::from_i64(b);
-
                     let exact = a + b;
-
                     let expected = (exact + max).rem_euclid(modulus) - max;
-
                     let carry = if exact > max {
                         Digit::Pos
                     } else if exact < min {
@@ -444,24 +587,16 @@ mod tests {
                     } else {
                         Digit::Zero
                     };
-
-                    // Wrapped arithmetic.
                     assert_eq!((lhs + rhs).to_i64(), expected);
-
                     assert_eq!(lhs.wrapping_add(rhs).to_i64(), expected);
 
-                    // Outgoing carry.
                     let (result, actual_carry) = lhs.add_with_carry(rhs);
-
                     assert_eq!(result.to_i64(), expected);
                     assert_eq!(actual_carry, carry);
 
-                    // Overflow detection.
                     let (overflowing_result, overflowed) = lhs.overflowing_add(rhs);
                     assert_eq!(overflowing_result.to_i64(), expected);
                     assert_eq!(overflowed, carry != Digit::Zero);
-
-                    // Checked arithmetic.
                     assert_eq!(
                         lhs.checked_add(rhs),
                         if carry == Digit::Zero {
@@ -470,8 +605,6 @@ mod tests {
                             None
                         }
                     );
-
-                    // Saturating arithmetic.
                     assert_eq!(lhs.saturating_add(rhs).to_i64(), exact.clamp(min, max));
                 }
             }
@@ -505,5 +638,168 @@ mod tests {
         use crate::Tryte;
         let zero = Tryte::<0>::ZERO;
         assert_eq!(zero + zero, zero);
+    }
+
+    #[test]
+    fn tryte_subtraction_exhaustive() {
+        use crate::{Digit, Tryte};
+
+        fn check<const N: usize>() {
+            let modulus = 3_i64.pow(N as u32);
+            let max = (modulus - 1) / 2;
+
+            for a in -max..=max {
+                for b in -max..=max {
+                    let lhs = Tryte::<N>::from_i64(a);
+                    let rhs = Tryte::<N>::from_i64(b);
+
+                    let exact = a - b;
+                    let wrapped = (exact + max).rem_euclid(modulus) - max;
+                    let expected_carry = Digit::from_i8(((exact - wrapped) / modulus) as i8);
+                    let (result, carry) = lhs.sub_with_carry(rhs);
+                    assert_eq!(result.to_i64(), wrapped);
+                    assert_eq!(carry, expected_carry);
+                    assert_eq!((lhs - rhs).to_i64(), wrapped);
+                    assert_eq!(lhs.wrapping_sub(rhs), result);
+
+                    let (overflowing_result, overflowed) = lhs.overflowing_sub(rhs);
+                    assert_eq!(overflowing_result.to_digit_slice(), result.to_digit_slice());
+                    assert_eq!(overflowed, expected_carry != Digit::Zero);
+                    assert_eq!(
+                        lhs.checked_sub(rhs),
+                        if expected_carry == Digit::Zero {
+                            Some(result)
+                        } else {
+                            None
+                        }
+                    );
+                    assert_eq!(lhs.saturating_sub(rhs).to_i64(), exact.clamp(-max, max));
+                }
+            }
+        }
+
+        check::<1>();
+        check::<2>();
+        check::<3>();
+    }
+
+    #[test]
+    fn tryte_multiplication_exhaustive() {
+        use crate::Tryte;
+
+        fn check<const N: usize>() {
+            let modulus = 3_i64.pow(N as u32);
+            let max = (modulus - 1) / 2;
+
+            for a in -max..=max {
+                for b in -max..=max {
+                    let lhs = Tryte::<N>::from_i64(a);
+                    let rhs = Tryte::<N>::from_i64(b);
+                    let exact = a * b;
+                    let wrapped = (exact + max).rem_euclid(modulus) - max;
+                    let overflow = exact < -max || exact > max;
+                    assert_eq!((lhs * rhs).to_i64(), wrapped);
+                    assert_eq!(lhs.wrapping_mul(rhs).to_i64(), wrapped);
+
+                    let (result, actual_overflow) = lhs.overflowing_mul(rhs);
+                    assert_eq!(result.to_i64(), wrapped);
+                    assert_eq!(actual_overflow, overflow);
+                    assert_eq!(
+                        lhs.checked_mul(rhs),
+                        if overflow { None } else { Some(result) }
+                    );
+                    assert_eq!(lhs.saturating_mul(rhs).to_i64(), exact.clamp(-max, max));
+                }
+            }
+        }
+
+        check::<1>();
+        check::<2>();
+        check::<3>();
+    }
+
+    #[test]
+    fn tryte_division_exhaustive() {
+        use crate::Tryte;
+
+        fn check<const N: usize>() {
+            let modulus = 3_i64.pow(N as u32);
+            let max = (modulus - 1) / 2;
+
+            for a in -max..=max {
+                let lhs = Tryte::<N>::from_i64(a);
+
+                assert_eq!(lhs.checked_div(Tryte::<N>::ZERO), None);
+
+                for b in -max..=max {
+                    if b == 0 {
+                        continue;
+                    }
+
+                    let rhs = Tryte::<N>::from_i64(b);
+                    let expected = a / b;
+
+                    assert_eq!((lhs / rhs).to_i64(), expected);
+                    assert_eq!(lhs.checked_div(rhs).unwrap().to_i64(), expected);
+                    assert_eq!(lhs.wrapping_div(rhs).to_i64(), expected);
+                    let (overflowing_result, overflowed) = lhs.overflowing_div(rhs);
+                    assert_eq!(overflowing_result.to_i64(), expected);
+                    assert!(!overflowed);
+                    assert_eq!(lhs.saturating_div(rhs).to_i64(), expected);
+                }
+            }
+        }
+
+        check::<1>();
+        check::<2>();
+        check::<3>();
+    }
+
+    #[test]
+    fn tryte_40_arithmetic_boundaries() {
+        use crate::Tryte;
+
+        type Word = Tryte<40>;
+
+        let one = Word::from_i64(1);
+        let two = Word::from_i64(2);
+        let neg_one = Word::from_i64(-1);
+
+        // Subtraction wraps at the 40-trit boundary.
+        assert_eq!(Word::MIN - one, Word::MAX);
+        assert_eq!(Word::MAX - neg_one, Word::MIN);
+        assert_eq!(Word::MIN.checked_sub(one), None);
+        assert_eq!(Word::MAX.checked_sub(neg_one), None);
+
+        // Multiplication wraps modulo 3^40.
+        assert_eq!(Word::MAX * two, neg_one);
+        assert_eq!(Word::MIN * two, one);
+        assert_eq!(Word::MAX.checked_mul(two), None);
+        assert_eq!(Word::MIN.checked_mul(two), None);
+
+        // Division uses signed integer semantics.
+        assert_eq!(Word::MIN / neg_one, Word::MAX);
+        assert_eq!(Word::MAX / neg_one, Word::MIN);
+        assert_eq!(Word::MIN.checked_div(Word::ZERO), None);
+
+        // Negation is always representable.
+        assert_eq!(-Word::MIN, Word::MAX);
+        assert_eq!(-Word::MAX, Word::MIN);
+    }
+
+    #[test]
+    fn tryte_zero_width_operations() {
+        use crate::Tryte;
+        let zero = Tryte::<0>::ZERO;
+        assert_eq!(zero - zero, zero);
+        assert_eq!(zero * zero, zero);
+        assert_eq!(zero.checked_div(zero), None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Tryte division by zero")]
+    fn tryte_division_by_zero_panics() {
+        use crate::Tryte;
+        let _ = Tryte::<6>::MAX / Tryte::<6>::ZERO;
     }
 }
