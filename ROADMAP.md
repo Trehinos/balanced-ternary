@@ -9,7 +9,7 @@
 | R03 | done                     | ~~Remove `i64` conversion from `Ternary::trim()`~~                                                 | `src/lib.rs`                                                       |
 | R04 | done                     | ~~Enforce `Ter40` range and define fixed-width overflow behavior~~                                 | `src/store.rs`                                                     |
 | R05 | done                     | ~~Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`~~                 | `src/tryte.rs`, `src/store.rs`                                     |
-| R06 | **P1 — architecture**    | Implement arbitrary-precision arithmetic directly on `Ternary` digits                              | `src/operations.rs`, `src/lib.rs`                                  |
+| R06 | done                     | ~~Implement arbitrary-precision arithmetic directly on `Ternary` digits~~                          | `src/operations.rs`, `src/lib.rs`                                  |
 | R07 | **P1 — performance**     | Eliminate temporary `Ternary` and `String` objects in remaining fixed-width methods and formatting | `src/tryte.rs`, `src/store.rs`, `src/lib.rs`                       |
 | R08 | **P1 — conversion API**  | Normalize conversion and parsing error behavior, including padding/empty input                     | `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs` |
 | R09 | **P2 — architecture**    | Introduce arithmetic directly on `TritsChunk` / `DataTernary` in balanced base 243                 | `src/store.rs`                                                     |
@@ -39,34 +39,7 @@
 
 ## R06 — Replace `i64`-based arithmetic in `Ternary` [P1]
 
-**Source:** [
-`src/operations.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/operations.rs).
-
-At the reviewed commit, `Add`, `Sub`, `Mul`, and `Div` for `&Ternary` still call `to_dec()`, do
-arithmetic on `i64`, and convert back. This artificially restricts a `Vec<Digit>`-backed type to
-64-bit numerical operations and triggers avoidable allocations.
-
-**Recommended sequence:**
-
-1. **Addition:** Implement native right-to-left balanced-trit addition with a carry. The existing
-   `each_zip_carry()` mechanism can help. For a sum `s = a + b + carry`, use
-   `new_carry = (s + 1).div_euclid(3)` and `digit = s - 3 * new_carry` to obtain both results in
-   `{-1,0,1}`. Normalize the final result only if numeric arithmetic is intended to produce
-   canonical representations.
-2. **Subtraction:** Reuse addition and digitwise negation, paying attention to `Digit` subtraction
-   semantics versus multi-trit subtraction.
-3. **Multiplication:** Initially use schoolbook digit multiplication and carry normalization (
-   `O(n*m)`), then benchmark before considering more advanced algorithms.
-4. **Division/remainder:** Design quotient/remainder semantics (truncate toward zero, as Rust signed
-   integers do, is the least surprising choice); implement long division without converting the full
-   value to `i64`.
-5. **Other traits:** Add `Rem`, `AddAssign`, `SubAssign`, and borrowed/owned operator combinations
-   only after the core arithmetic is correct and tested.
-
-**Acceptance:** Arithmetic operates on 100+ trits without `i64` conversion; signs and carries are
-correct; `a+b-b == a`, `a*0 == 0`, `a*1 == a`, and `a == (a/b)*b + (a%b)` for nonzero `b` under the
-selected quotient/remainder convention. Cross-check small values against `i128` where representable
-and independently generate wide test vectors.
+done
 
 ## R07 — Eliminate remaining allocations/conversions in fixed-width methods [P1]
 

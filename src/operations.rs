@@ -22,8 +22,11 @@
 //! - `Neg` and `Not` for `&Ternary`: Negates the `Ternary` by negating each digit in its balanced ternary representation.
 //! - `Add<&Ternary>` for `&Ternary`: Performs arbitrary-precision balanced ternary addition directly on digits.
 //! - `Sub<&Ternary>` for `&Ternary`: Performs arbitrary-precision balanced ternary subtraction directly on digits.
-//! - `Mul<&Ternary>` for `&Ternary`: Multiplies two `Ternary` values and returns a new `Ternary`. Panics on overflow.
-//! - `Div<&Ternary>` for `&Ternary`: Divides one `Ternary` by another and returns a new `Ternary`. Panics on overflow or division by zero.
+//! - `Mul<&Ternary>` for `&Ternary`: Performs arbitrary-precision multiplication directly on balanced ternary digits.
+//! - `Div<&Ternary>` for `&Ternary`: Performs arbitrary-precision signed integer division, truncating toward zero.
+//!   Panics on division by zero.
+//! - `Rem<&Ternary>` for `&Ternary`: Computes the remainder of the signed integer division. The remainder has the sign of the dividend.
+//! - `Ternary::div_rem()` computes quotient and remainder together, without converting the operands to machine integers.
 //! - `BitAnd<&Ternary>` for `&Ternary`: Computes the bitwise AND operation on two `Ternary` operands.
 //! - `BitOr<&Ternary>` for `&Ternary`: Computes the bitwise OR operation on two `Ternary` operands.
 //! - `BitXor<&Ternary>` for `&Ternary`: Computes the bitwise XOR operation on two `Ternary` operands.
@@ -32,7 +35,8 @@ use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
 use alloc::vec;
 use alloc::vec::Vec;
-use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Shl, Shr, Sub};
+use core::cmp::Ordering;
+use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Rem, Shl, Shr, Sub};
 
 impl Ternary {
     fn add_sub_digits(lhs: &[Digit], rhs: &[Digit], subtract: bool) -> Ternary {
@@ -67,6 +71,146 @@ impl Ternary {
         result.reverse();
         Ternary::new(result)
     }
+    /// Removes most-significant zeros from a little-endian
+    /// unsigned base-3 representation.
+    fn trim_base3(digits: &mut Vec<u8>) {
+        while digits.len() > 1 && digits.last() == Some(&0) {
+            digits.pop();
+        }
+        if digits.is_empty() {
+            digits.push(0);
+        }
+    }
+
+    /// Converts a balanced ternary number into its absolute
+    /// magnitude, stored as little-endian base-3 digits.
+    fn magnitude_base3(value: &Ternary) -> Vec<u8> {
+        let digits = value.significant_digits();
+        let negative = digits.first() == Some(&Digit::Neg);
+        let mut result = Vec::with_capacity(digits.len().max(1));
+        let mut carry = 0i8;
+
+        for digit in digits.iter().rev() {
+            let value = if negative {
+                -digit.to_i8()
+            } else {
+                digit.to_i8()
+            } + carry;
+            result.push(value.rem_euclid(3) as u8);
+            carry = value.div_euclid(3);
+        }
+        debug_assert_eq!(carry, 0);
+        Self::trim_base3(&mut result);
+        result
+    }
+
+    /// Compares two normalized, little-endian base-3 numbers.
+    fn compare_base3(lhs: &[u8], rhs: &[u8]) -> Ordering {
+        lhs.len()
+            .cmp(&rhs.len())
+            .then_with(|| lhs.iter().rev().cmp(rhs.iter().rev()))
+    }
+
+    /// Subtracts rhs from lhs in place.
+    ///
+    /// Preconditions:
+    /// - lhs >= rhs
+    /// - Both operands are normalized base-3 magnitudes.
+    fn subtract_base3(lhs: &mut Vec<u8>, rhs: &[u8]) {
+        debug_assert!(Self::compare_base3(lhs, rhs) != Ordering::Less);
+
+        let mut borrow = 0i8;
+        for (index, digit) in lhs.iter_mut().enumerate() {
+            let other = rhs.get(index).copied().unwrap_or(0) as i8;
+            let mut difference = *digit as i8 - other - borrow;
+            if difference < 0 {
+                difference += 3;
+                borrow = 1;
+            } else {
+                borrow = 0;
+            }
+            *digit = difference as u8;
+        }
+        debug_assert_eq!(borrow, 0);
+        Self::trim_base3(lhs);
+    }
+
+    /// Performs unsigned long division in base 3.
+    ///
+    /// Both inputs use little-endian digits.
+    /// The divisor must be nonzero.
+    ///
+    /// Returns (quotient, remainder).
+    fn div_rem_base3(dividend: &[u8], divisor: &[u8]) -> (Vec<u8>, Vec<u8>) {
+        let mut quotient = Vec::with_capacity(dividend.len());
+        let mut remainder = vec![0u8];
+        for &digit in dividend.iter().rev() {
+            remainder.insert(0, digit);
+            Self::trim_base3(&mut remainder);
+
+            let mut quotient_digit = 0u8;
+            while Self::compare_base3(&remainder, divisor) != Ordering::Less {
+                Self::subtract_base3(&mut remainder, divisor);
+                quotient_digit += 1;
+            }
+            debug_assert!(quotient_digit <= 2);
+            quotient.push(quotient_digit);
+        }
+        quotient.reverse();
+        Self::trim_base3(&mut quotient);
+        (quotient, remainder)
+    }
+
+    /// Converts an unsigned base-3 magnitude into a
+    /// balanced ternary number with the requested sign.
+    fn ternary_from_base3(magnitude: &[u8], negative: bool) -> Ternary {
+        let mut digits = Vec::with_capacity(magnitude.len() + 1);
+        let mut carry = 0u8;
+
+        for &digit in magnitude {
+            let value = digit + carry;
+            if value <= 1 {
+                digits.push(Digit::from_i8(value as i8));
+                carry = 0;
+            } else {
+                digits.push(Digit::from_i8(value as i8 - 3));
+                carry = 1;
+            }
+        }
+        if carry != 0 {
+            digits.push(Digit::Pos);
+        }
+        while digits.len() > 1 && digits.last() == Some(&Digit::Zero) {
+            digits.pop();
+        }
+        if digits.is_empty() {
+            digits.push(Digit::Zero);
+        }
+        if negative {
+            for digit in &mut digits {
+                *digit = -*digit;
+            }
+        }
+
+        digits.reverse();
+        Ternary::new(digits)
+    }
+    pub fn div_rem(&self, rhs: &Self) -> (Self, Self) {
+        assert!(
+            !rhs.significant_digits().is_empty(),
+            "Ternary division by zero"
+        );
+        let lhs_negative = self.significant_digits().first() == Some(&Digit::Neg);
+        let rhs_negative = rhs.significant_digits().first() == Some(&Digit::Neg);
+        let dividend = Self::magnitude_base3(self);
+        let divisor = Self::magnitude_base3(rhs);
+        let (quotient, remainder) = Self::div_rem_base3(&dividend, &divisor);
+
+        (
+            Self::ternary_from_base3(&quotient, lhs_negative != rhs_negative),
+            Self::ternary_from_base3(&remainder, lhs_negative),
+        )
+    }
 }
 
 impl Neg for &Ternary {
@@ -86,7 +230,6 @@ impl Neg for &Ternary {
 
 impl Add<&Ternary> for &Ternary {
     type Output = Ternary;
-
     fn add(self, rhs: &Ternary) -> Self::Output {
         Ternary::add_sub_digits(&self.digits, &rhs.digits, false)
     }
@@ -94,7 +237,6 @@ impl Add<&Ternary> for &Ternary {
 
 impl Add<Digit> for &Ternary {
     type Output = Ternary;
-
     fn add(self, rhs: Digit) -> Self::Output {
         Ternary::add_sub_digits(&self.digits, &[rhs], false)
     }
@@ -102,7 +244,6 @@ impl Add<Digit> for &Ternary {
 
 impl Sub<&Ternary> for &Ternary {
     type Output = Ternary;
-
     fn sub(self, rhs: &Ternary) -> Self::Output {
         Ternary::add_sub_digits(&self.digits, &rhs.digits, true)
     }
@@ -119,23 +260,50 @@ impl Mul<&Ternary> for &Ternary {
     type Output = Ternary;
 
     fn mul(self, rhs: &Ternary) -> Self::Output {
-        Ternary::from_dec(
-            self.to_dec()
-                .checked_mul(rhs.to_dec())
-                .expect("Overflow in multiplication."),
-        )
+        let lhs = self.significant_digits();
+        let rhs = rhs.significant_digits();
+        if lhs.is_empty() || rhs.is_empty() {
+            return Ternary::new(vec![Digit::Zero]);
+        }
+
+        let mut result = vec![Digit::Zero; lhs.len() + rhs.len() + 1];
+        for (j, b) in rhs.iter().rev().enumerate() {
+            let mut carry = 0i8;
+            for (i, a) in lhs.iter().rev().enumerate() {
+                let index = i + j;
+                let sum = result[index].to_i8() + a.to_i8() * b.to_i8() + carry;
+                carry = (sum + 1).div_euclid(3);
+                result[index] = Digit::from_i8(sum - 3 * carry);
+            }
+
+            let mut index = lhs.len() + j;
+            while carry != 0 {
+                let sum = result[index].to_i8() + carry;
+                carry = (sum + 1).div_euclid(3);
+                result[index] = Digit::from_i8(sum - 3 * carry);
+                index += 1;
+            }
+        }
+        while result.len() > 1 && result.last() == Some(&Digit::Zero) {
+            result.pop();
+        }
+
+        result.reverse();
+        Ternary::new(result)
     }
 }
 
 impl Div<&Ternary> for &Ternary {
     type Output = Ternary;
-
     fn div(self, rhs: &Ternary) -> Self::Output {
-        Ternary::from_dec(
-            self.to_dec()
-                .checked_div(rhs.to_dec())
-                .expect("Overflow in division or division by zero."),
-        )
+        self.div_rem(rhs).0
+    }
+}
+
+impl Rem<&Ternary> for &Ternary {
+    type Output = Ternary;
+    fn rem(self, rhs: &Ternary) -> Self::Output {
+        self.div_rem(rhs).1
     }
 }
 
@@ -339,4 +507,115 @@ mod tests {
         assert_eq!((&empty + &positive).to_string(), "+");
     }
 
+    #[test]
+    fn test_native_multiplication_exhaustive() {
+        use crate::Ternary;
+
+        for a in -100i64..=100 {
+            for b in -100i64..=100 {
+                let lhs = Ternary::from_dec(a);
+                let rhs = Ternary::from_dec(b);
+                let result = &lhs * &rhs;
+                assert_eq!(result.to_dec(), a * b);
+                assert_eq!(result, result.trim());
+                assert_eq!(&lhs * &rhs, &rhs * &lhs);
+            }
+        }
+    }
+
+    #[test]
+    fn test_native_division_exhaustive() {
+        use crate::Ternary;
+
+        for a in -100i64..=100 {
+            for b in -100i64..=100 {
+                if b == 0 {
+                    continue;
+                }
+
+                let lhs = Ternary::from_dec(a);
+                let rhs = Ternary::from_dec(b);
+                let (quotient, remainder) = lhs.div_rem(&rhs);
+
+                assert_eq!(quotient.to_dec(), a / b);
+                assert_eq!(remainder.to_dec(), a % b);
+                assert_eq!(&lhs / &rhs, quotient);
+                assert_eq!(&lhs % &rhs, remainder);
+                assert_eq!(&(&quotient * &rhs) + &remainder, lhs);
+                assert!(remainder.to_dec().abs() < b.abs());
+                if remainder.to_dec() != 0 {
+                    assert_eq!(remainder.to_dec().signum(), a.signum());
+                }
+                assert_eq!(quotient, quotient.trim());
+                assert_eq!(remainder, remainder.trim());
+            }
+        }
+    }
+
+    #[test]
+    fn test_native_arithmetic_large_values() {
+        use crate::Ternary;
+
+        let a = Ternary::parse(&"+".repeat(512));
+        let b = Ternary::parse(&"+".repeat(128));
+        let product = &a * &b;
+
+        assert_eq!(product.checked_to_dec(), None);
+        assert_eq!(&product / &b, a);
+        assert_eq!(&product % &b, Ternary::from_dec(0));
+
+        let (quotient, remainder) = a.div_rem(&b);
+        assert_eq!(&(&quotient * &b) + &remainder, a);
+        assert!(remainder < b);
+        assert_eq!(quotient.checked_to_dec(), None);
+
+        let negative = -&a;
+        let (neg_quotient, neg_remainder) = negative.div_rem(&b);
+        assert_eq!(neg_quotient, -&quotient);
+        assert_eq!(neg_remainder, -&remainder);
+    }
+
+    #[test]
+    fn test_native_arithmetic_i64_boundaries() {
+        use crate::Ternary;
+
+        let min = Ternary::from_dec(i64::MIN);
+        let max = Ternary::from_dec(i64::MAX);
+        let negative_one = Ternary::from_dec(-1);
+        let quotient = &min / &negative_one;
+        assert_eq!(quotient, -&min);
+        assert_eq!(quotient.checked_to_dec(), None);
+
+        let product = &max * &max;
+        assert_eq!(product.checked_to_dec(), None);
+        assert_eq!(&product / &max, max);
+    }
+
+    #[test]
+    #[should_panic(expected = "Ternary division by zero")]
+    fn test_native_division_by_zero() {
+        use crate::Ternary;
+
+        let a = Ternary::from_dec(42);
+        let zero = Ternary::parse("000");
+        let _ = &a / &zero;
+    }
+
+    #[test]
+    fn test_native_mul_div_noncanonical() {
+        use crate::Ternary;
+
+        let a = Ternary::parse("000+--");
+        let b = Ternary::parse("000+");
+        assert_eq!((&a * &b).to_string(), "+--");
+
+        let (quotient, remainder) = a.div_rem(&b);
+        assert_eq!(quotient.to_string(), "+--");
+        assert_eq!(remainder.to_string(), "0");
+
+        let empty = Ternary::parse("");
+        assert_eq!((&empty * &a).to_string(), "0");
+        assert_eq!((&empty / &b).to_string(), "0");
+        assert_eq!((&empty % &b).to_string(), "0");
+    }
 }

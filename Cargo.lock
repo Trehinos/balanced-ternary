@@ -5,4 +5,4 @@ version = 4
 
 [[package]]
 name = "balanced-ternary"
-version = "2.1.2-dev"
+version = "3.0.0-dev"

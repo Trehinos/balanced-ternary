@@ -1,6 +1,5 @@
 //! A [balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary) data structure.
 //!
-//! A `Ternary` object in this module represents a number in the balanced ternary numeral system.
 //! Balanced ternary is a non-standard positional numeral system that uses three digits: {-1, 0, +1}
 //! represented here as `Neg` for -1, `Zero` for 0, and `Pos` for +1. It is useful in some domains
 //! of computer science and mathematics due to its arithmetic properties and representation
@@ -36,8 +35,10 @@
 //!
 //! ### `ternary-string`
 //!
-//! Add the structure [Ternary] which is a vector of [Digit]s and a lot of utilities
-//! to manipulate digits into the ternary number. Implements [DigitOperate].
+//! `Ternary` represents arbitrary-precision signed integers
+//! using balanced ternary digits. Arithmetic is performed
+//! directly on digit sequences, while conversions to native
+//! integer types remain limited by their respective ranges.
 //!
 //! ### `tryte`
 //!
@@ -234,9 +235,64 @@ pub fn dter(from: &str) -> DataTernary {
     DataTernary::from_ternary(ter(from))
 }
 
-/// Represents a balanced ternary number using a sequence of `Digit`s.
+/// An arbitrary-precision balanced ternary integer.
 ///
-/// Provides functions for creating, parsing, converting, and manipulating balanced ternary numbers.
+/// Represents a signed integer as a variable-length sequence
+/// of balanced ternary digits (`Neg`, `Zero`, and `Pos`).
+///
+/// Unlike `Tryte<N>` and `Ter40`, this type has no fixed
+/// numeric range.
+///
+/// # Arithmetic
+///
+/// Addition, subtraction, multiplication, division, and the
+/// remainder are implemented directly on digit sequences,
+/// without converting operands to machine integers.
+///
+/// - `+`, `-`, `*`: arbitrary-precision arithmetic.
+/// - `/`: signed integer division, truncating toward zero.
+/// - `%`: remainder with the sign of the dividend.
+/// - `div_rem()`: computes quotient and remainder together.
+///
+/// Arithmetic results are normalized by removing leading
+/// zeros. Zero is represented by a single `Zero` digit.
+///
+/// # Representation
+///
+/// Leading zeros are permitted in stored representations.
+/// Equality, hashing, and ordering use the numeric value,
+/// independently of leading-zero padding.
+///
+/// The original digit sequence can be accessed through
+/// `to_digit_slice()`.
+///
+/// # Conversions
+///
+/// Although arithmetic supports arbitrary precision,
+/// `to_dec()` returns an `i64` and panics if the value
+/// cannot be represented.
+///
+/// Use `checked_to_dec()` for a non-panicking conversion.
+///
+/// Conversions to and from unbalanced ternary currently
+/// rely on `i64` and are therefore range-limited.
+///
+/// # Examples
+///
+/// ```
+/// use balanced_ternary::Ternary;
+///
+/// let a = Ternary::parse(&"+".repeat(100));
+/// let b = Ternary::from_dec(3);
+///
+/// let product = &a * &b;
+///
+/// assert_eq!(&product / &b, a);
+/// assert_eq!(&product % &b, Ternary::from_dec(0));
+///
+/// // Arithmetic is not limited to i64.
+/// assert_eq!(product.checked_to_dec(), None);
+/// ```
 #[derive(Debug, Clone)]
 #[cfg(feature = "ternary-string")]
 pub struct Ternary {
