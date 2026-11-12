@@ -1,6 +1,5 @@
 use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
-use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::fmt::Display;
@@ -533,6 +532,17 @@ impl Ter40 {
 
         Self::checked_from_i128(self.0 as i128 / rhs.0 as i128)
     }
+
+    /// Applies a digit-wise operation to exactly 40 trits.
+    ///
+    /// Returns the resulting value and the outgoing carry.
+    pub fn each_zip_carry_full(
+        &self,
+        f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit),
+        other: Self,
+    ) -> (Self, Digit) {
+        self.map_trits(other, f)
+    }
 }
 
 impl DigitOperate for Ter40 {
@@ -570,7 +580,7 @@ impl DigitOperate for Ter40 {
     where
         Self: Sized,
     {
-        self.map_trits(other, f).0
+        self.each_zip_carry_full(f, other).0
     }
 }
 

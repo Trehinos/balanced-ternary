@@ -153,18 +153,17 @@ impl<const SIZE: usize> Tryte<SIZE> {
     /// The carry is Neg, Zero or Pos.
     /// The result always contains exactly SIZE trits.
     pub fn add_with_carry(self, rhs: Self) -> (Self, Digit) {
-        let mut digits = [Zero; SIZE];
-        let mut carry = Zero;
-
-        for i in (0..SIZE).rev() {
-            let sum = self.raw[i].to_i8() + rhs.raw[i].to_i8() + carry.to_i8();
-            let next_carry = (sum + 1).div_euclid(3);
-
-            digits[i] = Digit::from_i8(sum - next_carry * 3);
-            carry = Digit::from_i8(next_carry);
-        }
-
-        (Self::new(digits), carry)
+        self.each_zip_carry_full(
+            |a, b, carry| {
+                let sum = a.to_i8() + b.to_i8() + carry.to_i8();
+                let next_carry = (sum + 1).div_euclid(3);
+                (
+                    Digit::from_i8(next_carry),
+                    Digit::from_i8(sum - next_carry * 3),
+                )
+            },
+            rhs,
+        )
     }
 
     /// Adds two words modulo 3^SIZE.
@@ -347,6 +346,71 @@ impl<const SIZE: usize> Tryte<SIZE> {
     pub fn saturating_div(self, rhs: Self) -> Self {
         self.wrapping_div(rhs)
     }
+
+    /// Returns the multiplicative inverse modulo 3^SIZE.
+    ///
+    /// An inverse exists only if the value is not
+    /// divisible by 3.
+    ///
+    /// Returns None for SIZE == 0 or a non-invertible value.
+    pub fn checked_modular_inverse(self) -> Option<Self> {
+        if SIZE == 0 {
+            return None;
+        }
+
+        let modulus = 3_i128.pow(SIZE as u32);
+        let value = self.to_i128().rem_euclid(modulus);
+        if value % 3 == 0 {
+            return None;
+        }
+
+        let (mut old_r, mut r) = (modulus, value);
+        let (mut old_t, mut t) = (0_i128, 1_i128);
+        while r != 0 {
+            let quotient = old_r / r;
+            (old_r, r) = (r, old_r - quotient * r);
+            (old_t, t) = (t, old_t - quotient * t);
+        }
+        debug_assert_eq!(old_r, 1);
+
+        let inverse = old_t.rem_euclid(modulus);
+        Some(Self::from_i128_wrapping(inverse).0)
+    }
+
+    /// Computes self / rhs modulo 3^SIZE.
+    ///
+    /// Division is defined as multiplication by the
+    /// modular inverse of rhs.
+    ///
+    /// Returns None when rhs is not invertible.
+    pub fn checked_modular_div(self, rhs: Self) -> Option<Self> {
+        let inverse = rhs.checked_modular_inverse()?;
+        Some(self.wrapping_mul(inverse))
+    }
+
+    /// Applies a digit-wise operation with carry.
+    ///
+    /// Returns both the fixed-width result and
+    /// the outgoing carry from the most significant trit.
+    ///
+    /// The callback returns (next_carry, result_digit).
+    pub fn each_zip_carry_full(
+        &self,
+        f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit),
+        other: Self,
+    ) -> (Self, Digit) {
+        let mut digits = [Zero; SIZE];
+        let mut carry = Zero;
+
+        for i in (0..SIZE).rev() {
+            let (next_carry, digit) = f(self.raw[i], other.raw[i], carry);
+
+            digits[i] = digit;
+            carry = next_carry;
+        }
+
+        (Self::new(digits), carry)
+    }
 }
 
 impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
@@ -392,15 +456,7 @@ impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
         f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit),
         other: Self,
     ) -> Self {
-        let mut result = [Zero; SIZE];
-        let mut carry = Zero;
-        for i in (0..SIZE).rev() {
-            let (next_carry, digit) = f(self.raw[i], other.raw[i], carry);
-
-            result[i] = digit;
-            carry = next_carry;
-        }
-        Self::new(result)
+        self.each_zip_carry_full(f, other).0
     }
 }
 
@@ -802,4 +858,59 @@ mod tests {
         use crate::Tryte;
         let _ = Tryte::<6>::MAX / Tryte::<6>::ZERO;
     }
+
+    #[test]
+    fn tryte_modular_division_exhaustive() {
+        use crate::Tryte;
+
+        fn check<const N: usize>() {
+            let modulus = 3_i64.pow(N as u32);
+            let max = (modulus - 1) / 2;
+            let one = Tryte::<N>::from_i64(1);
+
+            for b in -max..=max {
+                let divisor = Tryte::<N>::from_i64(b);
+                let inverse = divisor.checked_modular_inverse();
+
+                // A divisor is invertible iff it is not divisible by 3.
+                let invertible = b.rem_euclid(3) != 0;
+                assert_eq!(inverse.is_some(), invertible);
+
+                if let Some(inverse) = inverse {
+                    assert_eq!(divisor * inverse, one);
+                    for a in -max..=max {
+                        let numerator = Tryte::<N>::from_i64(a);
+                        let quotient = numerator
+                            .checked_modular_div(divisor)
+                            .expect("Divisor must be invertible");
+
+                        // (a / b) * b == a (mod 3^N).
+                        assert_eq!(quotient * divisor, numerator);
+                        assert_eq!(quotient, numerator.wrapping_mul(inverse));
+                    }
+                } else {
+                    assert_eq!(one.checked_modular_div(divisor), None);
+                }
+            }
+        }
+
+        check::<1>();
+        check::<2>();
+        check::<3>();
+        check::<4>();
+    }
+
+    #[test]
+    fn tryte_zero_width_modular_division() {
+        use crate::Tryte;
+        let zero = Tryte::<0>::ZERO;
+
+        assert_eq!(zero.checked_modular_inverse(), None);
+        assert_eq!(zero.checked_modular_div(zero), None);
+        assert_eq!(zero.checked_div(zero), None);
+        assert_eq!(zero + zero, zero);
+        assert_eq!(zero - zero, zero);
+        assert_eq!(zero * zero, zero);
+    }
+
 }
