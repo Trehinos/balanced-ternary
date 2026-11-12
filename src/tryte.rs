@@ -14,29 +14,74 @@ use core::str::FromStr;
 /// A fixed-width balanced ternary word containing exactly
 /// `SIZE` trits.
 ///
-/// Each trit is represented by a `Digit` and can hold
-/// one of three values: -1, 0, or +1.
+/// Each trit is represented by a `Digit` with one of three
+/// possible values: -1, 0, or +1.
 ///
-/// Unlike `Ter40`, which is a bounded numeric type,
-/// `Tryte<SIZE>` represents a fixed-width sequence of trits.
+/// Unlike `Ter40`, which is a bounded signed integer,
+/// `Tryte<SIZE>` represents a fixed-width ternary word.
 ///
-/// Digit-wise operations preserve the word width and
-/// discard any outgoing carry.
+/// # Arithmetic
 ///
-/// The default width is 6 trits, representing values
-/// from -364 to +364.
-/// # Default SIZE
+/// - Addition, subtraction, and multiplication wrap modulo 3^SIZE.
+/// - Division (`/`) performs signed integer division,
+///   truncating toward zero.
+/// - `checked_*` methods return `None` on overflow or
+///   division by zero.
+/// - `overflowing_*` methods return the wrapped result
+///   and an overflow flag.
+/// - `saturating_*` methods clamp arithmetic results
+///   to the representable range.
+/// - `checked_modular_inverse()` and
+///   `checked_modular_div()` provide modular arithmetic.
 ///
-/// `SIZE` is 6 by default (the size of a tryte in a Setun computer).
+/// Division is not modular by default. Modular division
+/// requires an invertible divisor.
 ///
-/// > **6 trits ~= 9.505 bits**
+/// # Width
 ///
-/// > `-364` to `364`
+/// The default width is 6 trits, as in the Setun computer.
 ///
-/// > **40 trits ~= 63.398 bits**
-/// >
-/// > `-6 078 832 729 528 464 400` to `6 078 832 729 528 464 400`
+/// Supported widths range from 0 to 40 trits.
 ///
+/// The signed numeric range for SIZE > 0 is:
+///
+/// -(3^SIZE - 1) / 2 ..= (3^SIZE - 1) / 2
+///
+/// Examples:
+///
+/// - 6 trits: -364 ..= 364
+/// - 40 trits: -6_078_832_729_528_464_400
+///           ..= 6_078_832_729_528_464_400
+///
+/// `Tryte<0>` represents an empty word whose only
+/// numeric value is zero. Its conversion API has
+/// limitations that will be addressed in R08.
+///
+/// # Examples
+///
+/// ```
+/// use balanced_ternary::Tryte;
+///
+/// type Word = Tryte<2>;
+///
+/// let one = Word::from_i64(1);
+/// let two = Word::from_i64(2);
+///
+/// // Wrapping addition.
+/// assert_eq!(Word::MAX + one, Word::MIN);
+///
+/// // Checked addition.
+/// assert_eq!(Word::MAX.checked_add(one), None);
+///
+/// // Ordinary integer division.
+/// assert_eq!(one / two, Word::ZERO);
+///
+/// // Modular division modulo 9.
+/// assert_eq!(
+///     one.checked_modular_div(two),
+///     Some(Word::from_i64(-4))
+/// );
+/// ```
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Copy)]
 pub struct Tryte<const SIZE: usize = 6> {
     /// The raw representation of the `Tryte` as SIZE ternary digits.
@@ -94,7 +139,7 @@ impl<const SIZE: usize> Tryte<SIZE> {
     ///
     /// # Returns
     ///
-    /// A slice referencing the six-digit array of the `Tryte`.
+    /// A slice referencing the SIZE-digit array of the `Tryte`.
     ///
     /// This function allows access to the raw representation of the
     /// balanced ternary number as a slice of `Digit` values.
@@ -139,6 +184,11 @@ impl<const SIZE: usize> Tryte<SIZE> {
     /// # Arguments
     ///
     /// * `v` - A signed 64-bit integer.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value cannot be represented using
+    /// exactly SIZE balanced trits.
     ///
     /// # Returns
     ///
@@ -377,12 +427,18 @@ impl<const SIZE: usize> Tryte<SIZE> {
         Some(Self::from_i128_wrapping(inverse).0)
     }
 
-    /// Computes self / rhs modulo 3^SIZE.
+    /// Computes division modulo 3^SIZE by multiplying
+    /// by the modular inverse of the divisor.
     ///
-    /// Division is defined as multiplication by the
-    /// modular inverse of rhs.
+    /// Returns `None` if SIZE is zero or the divisor
+    /// is not invertible modulo 3^SIZE.
     ///
-    /// Returns None when rhs is not invertible.
+    /// For SIZE > 0, the divisor is invertible if and
+    /// only if its numeric value is not divisible by 3.
+    ///
+    /// This operation differs from ordinary integer division.
+    /// It does not attempt to solve modular equations with
+    /// non-invertible divisors.
     pub fn checked_modular_div(self, rhs: Self) -> Option<Self> {
         let inverse = rhs.checked_modular_inverse()?;
         Some(self.wrapping_mul(inverse))

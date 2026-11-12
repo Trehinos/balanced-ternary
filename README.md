@@ -23,7 +23,7 @@ processing, and three-valued logic modeling.
       [RM3](https://en.wikipedia.org/wiki/Paraconsistent_logic#An_ideal_three-valued_paraconsistent_logic),
       [paraconsistent-logic](https://en.wikipedia.org/wiki/Paraconsistent_logic#An_ideal_three-valued_paraconsistent_logic)
       and [HT](https://en.wikipedia.org/wiki/Intermediate_logic) imply operation,
-      and some more HT, BI3, L3 and post-logic operations.
+      and some more HT, BI3, L3, and post-logic operations.
 - **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols by default, or custom ones.
 
 ### Library `features`
@@ -70,14 +70,14 @@ Add structures to store ternaries efficiently. These types are provided:
 
 ## Types summary
 
-| Type          | Representation    | Behavior                                                        |
-|---------------|-------------------|-----------------------------------------------------------------|
-| `Digit`       | Single trit       | Arithmetic operations modulo 3                                  |
-| `Ternary`     | `Vec<Digit>`      | Arbitrary precision, arithmetic currently limited to `i64`      |
-| `Tryte<N>`    | `[Digit; N]`      | Fixed-width word; wrapping arithmetic planned for R05           |
-| `Ter40`       | `i64`             | Bounded signed 40-trit integer with checked arithmetic          |
-| `TritsChunk`  | `i8`              | Compact storage for 5 trits                                     |
-| `DataTernary` | `Vec<TritsChunk>` | Compact variable-length storage                                 |
+| Type          | Representation    | Behavior                                                   |
+|---------------|-------------------|------------------------------------------------------------|
+| `Digit`       | Single trit       | Arithmetic operations modulo 3                             |
+| `Ternary`     | `Vec<Digit>`      | Arbitrary precision, arithmetic currently limited to `i64` |
+| `Tryte<N>`    | `[Digit; N]`      | Fixed-width word; wrapping add, sub and mul                |
+| `Ter40`       | `i64`             | Bounded signed 40-trit integer with checked arithmetic     |
+| `TritsChunk`  | `i8`              | Compact storage for 5 trits                                |
+| `DataTernary` | `Vec<TritsChunk>` | Compact variable-length storage                            |
 
 ## Three-valued logic
 
@@ -173,6 +173,42 @@ fn test() {
     assert_eq!(back.to_string(), "+0-");
 }
 ```
+
+### Fixed-width ternary arithmetic
+
+`Tryte<N>` represents a fixed-width ternary word. Addition, subtraction, and multiplication wrap modulo `3^N`.
+
+For checked numeric arithmetic, use `checked_*` methods.
+
+```rust
+use balanced_ternary::Tryte;
+
+type Word = Tryte<2>;
+
+fn test() {
+    let one = Word::from_i64(1);
+    let two = Word::from_i64(2);
+
+    // Arithmetic wraps modulo 9.
+    assert_eq!(Word::MAX + one, Word::MIN);
+
+    // Detect overflow instead of wrapping.
+    assert_eq!(Word::MAX.checked_add(one), None);
+
+    // Integer division truncates toward zero.
+    assert_eq!(one / two, Word::ZERO);
+
+    // Modular division uses the multiplicative inverse.
+    assert_eq!(
+        one.checked_modular_div(two),
+        Some(Word::from_i64(-4))
+    );
+}
+```
+
+`Ter40` has different semantics: it represents a bounded
+signed integer, and its arithmetic operators panic on overflow.
+
 
 ### Handle negative numbers
 

@@ -8,7 +8,7 @@
 | R02 | done                     | ~~Repair `checked_to_dec()` for `i64::MIN`: intermediate `i64` overflow~~                          | `src/lib.rs`                                                       |
 | R03 | done                     | ~~Remove `i64` conversion from `Ternary::trim()`~~                                                 | `src/lib.rs`                                                       |
 | R04 | done                     | ~~Enforce `Ter40` range and define fixed-width overflow behavior~~                                 | `src/store.rs`                                                     |
-| R05 | done                     | Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`                     | `src/tryte.rs`, `src/store.rs`                                     |
+| R05 | done                     | ~~Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`~~                 | `src/tryte.rs`, `src/store.rs`                                     |
 | R06 | **P1 — architecture**    | Implement arbitrary-precision arithmetic directly on `Ternary` digits                              | `src/operations.rs`, `src/lib.rs`                                  |
 | R07 | **P1 — performance**     | Eliminate temporary `Ternary` and `String` objects in remaining fixed-width methods and formatting | `src/tryte.rs`, `src/store.rs`, `src/lib.rs`                       |
 | R08 | **P1 — conversion API**  | Normalize conversion and parsing error behavior, including padding/empty input                     | `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs` |
@@ -21,38 +21,21 @@
 
 ## R05 — Define fixed-width overflow and carry APIs [P1]
 
-**Sources:** `src/tryte.rs`, `src/store.rs`, `src/concepts.rs`.
+### Semantics
 
+- `Tryte<N>` addition, subtraction and multiplication wrap
+  modulo 3^N.
+- `/` performs signed integer division, not modular division.
+- Modular division requires an invertible divisor.
+- A divisor is invertible modulo 3^N iff it is not divisible by 3
+  (for N > 0).
+- `Tryte<0>` remains supported as an empty word.
 
-## R05 — Implement fixed-width wrapping arithmetic for Tryte<N> [P1]
+### Deferred work
 
-### Architectural decisions
-
-- `Ter40` is a bounded signed numeric type.
-- `Ter40` arithmetic is checked (completed in R04).
-- `Tryte<N>` represents a fixed-width ternary word.
-- `Tryte<N>` arithmetic must wrap modulo 3^N.
-- No separate `Ter40Word` structure is required.
-- `Tryte<40>` already represents a 40-trit word.
-
-### Remaining work
-
-1. Implement native wrapping addition for Tryte<N>.
-2. Implement wrapping subtraction and multiplication.
-3. Define explicit checked and overflowing operations.
-4. Expose outgoing carry where appropriate.
-5. Define division semantics separately.
-6. Resolve the behavior of Tryte<0>.
-7. Add exhaustive small-width and boundary tests.
-
-### Acceptance criteria
-
-- Fixed-width arithmetic never changes word width.
-- Addition, subtraction, and multiplication wrap modulo 3^N.
-- Overflow detection uses ternary bounds.
-- Arithmetic behavior is identical in debug and release.
-- No implicit conversion through bounded i64 arithmetic
-  is required for the core wrapping operations.
+- Normalize conversions and edge cases for `Tryte<0>` (R08).
+- Improve performance of remaining conversion-based methods (R07).
+- Extend CI coverage and property tests (R11).
 
 ## R06 — Replace `i64`-based arithmetic in `Ternary` [P1]
 
