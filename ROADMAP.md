@@ -74,8 +74,6 @@ done
 ### Remaining Considerations
 
 - Benchmark allocation and formatting improvements (R12).
-- Review empty representation and conversion semantics (R08).
-- Implement arithmetic directly on compact chunks (R09).
 
 ## R08 — Clarify conversions, parsing, and zero-width representation [DONE]
 
