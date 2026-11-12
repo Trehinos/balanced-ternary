@@ -177,16 +177,58 @@ impl TryFrom<Ternary> for TritsChunk {
     }
 }
 
-/// A variable-length balanced ternary representation
-/// stored as five-trit chunks.
+/// Compact variable-length storage for balanced ternary digits,
+/// organized into five-trit chunks.
 ///
-/// Equality, hashing, and ordering currently operate
-/// on the stored chunk sequence, not on the normalized
-/// numeric value.
+/// This type provides storage and conversions, not arithmetic.
 ///
-/// Consequently, representations with different leading
-/// zero chunks can compare as unequal even when they
-/// represent the same number.
+/// # Structural equality and hashing
+///
+/// `PartialEq`, `Eq`, and `Hash` operate on the complete stored
+/// chunk sequence, including its length and leading zero chunks.
+/// They do not normalize or compare numeric values.
+///
+/// Input digits are left-padded to a multiple of five during
+/// encoding. Different inputs can therefore produce identical
+/// storage when they differ only by padding within the first chunk.
+///
+/// ```
+/// use balanced_ternary::{DataTernary, Ternary};
+///
+/// let short = DataTernary::from_ternary(Ternary::parse("+"));
+/// let same = DataTernary::from_ternary(Ternary::parse("0000+"));
+/// let wider = DataTernary::from_ternary(Ternary::parse("00000+"));
+///
+/// assert_eq!(short, same);
+/// assert_ne!(short, wider);
+/// assert_eq!(short.to_ternary(), wider.to_ternary());
+///
+/// assert_ne!(DataTernary::default(), DataTernary::from_dec(0));
+/// ```
+///
+/// `HashMap` and `HashSet` distinguish different stored chunk
+/// sequences even when their numeric values are equal.
+///
+/// # No ordering
+///
+/// `PartialOrd` and `Ord` are intentionally not implemented.
+/// Direct comparisons with `<` or `>`, sorting with `sort()`,
+/// and insertion into `BTreeMap` or `BTreeSet` are unsupported.
+///
+/// Convert to `Ternary` when numeric comparison is required.
+///
+/// ```compile_fail
+/// use balanced_ternary::DataTernary;
+///
+/// let _ = DataTernary::default() < DataTernary::from_dec(0);
+/// ```
+///
+/// ```compile_fail
+/// use balanced_ternary::DataTernary;
+///
+/// fn requires_ord<T: Ord>() {}
+/// requires_ord::<DataTernary>();
+/// ```
 ///
 /// # Empty storage and zero
 ///
@@ -203,7 +245,7 @@ impl TryFrom<Ternary> for TritsChunk {
 /// Numeric conversions normalize representations. To preserve the
 /// stored chunk sequence through a Ternary round trip, use
 /// `to_fixed_ternary()` followed by `from_ternary()`.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct DataTernary {
     chunks: Vec<TritsChunk>,
 }
@@ -1308,5 +1350,94 @@ mod tests {
         let storage = DataTernary::from_ternary(value);
 
         let _ = storage.to_dec();
+    }
+
+    #[test]
+    fn data_equality_compares_stored_chunks() {
+        use crate::Ternary;
+
+        for suffix in ["+", "-", "+-0"] {
+            let short = DataTernary::from_ternary(Ternary::parse(suffix));
+            let same = DataTernary::from_ternary(
+                Ternary::parse(suffix).with_length(5),
+            );
+            let wider = DataTernary::from_ternary(
+                Ternary::parse(suffix).with_length(6),
+            );
+
+            assert_eq!(short, same);
+            assert_ne!(short, wider);
+            assert_eq!(short.to_ternary(), wider.to_ternary());
+
+            let restored =
+                DataTernary::from_ternary(wider.to_fixed_ternary());
+            assert_eq!(restored, wider);
+        }
+
+        // Equal widths alone do not imply equal storage.
+        assert_ne!(DataTernary::from_dec(1), DataTernary::from_dec(-1));
+    }
+
+    #[test]
+    fn data_zero_equality_preserves_storage_width() {
+        use crate::Ternary;
+
+        let empty = DataTernary::default();
+        let one_chunk = DataTernary::from_dec(0);
+        let two_chunks =
+            DataTernary::from_ternary(Ternary::parse("000000"));
+
+        assert_eq!(
+            empty,
+            DataTernary::from_ternary(Ternary::parse(""))
+        );
+
+        for input in ["0", "000", "00000"] {
+            assert_eq!(
+                one_chunk,
+                DataTernary::from_ternary(Ternary::parse(input))
+            );
+        }
+
+        assert_ne!(empty, one_chunk);
+        assert_ne!(empty, two_chunks);
+        assert_ne!(one_chunk, two_chunks);
+
+        for storage in [&empty, &one_chunk, &two_chunks] {
+            assert_eq!(storage.checked_to_dec(), Some(0));
+        }
+    }
+
+    #[test]
+    fn data_hash_collections_use_structural_equality() {
+        extern crate std;
+
+        use crate::Ternary;
+        use std::collections::{HashMap, HashSet};
+
+        let short = DataTernary::from_ternary(Ternary::parse("+"));
+        let same = DataTernary::from_ternary(Ternary::parse("0000+"));
+        let wider = DataTernary::from_ternary(Ternary::parse("00000+"));
+
+        let mut set = HashSet::new();
+
+        assert!(set.insert(short.clone()));
+        assert!(!set.insert(same.clone()));
+        assert!(set.insert(wider.clone()));
+        assert!(set.insert(DataTernary::default()));
+        assert!(set.insert(DataTernary::from_dec(0)));
+        assert!(set.insert(DataTernary::from_ternary(
+            Ternary::parse("000000")
+        )));
+        assert_eq!(set.len(), 5);
+
+        let mut map = HashMap::new();
+
+        assert_eq!(map.insert(short.clone(), 10), None);
+        assert_eq!(map.insert(same, 20), Some(10));
+        assert_eq!(map.insert(wider.clone(), 30), None);
+        assert_eq!(map.len(), 2);
+        assert_eq!(map.get(&short), Some(&20));
+        assert_eq!(map.get(&wider), Some(&30));
     }
 }

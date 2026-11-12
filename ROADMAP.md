@@ -13,7 +13,7 @@
 | R07 | done                     | ~~Eliminate temporary `Ternary` and `String` objects in remaining fixed-width methods and formatting~~ | `src/tryte.rs`, `src/store.rs`, `src/lib.rs`                       |
 | R08 | done                     | ~~Normalize conversion and parsing error behavior, including padding/empty input~~                     | `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs` |
 | R09 | cancelled                | ~~Introduce arithmetic directly on `TritsChunk` / `DataTernary` in balanced base 243~~                 | `src/store.rs`                                                     |
-| R10 | **P2 — semantic design** | Decide numeric-value versus representation equality for `DataTernary`                                  | `src/store.rs`                                                     |
+| R10 | done                     | ~~Decide numeric-value versus representation equality for `DataTernary`~~                              | `src/store.rs`                                                     |
 | R11 | **P1 — verification**    | Expand boundary/property tests and CI feature matrix                                                   | tests, `.github/workflows/rust.yml`                                |
 | R12 | **P2 — release quality** | Benchmark, documentation consistency, release metadata, optional API extensions                        | docs, benchmarks, `Cargo.toml`, `.changelog/`                      |
 
@@ -102,25 +102,17 @@ remains tracked separately in R10.
 
 cancelled
 
-## R10 — Choose `DataTernary` equality/order semantics [P2]
+## R10 — Define DataTernary storage semantics [DONE]
 
-**Source:** `src/store.rs`.
-
-`DataTernary` still derives `PartialEq`, `Eq`, `Hash`, `PartialOrd`, and `Ord` on its vector of
-`TritsChunk`. Unlike the numeric `Ternary` type, this gives **structural** equality and
-lexicographic chunk ordering. For example, values created from `"+"` and `"00000+"` can have
-different chunk vectors even though they represent the same number. Lexicographic order of signed
-chunks is not necessarily numerical order across different lengths or signs.
-
-**Decision required:**
-
-- If `DataTernary` is a *storage sequence*, retain structural `Eq` and `Hash`, but avoid presenting
-  its derived `Ord` as numerical ordering; provide an explicitly numeric comparator if needed.
-- If it is also a *number*, implement numeric `Eq`/`Hash`/`Ord` consistently by ignoring only
-  leading zero chunks; compare signs, significant lengths, and chunks in balanced base 243.
-
-Do not silently switch semantics without documenting compatibility with `HashMap`, `HashSet`, and
-`BTreeSet`. Add collection tests for any chosen policy.
+- `DataTernary` provides compact storage and conversions, not arithmetic.
+- `PartialEq`, `Eq`, and `Hash` retain structural semantics over the
+  complete stored chunk sequence.
+- Leading zero chunks and stored width participate in equality.
+- Empty storage differs from a stored zero chunk.
+- Removed `PartialOrd` and `Ord`; no numeric comparator was added.
+- Documented hash collection behavior and the ordering API break.
+- Added equality and hash collection regression tests, plus
+  compile-fail doctests for unsupported ordering.
 
 ## R11 — Test matrix, properties, and CI [P1]
 

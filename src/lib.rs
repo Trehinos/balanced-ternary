@@ -51,7 +51,7 @@
 //! > Needs the feature `ternary-string`.
 //!
 //! Add structures to store ternaries efficiently. These types are provided:
-//! - [DataTernary]: a variable length ternary number stored into [TritsChunk]s,
+//! - [DataTernary]: variable-length storage of five-trit [TritsChunk]s, with structural equality and hashing, without ordering or arithmetic,
 //! - [TritsChunk]: a fixed size copy-type 5 digits stored into one byte,
 //! - [Ter40]: a fixed size copy-type 40 digits stored into one 64 bits integer. Implements [DigitOperate].
 //!
