@@ -146,6 +146,62 @@ impl<const SIZE: usize> Tryte<SIZE> {
     pub fn from_i64(v: i64) -> Self {
         Self::from_ternary(&Ternary::from_dec(v))
     }
+
+    /// Adds two fixed-width ternary words and returns
+    /// the wrapped result and the outgoing carry.
+    ///
+    /// The carry is Neg, Zero or Pos.
+    /// The result always contains exactly SIZE trits.
+    pub fn add_with_carry(self, rhs: Self) -> (Self, Digit) {
+        let mut digits = [Zero; SIZE];
+        let mut carry = Zero;
+
+        for i in (0..SIZE).rev() {
+            let sum = self.raw[i].to_i8() + rhs.raw[i].to_i8() + carry.to_i8();
+
+            let next_carry = (sum + 1).div_euclid(3);
+
+            digits[i] = Digit::from_i8(sum - next_carry * 3);
+
+            carry = Digit::from_i8(next_carry);
+        }
+
+        (Self::new(digits), carry)
+    }
+
+    /// Adds two words modulo 3^SIZE.
+    pub fn wrapping_add(self, rhs: Self) -> Self {
+        self.add_with_carry(rhs).0
+    }
+
+    /// Adds two words and reports a numeric overflow.
+    ///
+    /// The boolean indicates whether the exact sum
+    /// exceeds the signed SIZE-trit range.
+    pub fn overflowing_add(self, rhs: Self) -> (Self, bool) {
+        let (result, carry) = self.add_with_carry(rhs);
+        (result, carry != Zero)
+    }
+
+    /// Returns None if the exact sum exceeds
+    /// the representable SIZE-trit range.
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
+        let (result, carry) = self.add_with_carry(rhs);
+
+        if carry == Zero { Some(result) } else { None }
+    }
+
+    /// Adds two words, clamping the result
+    /// to MIN or MAX on overflow.
+    pub fn saturating_add(self, rhs: Self) -> Self {
+        let (result, carry) = self.add_with_carry(rhs);
+
+        match carry {
+            Neg => Self::MIN,
+            Zero => result,
+            Pos => Self::MAX,
+        }
+    }
 }
 
 impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
@@ -224,7 +280,7 @@ impl<const SIZE: usize> Add for Tryte<SIZE> {
     type Output = Tryte<SIZE>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self::from_ternary(&(&self.to_ternary() + &rhs.to_ternary()))
+        self.wrapping_add(rhs)
     }
 }
 
@@ -332,8 +388,8 @@ impl<const SIZE: usize> FromStr for Tryte<SIZE> {
 
 #[cfg(test)]
 mod tests {
-    use alloc::string::ToString;
     use crate::Tryte;
+    use alloc::string::ToString;
 
     #[test]
     pub fn test_tryte() {
@@ -361,5 +417,93 @@ mod tests {
         assert_eq!(tryte.to_string(), "000+-0");
 
         assert!(Tryte::<6>::from_str("+-x").is_err());
+    }
+
+    #[test]
+    fn tryte_addition_exhaustive() {
+        use crate::{Digit, Tryte};
+
+        fn check<const N: usize>() {
+            let modulus = 3_i64.pow(N as u32);
+            let max = (modulus - 1) / 2;
+            let min = -max;
+
+            for a in min..=max {
+                for b in min..=max {
+                    let lhs = Tryte::<N>::from_i64(a);
+                    let rhs = Tryte::<N>::from_i64(b);
+
+                    let exact = a + b;
+
+                    let expected = (exact + max).rem_euclid(modulus) - max;
+
+                    let carry = if exact > max {
+                        Digit::Pos
+                    } else if exact < min {
+                        Digit::Neg
+                    } else {
+                        Digit::Zero
+                    };
+
+                    // Wrapped arithmetic.
+                    assert_eq!((lhs + rhs).to_i64(), expected);
+
+                    assert_eq!(lhs.wrapping_add(rhs).to_i64(), expected);
+
+                    // Outgoing carry.
+                    let (result, actual_carry) = lhs.add_with_carry(rhs);
+
+                    assert_eq!(result.to_i64(), expected);
+                    assert_eq!(actual_carry, carry);
+
+                    // Overflow detection.
+                    let (overflowing_result, overflowed) = lhs.overflowing_add(rhs);
+                    assert_eq!(overflowing_result.to_i64(), expected);
+                    assert_eq!(overflowed, carry != Digit::Zero);
+
+                    // Checked arithmetic.
+                    assert_eq!(
+                        lhs.checked_add(rhs),
+                        if carry == Digit::Zero {
+                            Some(result)
+                        } else {
+                            None
+                        }
+                    );
+
+                    // Saturating arithmetic.
+                    assert_eq!(lhs.saturating_add(rhs).to_i64(), exact.clamp(min, max));
+                }
+            }
+        }
+
+        check::<1>();
+        check::<2>();
+        check::<3>();
+    }
+
+    #[test]
+    fn tryte_40_addition_boundaries() {
+        use crate::Tryte;
+        type Tryte40 = Tryte<40>;
+
+        let one = Tryte40::from_i64(1);
+        let neg_one = Tryte40::from_i64(-1);
+
+        assert_eq!(Tryte40::MAX + one, Tryte40::MIN);
+        assert_eq!(Tryte40::MIN + neg_one, Tryte40::MAX);
+        assert_eq!(Tryte40::MAX + Tryte40::MAX, neg_one);
+        assert_eq!(Tryte40::MAX + Tryte40::MIN, Tryte40::ZERO);
+        assert_eq!(Tryte40::MAX.checked_add(one), None);
+        assert_eq!(Tryte40::MIN.checked_add(neg_one), None);
+        assert_eq!(Tryte40::MAX.saturating_add(one), Tryte40::MAX);
+        assert_eq!(Tryte40::MIN.saturating_add(neg_one), Tryte40::MIN);
+    }
+
+    #[test]
+    fn tryte_zero_width_addition() {
+        use crate::Tryte;
+        let zero = Tryte::<0>::ZERO;
+        assert_eq!(zero + zero, zero);
     }
 }
