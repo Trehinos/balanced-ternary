@@ -1,116 +1,116 @@
 name: Rust
 
 on:
-  push:
-    branches: ["master"]
-  pull_request:
-    branches: ["master"]
-  workflow_dispatch:
+    push:
+        branches: [ "master" ]
+    pull_request:
+        branches: [ "master" ]
+    workflow_dispatch:
 
 permissions:
-  contents: read
+    contents: read
 
 env:
-  CARGO_TERM_COLOR: always
+    CARGO_TERM_COLOR: always
 
 jobs:
-  tests:
-    name: Tests / ${{ matrix.config.name }} / ${{ matrix.profile.name }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - name: default
-            args: ""
-          - name: no-features
-            args: "--no-default-features"
-          - name: ternary-string
-            args: "--no-default-features --features ternary-string"
-          - name: tryte
-            args: "--no-default-features --features tryte"
-          - name: ternary-store
-            args: "--no-default-features --features ternary-store"
-          - name: all-features
-            args: "--all-features"
-        profile:
-          - name: debug
-            args: ""
-          - name: release
-            args: "--release"
+    tests:
+        name: Tests / ${{ matrix.config.name }} / ${{ matrix.profile.name }}
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                config:
+                    -   name: default
+                        args: ""
+                    -   name: no-features
+                        args: "--no-default-features"
+                    -   name: ternary-string
+                        args: "--no-default-features --features ternary-string"
+                    -   name: tryte
+                        args: "--no-default-features --features tryte"
+                    -   name: ternary-store
+                        args: "--no-default-features --features ternary-store"
+                    -   name: all-features
+                        args: "--all-features"
+                profile:
+                    -   name: debug
+                        args: ""
+                    -   name: release
+                        args: "--release"
 
-    steps:
-      - uses: actions/checkout@v7
+        steps:
+            -   uses: actions/checkout@v7
 
-      - name: Install stable Rust
-        run: rustup toolchain install stable --profile minimal
+            -   name: Install stable Rust
+                run: rustup toolchain install stable --profile minimal
 
-      - name: Build library
-        run: >-
-          cargo +stable build --locked
-          ${{ matrix.config.args }}
-          ${{ matrix.profile.args }}
+            -   name: Build library
+                run: >-
+                    cargo +stable build --locked
+                    ${{ matrix.config.args }}
+                    ${{ matrix.profile.args }}
 
-      - name: Run unit, integration, and documentation tests
-        run: >-
-          cargo +stable test --locked
-          ${{ matrix.config.args }}
-          ${{ matrix.profile.args }}
+            -   name: Run unit, integration, and documentation tests
+                run: >-
+                    cargo +stable test --locked
+                    ${{ matrix.config.args }}
+                    ${{ matrix.profile.args }}
 
-  quality:
-    name: Formatting, Clippy, and documentation
-    runs-on: ubuntu-latest
+    quality:
+        name: Formatting, Clippy, and documentation
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v7
+        steps:
+            -   uses: actions/checkout@v7
 
-      - name: Install tools
-        run: >-
-          rustup toolchain install stable --profile minimal
-          --component rustfmt --component clippy
+            -   name: Install tools
+                run: >-
+                    rustup toolchain install stable --profile minimal
+                    --component rustfmt --component clippy
 
-      - name: Check formatting
-        run: cargo +stable fmt --all -- --check
+            -   name: Check formatting
+                run: cargo +stable fmt --all -- --check
 
-      - name: Run Clippy
-        run: cargo +stable clippy --locked --all-targets --all-features
+            -   name: Run Clippy
+                run: cargo +stable clippy --locked --all-targets --all-features
 
-      - name: Build documentation
-        env:
-          RUSTDOCFLAGS: "-D warnings"
-        run: cargo +stable doc --locked --no-deps --all-features
+            -   name: Build documentation
+                env:
+                    RUSTDOCFLAGS: "-D warnings"
+                run: cargo +stable doc --locked --no-deps --all-features
 
-  no-std:
-    name: Build without std
-    runs-on: ubuntu-latest
+    no-std:
+        name: Build without std
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v7
+        steps:
+            -   uses: actions/checkout@v7
 
-      - name: Install embedded target
-        run: >-
-          rustup toolchain install stable --profile minimal
-          --target thumbv7em-none-eabi
+            -   name: Install embedded target
+                run: >-
+                    rustup toolchain install stable --profile minimal
+                    --target thumbv7em-none-eabi
 
-      - name: Build every effective feature combination
-        shell: bash
-        run: |
-          for features in \
-            "" \
-            "ternary-string" \
-            "tryte" \
-            "ternary-store" \
-            "tryte,ternary-store"
-          do
-            feature_args=()
-            if [[ -n "$features" ]]; then
-              feature_args=(--features "$features")
-            fi
-
-            cargo +stable build \
-              --locked \
-              --lib \
-              --target thumbv7em-none-eabi \
-              --no-default-features \
-              "${feature_args[@]}"
-          done
+            -   name: Build every effective feature combination
+                shell: bash
+                run: |
+                    for features in \
+                      "" \
+                      "ternary-string" \
+                      "tryte" \
+                      "ternary-store" \
+                      "tryte,ternary-store"
+                    do
+                      feature_args=()
+                      if [[ -n "$features" ]]; then
+                        feature_args=(--features "$features")
+                      fi
+                    
+                      cargo +stable build \
+                        --locked \
+                        --lib \
+                        --target thumbv7em-none-eabi \
+                        --no-default-features \
+                        "${feature_args[@]}"
+                    done
