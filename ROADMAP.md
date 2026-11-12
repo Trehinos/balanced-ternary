@@ -8,7 +8,7 @@
 | R02 | done                     | ~~Repair `checked_to_dec()` for `i64::MIN`: intermediate `i64` overflow~~                          | `src/lib.rs`                                                       |
 | R03 | done                     | ~~Remove `i64` conversion from `Ternary::trim()`~~                                                 | `src/lib.rs`                                                       |
 | R04 | done                     | ~~Enforce `Ter40` range and define fixed-width overflow behavior~~                                 | `src/store.rs`                                                     |
-| R05 | **P1 — semantics**       | Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`                     | `src/tryte.rs`, `src/store.rs`                                     |
+| R05 | done                     | Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`                     | `src/tryte.rs`, `src/store.rs`                                     |
 | R06 | **P1 — architecture**    | Implement arbitrary-precision arithmetic directly on `Ternary` digits                              | `src/operations.rs`, `src/lib.rs`                                  |
 | R07 | **P1 — performance**     | Eliminate temporary `Ternary` and `String` objects in remaining fixed-width methods and formatting | `src/tryte.rs`, `src/store.rs`, `src/lib.rs`                       |
 | R08 | **P1 — conversion API**  | Normalize conversion and parsing error behavior, including padding/empty input                     | `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs` |
