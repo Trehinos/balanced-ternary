@@ -445,8 +445,8 @@ mod tests {
                 assert_eq!(difference.to_dec(), a - b);
                 assert_eq!(&sum - &rhs, lhs);
                 assert_eq!(&difference + &rhs, lhs);
-                assert_eq!(sum, sum.trim());
-                assert_eq!(difference, difference.trim());
+                assert_eq!(sum.to_digit_slice(), sum.trim().to_digit_slice());
+                assert_eq!(difference.to_digit_slice(), difference.trim().to_digit_slice());
             }
         }
 
@@ -522,7 +522,7 @@ mod tests {
                 let rhs = Ternary::from_dec(b);
                 let result = &lhs * &rhs;
                 assert_eq!(result.to_dec(), a * b);
-                assert_eq!(result, result.trim());
+                assert_eq!(result.to_digit_slice(), result.trim().to_digit_slice());
                 assert_eq!(&lhs * &rhs, &rhs * &lhs);
             }
         }
@@ -551,8 +551,8 @@ mod tests {
                 if remainder.to_dec() != 0 {
                     assert_eq!(remainder.to_dec().signum(), a.signum());
                 }
-                assert_eq!(quotient, quotient.trim());
-                assert_eq!(remainder, remainder.trim());
+                assert_eq!(quotient.to_digit_slice(), quotient.trim().to_digit_slice());
+                assert_eq!(remainder.to_digit_slice(), remainder.trim().to_digit_slice());
             }
         }
     }

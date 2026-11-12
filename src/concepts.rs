@@ -42,6 +42,8 @@ pub trait DigitOperate {
     ///
     /// ### Examples with [crate::Ternary]
     /// ```
+    /// # #[cfg(feature = "ternary-string")]
+    /// # {
     /// use balanced_ternary::{Ternary, Digit};
     /// use balanced_ternary::concepts::DigitOperate;
     ///
@@ -54,6 +56,7 @@ pub trait DigitOperate {
     /// assert_eq!(transformed.to_string(), "++0");
     /// let transformed = orig_ternary.each(Digit::absolute_negative);
     /// assert_eq!(transformed.to_string(), "-0-");
+    /// # }
     /// ```
     fn each(&self, f: impl Fn(Digit) -> Digit) -> Self
     where
@@ -95,6 +98,8 @@ pub trait DigitOperate {
     ///
     /// ### Examples with [crate::Ternary]
     /// ```
+    /// # #[cfg(feature = "ternary-string")]
+    /// # {
     /// use std::ops::Mul;
     /// use balanced_ternary::{Ternary, Digit};
     /// use balanced_ternary::concepts::DigitOperate;
@@ -102,6 +107,7 @@ pub trait DigitOperate {
     /// let original = Ternary::parse("+-0");
     /// let transformed = original.each_with(Digit::mul, Digit::Neg);
     /// assert_eq!(transformed.to_string(), "-+0");
+    /// # }
     /// ```
     fn each_with(&self, f: impl Fn(Digit, Digit) -> Digit, other: Digit) -> Self
     where
@@ -125,6 +131,8 @@ pub trait DigitOperate {
     /// ### Examples with [crate::Ternary]
     ///
     /// ```
+    /// # #[cfg(feature = "ternary-string")]
+    /// # {
     /// use std::ops::Mul;
     /// use balanced_ternary::{Ternary, Digit};
     /// use balanced_ternary::concepts::DigitOperate;
@@ -141,6 +149,7 @@ pub trait DigitOperate {
     /// assert_eq!(result.to_string(), "+-0000++0");
     /// let result = ternary1.each_zip(Digit::ht_imply, ternary2.clone());
     /// assert_eq!(result.to_string(), "+--+0++++");
+    /// # }
     /// ```
     fn each_zip(&self, f: impl Fn(Digit, Digit) -> Digit, other: Self) -> Self
     where
@@ -180,6 +189,8 @@ pub trait DigitOperate {
     /// ### Examples with [crate::Ternary]
     ///
     /// ```
+    /// # #[cfg(feature = "ternary-string")]
+    /// # {
     /// use balanced_ternary::{Digit, Ternary};
     /// use balanced_ternary::concepts::DigitOperate;
     ///
@@ -203,6 +214,7 @@ pub trait DigitOperate {
     ///
     /// let result = ternary1.each_zip_carry(combine, ternary2.clone()).trim();
     /// assert_eq!(result.to_string(), (&ternary1 + &ternary2).to_string());
+    /// # }
     /// ```
     fn each_zip_carry(
         &self,

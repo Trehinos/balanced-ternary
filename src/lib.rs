@@ -62,16 +62,15 @@ extern crate alloc;
 pub mod concepts;
 
 #[cfg(feature = "ternary-string")]
-use alloc::{string::String, vec, vec::Vec};
-
 use crate::concepts::DigitOperate;
-use core::fmt::Write;
-use core::hash::{Hash, Hasher};
+#[cfg(feature = "ternary-string")]
+use alloc::{string::String, vec, vec::Vec};
 #[cfg(feature = "ternary-string")]
 use core::{
     cmp::Ordering,
     error::Error,
-    fmt::{Display, Formatter},
+    fmt::{Display, Formatter, Write},
+    hash::{Hash, Hasher},
     str::FromStr,
 };
 
@@ -1552,10 +1551,7 @@ mod tests {
             ] {
                 assert_eq!(
                     Ternary::try_from_unbalanced(input),
-                    Err(ParseUnbalancedTernaryError::InvalidCharacter {
-                        character,
-                        index,
-                    }),
+                    Err(ParseUnbalancedTernaryError::InvalidCharacter { character, index }),
                     "input: {input:?}",
                 );
             }
@@ -1567,11 +1563,7 @@ mod tests {
                 let expected = reference_unbalanced(value);
                 let ternary = Ternary::from_dec(value);
 
-                assert_eq!(
-                    ternary.to_unbalanced(),
-                    expected,
-                    "value: {value}",
-                );
+                assert_eq!(ternary.to_unbalanced(), expected, "value: {value}",);
 
                 let parsed = Ternary::try_from_unbalanced(&expected).unwrap();
 
@@ -1610,8 +1602,7 @@ mod tests {
         fn unbalanced_round_trips_normalize_balanced_representations() {
             for input in ["", "0", "000", "000+-0", "-++", "+0-+-0"] {
                 let value = Ternary::parse(input);
-                let restored =
-                    Ternary::try_from_unbalanced(&value.to_unbalanced()).unwrap();
+                let restored = Ternary::try_from_unbalanced(&value.to_unbalanced()).unwrap();
 
                 assert_eq!(
                     restored.to_digit_slice(),
@@ -1622,25 +1613,19 @@ mod tests {
 
             let input = format!("000{}", "+0-".repeat(1024));
             let value = Ternary::parse(&input);
-            let restored =
-                Ternary::try_from_unbalanced(&value.to_unbalanced()).unwrap();
+            let restored = Ternary::try_from_unbalanced(&value.to_unbalanced()).unwrap();
 
-            assert_eq!(
-            restored.to_digit_slice(),
-            value.trim().to_digit_slice(),
-        );
+            assert_eq!(restored.to_digit_slice(), value.trim().to_digit_slice(),);
         }
 
         #[test]
         fn unbalanced_parsing_accepts_long_zero_padding() {
             let padding = "0".repeat(4096);
 
-            let zero =
-                Ternary::try_from_unbalanced(&format!("-{padding}")).unwrap();
+            let zero = Ternary::try_from_unbalanced(&format!("-{padding}")).unwrap();
             assert_eq!(zero.to_string(), "0");
 
-            let value =
-                Ternary::try_from_unbalanced(&format!("+{padding}12")).unwrap();
+            let value = Ternary::try_from_unbalanced(&format!("+{padding}12")).unwrap();
             assert_eq!(value.to_string(), "+--");
             assert_eq!(value.to_unbalanced(), "12");
         }
@@ -1651,4 +1636,6 @@ mod tests {
             let _ = Ternary::from_unbalanced("1023");
         }
     }
+
+    mod r11_properties;
 }

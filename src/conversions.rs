@@ -10,13 +10,13 @@
 //! use `TryFrom` and return `TernaryConversionError::OutOfRange`
 //! when the numeric value cannot be represented.
 
-use crate::{Digit, DigitConversionError, TernaryConversionError};
+use crate::{Digit, DigitConversionError};
 
 #[cfg(feature = "ternary-string")]
 use alloc::string::{String, ToString};
 
 #[cfg(feature = "ternary-string")]
-use crate::{ParseTernaryError, Ternary};
+use crate::{ParseTernaryError, Ternary, TernaryConversionError};
 
 impl From<Digit> for char {
     fn from(value: Digit) -> Self {
