@@ -303,7 +303,8 @@ pub fn dter(from: &str) -> DataTernary {
 /// `to_dec()` returns an `i64` and panics if the value
 /// cannot be represented.
 ///
-/// Use `checked_to_dec()` for a non-panicking conversion.
+/// Use `checked_to_dec()` to get an Option, or `i64::try_from()`
+/// to get a Result. Both borrowed and owned conversions are supported.
 ///
 /// Conversions to and from unbalanced ternary currently
 /// rely on `i64` and are therefore range-limited.

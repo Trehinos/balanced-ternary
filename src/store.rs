@@ -187,6 +187,22 @@ impl TryFrom<Ternary> for TritsChunk {
 /// Consequently, representations with different leading
 /// zero chunks can compare as unequal even when they
 /// represent the same number.
+///
+/// # Empty storage and zero
+///
+/// `Default` creates empty storage. Its numeric value is zero,
+/// but its stored width is zero:
+///
+/// - `Display` produces an empty string.
+/// - `to_fixed_ternary()` produces an empty representation.
+/// - `to_ternary()` and `to_digits()` produce one zero trit.
+/// - `checked_to_dec()` returns `Some(0)`.
+///
+/// In contrast, `from_dec(0)` stores one zero chunk.
+///
+/// Numeric conversions normalize representations. To preserve the
+/// stored chunk sequence through a Ternary round trip, use
+/// `to_fixed_ternary()` followed by `from_ternary()`.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct DataTernary {
     chunks: Vec<TritsChunk>,
@@ -203,6 +219,9 @@ impl DataTernary {
     ///
     /// Chunks are encoded directly in balanced base 243,
     /// without creating intermediate Ternary objects.
+    ///
+    /// Empty input produces empty storage.
+    /// Nonempty all-zero input retains its padded storage width.
     ///
     /// Time complexity: O(n), where n is the number of trits.
     pub fn from_ternary(ternary: Ternary) -> Self {
@@ -229,6 +248,9 @@ impl DataTernary {
     }
 
     /// Converts the stored value into a normalized balanced ternary representation.
+    ///
+    /// Empty and all-zero storage produce a single zero trit.
+    /// Use [`Self::to_fixed_ternary`] to preserve the stored width.
     pub fn to_ternary(&self) -> Ternary {
         Ternary::new(self.decode_digits(true))
     }
@@ -293,10 +315,31 @@ impl DataTernary {
         Self { chunks }
     }
 
+    /// Attempts to convert the stored numeric value into an i64.
+    ///
+    /// Evaluates the chunks directly in balanced base 243.
+    /// Leading zero chunks do not affect representability.
+    /// Empty storage converts to zero.
+    ///
+    /// Returns None if the value is outside the i64 range.
+    /// Intermediate arithmetic is checked to handle arbitrarily long input.
+    ///
+    /// No heap allocation is performed.
+    pub fn checked_to_dec(&self) -> Option<i64> {
+        let value = self.chunks.iter().try_fold(0i128, |acc, chunk| {
+            acc.checked_mul(243)?.checked_add(chunk.to_dec() as i128)
+        })?;
+
+        i64::try_from(value).ok()
+    }
+
     /// Converts the stored chunks into a signed 64-bit integer.
     ///
     /// Uses direct balanced base-243 evaluation without
     /// constructing an intermediate Ternary.
+    ///
+    /// Empty storage converts to zero.
+    /// Use [`Self::checked_to_dec`] for a fallible conversion.
     ///
     /// # Panics
     ///
@@ -313,12 +356,7 @@ impl DataTernary {
     /// assert_eq!(decimal, 42);
     /// ```
     pub fn to_dec(&self) -> i64 {
-        self.chunks
-            .iter()
-            .try_fold(0i128, |acc, chunk| {
-                acc.checked_mul(243)?.checked_add(chunk.to_dec() as i128)
-            })
-            .and_then(|value| i64::try_from(value).ok())
+        self.checked_to_dec()
             .expect("Ternary value does not fit in i64")
     }
 
@@ -367,6 +405,22 @@ impl From<Ternary> for DataTernary {
 impl From<DataTernary> for Ternary {
     fn from(value: DataTernary) -> Self {
         value.to_ternary()
+    }
+}
+
+impl TryFrom<&DataTernary> for i64 {
+    type Error = TernaryConversionError;
+    fn try_from(value: &DataTernary) -> Result<Self, Self::Error> {
+        value
+            .checked_to_dec()
+            .ok_or(TernaryConversionError::OutOfRange)
+    }
+}
+
+impl TryFrom<DataTernary> for i64 {
+    type Error = TernaryConversionError;
+    fn try_from(value: DataTernary) -> Result<Self, Self::Error> {
+        Self::try_from(&value)
     }
 }
 
@@ -1168,5 +1222,91 @@ mod tests {
                 Err(TernaryConversionError::OutOfRange)
             );
         }
+    }
+
+    #[test]
+    fn data_checked_conversion_from_decimal() {
+        for value in [
+            i64::MIN,
+            i64::MIN + 1,
+            -243,
+            -122,
+            -121,
+            -1,
+            0,
+            1,
+            121,
+            122,
+            243,
+            i64::MAX - 1,
+            i64::MAX,
+        ] {
+            let storage = DataTernary::from_dec(value);
+
+            assert_eq!(storage.checked_to_dec(), Some(value));
+            assert_eq!(i64::try_from(&storage), Ok(value));
+            assert_eq!(i64::try_from(storage), Ok(value));
+        }
+    }
+
+    #[test]
+    fn data_zero_storage_preserves_padded_width() {
+        use crate::{Digit, Ternary};
+
+        for length in [0usize, 1, 4, 5, 6, 10, 137] {
+            let input = Ternary::parse(&"0".repeat(length));
+            let storage = DataTernary::from_ternary(input);
+            let expected_chunks = length / 5 + usize::from(length % 5 != 0);
+            let expected_width = expected_chunks * 5;
+
+            assert_eq!(storage.chunks.len(), expected_chunks);
+            assert_eq!(storage.to_string(), "0".repeat(expected_width));
+            assert_eq!(
+                storage.to_fixed_ternary().to_digit_slice(),
+                vec![Digit::Zero; expected_width].as_slice()
+            );
+
+            assert_eq!(storage.to_ternary().to_digit_slice(), &[Digit::Zero]);
+            assert_eq!(storage.to_digits(), vec![Digit::Zero]);
+            assert_eq!(storage.checked_to_dec(), Some(0));
+
+            let restored = DataTernary::from_ternary(storage.to_fixed_ternary());
+
+            // Compare the representation directly, independently of Eq semantics.
+            assert_eq!(restored.chunks.as_slice(), storage.chunks.as_slice());
+        }
+    }
+
+    #[test]
+    fn data_empty_numeric_and_fixed_round_trips() {
+        let empty = DataTernary::default();
+        let numeric_zero = DataTernary::from_dec(0);
+
+        assert!(empty.chunks.is_empty());
+        assert_eq!(numeric_zero.chunks.len(), 1);
+
+        assert_eq!(empty.to_string(), "");
+        assert_eq!(numeric_zero.to_string(), "00000");
+
+        assert_eq!(empty.checked_to_dec(), Some(0));
+        assert_eq!(numeric_zero.checked_to_dec(), Some(0));
+        assert_eq!(i64::try_from(&empty), Ok(0));
+        assert_eq!(i64::try_from(empty.clone()), Ok(0));
+
+        let fixed_round_trip = DataTernary::from_ternary(empty.to_fixed_ternary());
+        assert!(fixed_round_trip.chunks.is_empty());
+
+        let numeric_round_trip = DataTernary::from_ternary(empty.to_ternary());
+        assert_eq!(numeric_round_trip.chunks.len(), 1);
+        assert_eq!(numeric_round_trip.to_string(), "00000");
+    }
+
+    #[test]
+    #[should_panic(expected = "Ternary value does not fit in i64")]
+    fn data_to_dec_panics_on_overflow() {
+        let value = crate::Ternary::parse(&"+".repeat(100));
+        let storage = DataTernary::from_ternary(value);
+
+        let _ = storage.to_dec();
     }
 }
