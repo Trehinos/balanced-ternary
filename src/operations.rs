@@ -20,8 +20,8 @@
 //! ## `Ternary` type
 //!
 //! - `Neg` and `Not` for `&Ternary`: Negates the `Ternary` by negating each digit in its balanced ternary representation.
-//! - `Add<&Ternary>` for `&Ternary`: Adds two `Ternary` values and returns a new `Ternary`. Panics on overflow.
-//! - `Sub<&Ternary>` for `&Ternary`: Subtracts one `Ternary` from another and returns a new `Ternary`. Panics on overflow.
+//! - `Add<&Ternary>` for `&Ternary`: Performs arbitrary-precision balanced ternary addition directly on digits.
+//! - `Sub<&Ternary>` for `&Ternary`: Performs arbitrary-precision balanced ternary subtraction directly on digits.
 //! - `Mul<&Ternary>` for `&Ternary`: Multiplies two `Ternary` values and returns a new `Ternary`. Panics on overflow.
 //! - `Div<&Ternary>` for `&Ternary`: Divides one `Ternary` by another and returns a new `Ternary`. Panics on overflow or division by zero.
 //! - `BitAnd<&Ternary>` for `&Ternary`: Computes the bitwise AND operation on two `Ternary` operands.
@@ -31,7 +31,43 @@
 use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
 use alloc::vec;
+use alloc::vec::Vec;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Shl, Shr, Sub};
+
+impl Ternary {
+    fn add_sub_digits(lhs: &[Digit], rhs: &[Digit], subtract: bool) -> Ternary {
+        let width = lhs.len().max(rhs.len());
+
+        let mut result = Vec::with_capacity(width.saturating_add(1));
+        let mut lhs = lhs.iter().rev();
+        let mut rhs = rhs.iter().rev();
+        let mut carry = 0i8;
+
+        for _ in 0..width {
+            let a = lhs.next().copied().unwrap_or(Digit::Zero).to_i8();
+            let b = rhs.next().copied().unwrap_or(Digit::Zero).to_i8();
+            let b = if subtract { -b } else { b };
+            let sum = a + b + carry;
+            carry = (sum + 1).div_euclid(3);
+
+            let digit = sum - 3 * carry;
+            result.push(Digit::from_i8(digit));
+        }
+
+        if carry != 0 {
+            result.push(Digit::from_i8(carry));
+        }
+        while result.len() > 1 && result.last() == Some(&Digit::Zero) {
+            result.pop();
+        }
+        if result.is_empty() {
+            result.push(Digit::Zero);
+        }
+
+        result.reverse();
+        Ternary::new(result)
+    }
+}
 
 impl Neg for &Ternary {
     type Output = Ternary;
@@ -52,11 +88,7 @@ impl Add<&Ternary> for &Ternary {
     type Output = Ternary;
 
     fn add(self, rhs: &Ternary) -> Self::Output {
-        Ternary::from_dec(
-            self.to_dec()
-                .checked_add(rhs.to_dec())
-                .expect("Overflow in addition."),
-        )
+        Ternary::add_sub_digits(&self.digits, &rhs.digits, false)
     }
 }
 
@@ -64,11 +96,7 @@ impl Add<Digit> for &Ternary {
     type Output = Ternary;
 
     fn add(self, rhs: Digit) -> Self::Output {
-        Ternary::from_dec(
-            self.to_dec()
-                .checked_add(rhs.to_i8() as i64)
-                .expect("Overflow in addition."),
-        )
+        Ternary::add_sub_digits(&self.digits, &[rhs], false)
     }
 }
 
@@ -76,18 +104,14 @@ impl Sub<&Ternary> for &Ternary {
     type Output = Ternary;
 
     fn sub(self, rhs: &Ternary) -> Self::Output {
-        Ternary::from_dec(
-            self.to_dec()
-                .checked_sub(rhs.to_dec())
-                .expect("Overflow in subtraction."),
-        )
+        Ternary::add_sub_digits(&self.digits, &rhs.digits, true)
     }
 }
 
 impl Sub<Digit> for &Ternary {
     type Output = Ternary;
     fn sub(self, rhs: Digit) -> Self::Output {
-        self + (-rhs)
+        Ternary::add_sub_digits(&self.digits, &[rhs], true)
     }
 }
 
@@ -177,6 +201,8 @@ impl Not for &Ternary {
 #[cfg(test)]
 mod tests {
     use crate::Ternary;
+    use alloc::string::ToString;
+    use alloc::vec;
 
     #[test]
     fn test_ternary_ops() {
@@ -230,4 +256,87 @@ mod tests {
         let zero = &t >> 5;
         assert_eq!(zero.to_string(), "0");
     }
+
+    #[test]
+    fn test_native_add_sub_exhaustive() {
+        use crate::{Digit, Ternary};
+
+        for a in -100i64..=100 {
+            for b in -100i64..=100 {
+                let lhs = Ternary::from_dec(a);
+                let rhs = Ternary::from_dec(b);
+                let sum = &lhs + &rhs;
+                let difference = &lhs - &rhs;
+
+                assert_eq!(sum.to_dec(), a + b);
+                assert_eq!(difference.to_dec(), a - b);
+                assert_eq!(&sum - &rhs, lhs);
+                assert_eq!(&difference + &rhs, lhs);
+                assert_eq!(sum, sum.trim());
+                assert_eq!(difference, difference.trim());
+            }
+        }
+
+        for value in -100i64..=100 {
+            let lhs = Ternary::from_dec(value);
+            for digit in [Digit::Neg, Digit::Zero, Digit::Pos] {
+                let d = digit.to_i8() as i64;
+                assert_eq!((&lhs + digit).to_dec(), value + d);
+                assert_eq!((&lhs - digit).to_dec(), value - d);
+            }
+        }
+    }
+
+    #[test]
+    fn test_native_add_sub_i64_boundaries() {
+        use crate::Ternary;
+
+        let max = Ternary::from_dec(i64::MAX);
+        let min = Ternary::from_dec(i64::MIN);
+        let one = Ternary::from_dec(1);
+        let above_max = &max + &one;
+        let below_min = &min - &one;
+
+        assert_eq!(above_max.checked_to_dec(), None);
+        assert_eq!(below_min.checked_to_dec(), None);
+        assert_eq!(&above_max - &one, max);
+        assert_eq!(&below_min + &one, min);
+        assert_eq!((&max + &min).to_dec(), -1);
+    }
+
+    #[test]
+    fn test_native_add_sub_large_values() {
+        use crate::Ternary;
+
+        for width in [256, 1024] {
+            let positive = Ternary::parse(&"+".repeat(width));
+            let negative = Ternary::parse(&"-".repeat(width));
+            let one = Ternary::parse("+");
+            assert_eq!((&positive + &negative).to_string(), "0");
+
+            let incremented = &positive + &one;
+            let decremented = &negative - &one;
+            assert_eq!(incremented.log(), width + 1);
+            assert_eq!(decremented.log(), width + 1);
+            assert_eq!(&incremented - &one, positive);
+            assert_eq!(&decremented + &one, negative);
+            assert_eq!((&positive - &positive).to_string(), "0");
+        }
+    }
+
+    #[test]
+    fn test_native_add_sub_normalization() {
+        use crate::Ternary;
+
+        let empty = Ternary::new(vec![]);
+        let zero = Ternary::parse("0000");
+        let positive = Ternary::parse("000+");
+        let negative = Ternary::parse("000-");
+        assert_eq!((&empty + &empty).to_string(), "0");
+        assert_eq!((&zero - &zero).to_string(), "0");
+        assert_eq!((&positive + &negative).to_string(), "0");
+        assert_eq!((&positive - &negative).to_string(), "+-");
+        assert_eq!((&empty + &positive).to_string(), "+");
+    }
+
 }

@@ -9,7 +9,7 @@ This crate provides utilities for working with balanced ternary numbers and aims
 - **store** – compact storage types (`TritsChunk`, `DataTernary`, `Ter40`).
 - **conversions** – `From`/`Into` implementations for common types.
 
-All of these reside under `src/` and are organised as individual modules imported by `lib.rs`.
+All of these reside under `src/` and are organized as individual modules imported by `lib.rs`.
 
 The crate and all dependencies must remain usable with `#![no_std]`; avoid adding anything that would pull in `std` by default.
 
