@@ -7,7 +7,7 @@ use crate::{
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::array;
-use core::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter, Write};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
 use core::str::FromStr;
 
@@ -170,31 +170,48 @@ impl<const SIZE: usize> Tryte<SIZE> {
         Self::new(digits)
     }
 
-    /// Converts the `Tryte` into a signed 64-bit integer.
+    /// Converts the word into a signed 64-bit integer.
     ///
-    /// # Returns
+    /// Uses Horner's method without heap allocation.
     ///
-    /// A `i64` representing the decimal value of the `Tryte`.
+    /// The conversion cannot overflow because a
+    /// valid Tryte contains at most 40 trits.
     pub fn to_i64(&self) -> i64 {
-        self.to_ternary().to_dec()
+        self.raw
+            .iter()
+            .fold(0i64, |acc, digit| acc * 3 + digit.to_i8() as i64)
     }
 
-    /// Creates a `Tryte` from a signed 64-bit integer.
+    /// Creates a fixed-width ternary word from an i64.
     ///
-    /// # Arguments
-    ///
-    /// * `v` - A signed 64-bit integer.
+    /// Converts the value directly into the raw digit array,
+    /// without allocating an intermediate Ternary.
     ///
     /// # Panics
     ///
-    /// Panics if the value cannot be represented using
-    /// exactly SIZE balanced trits.
-    ///
-    /// # Returns
-    ///
-    /// A `Tryte` representing the equivalent ternary number.
-    pub fn from_i64(v: i64) -> Self {
-        Self::from_ternary(&Ternary::from_dec(v))
+    /// Panics if the value does not fit within SIZE trits.
+    /// Zero-width conversion remains unsupported pending R08.
+    pub fn from_i64(mut value: i64) -> Self {
+        if SIZE == 0 {
+            panic!("Cannot convert an i64 to Tryte<0>");
+        }
+        let mut digits = [Zero; SIZE];
+        for digit in digits.iter_mut().rev() {
+            let remainder = value.rem_euclid(3);
+            value = value.div_euclid(3);
+            *digit = match remainder {
+                0 => Zero,
+                1 => Pos,
+                2 => {
+                    value += 1;
+                    Neg
+                }
+                _ => unreachable!(),
+            };
+        }
+
+        assert_eq!(value, 0, "Value does not fit in Tryte<{}>", SIZE);
+        Self::new(digits)
     }
 
     /// Adds two fixed-width ternary words and returns
@@ -517,12 +534,12 @@ impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
 }
 
 impl<const SIZE: usize> Display for Tryte<SIZE> {
-    /// Formats the `Tryte` for display.
-    ///
-    /// The `Tryte` is displayed in its balanced ternary representation
-    /// as a SIZE-character string.
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{:01$}", self.to_ternary().to_string(), SIZE)
+        for digit in &self.raw {
+            f.write_char(digit.to_char())?;
+        }
+
+        Ok(())
     }
 }
 
@@ -567,28 +584,28 @@ impl<const SIZE: usize> Div for Tryte<SIZE> {
 }
 
 impl<const SIZE: usize> BitAnd for Tryte<SIZE> {
-    type Output = Tryte<SIZE>;
+    type Output = Self;
     fn bitand(self, rhs: Self) -> Self::Output {
-        Self::from_ternary(&(&self.to_ternary() & &rhs.to_ternary()))
+        self.each_zip(Digit::bitand, rhs)
     }
 }
 
 impl<const SIZE: usize> BitOr for Tryte<SIZE> {
-    type Output = Tryte<SIZE>;
+    type Output = Self;
     fn bitor(self, rhs: Self) -> Self::Output {
-        Self::from_ternary(&(&self.to_ternary() | &rhs.to_ternary()))
+        self.each_zip(Digit::bitor, rhs)
     }
 }
 
 impl<const SIZE: usize> BitXor for Tryte<SIZE> {
-    type Output = Tryte<SIZE>;
+    type Output = Self;
     fn bitxor(self, rhs: Self) -> Self::Output {
-        Self::from_ternary(&(&self.to_ternary() ^ &rhs.to_ternary()))
+        self.each_zip(Digit::bitxor, rhs)
     }
 }
 
 impl<const SIZE: usize> Not for Tryte<SIZE> {
-    type Output = Tryte<SIZE>;
+    type Output = Self;
     fn not(self) -> Self::Output {
         -self
     }
@@ -969,4 +986,75 @@ mod tests {
         assert_eq!(zero * zero, zero);
     }
 
+    #[test]
+    fn tryte_direct_i64_conversion() {
+        use crate::Tryte;
+
+        fn check<const N: usize>(min: i64, max: i64) {
+            for value in min..=max {
+                let word = Tryte::<N>::from_i64(value);
+                assert_eq!(word.to_i64(), value);
+                let reference = Tryte::<N>::from_ternary(&crate::Ternary::from_dec(value));
+                assert_eq!(word, reference);
+            }
+        }
+
+        check::<1>(-1, 1);
+        check::<3>(-13, 13);
+        check::<6>(-364, 364);
+
+        type Word = Tryte<40>;
+        for value in [
+            0,
+            1,
+            -1,
+            42,
+            -42,
+            6_078_832_729_528_464_400,
+            -6_078_832_729_528_464_400,
+        ] {
+            assert_eq!(Word::from_i64(value).to_i64(), value);
+        }
+        assert_eq!(Tryte::<0>::ZERO.to_i64(), 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "Value does not fit")]
+    fn tryte_direct_conversion_overflow() {
+        use crate::Tryte;
+        let _ = Tryte::<6>::from_i64(365);
+    }
+
+    #[test]
+    fn tryte_direct_bitwise_operations() {
+        use crate::Tryte;
+
+        for a in -13..=13 {
+            for b in -13..=13 {
+                let lhs = Tryte::<3>::from_i64(a);
+                let rhs = Tryte::<3>::from_i64(b);
+                let ta = lhs.to_ternary();
+                let tb = rhs.to_ternary();
+                let expected_and = Tryte::<3>::from_ternary(&(&ta & &tb));
+                let expected_or = Tryte::<3>::from_ternary(&(&ta | &tb));
+                let expected_xor = Tryte::<3>::from_ternary(&(&ta ^ &tb));
+                assert_eq!(lhs & rhs, expected_and);
+                assert_eq!(lhs | rhs, expected_or);
+                assert_eq!(lhs ^ rhs, expected_xor);
+            }
+        }
+    }
+
+    #[test]
+    fn tryte_direct_display() {
+        use crate::Tryte;
+        use alloc::string::ToString;
+
+        assert_eq!(Tryte::<6>::ZERO.to_string(), "000000");
+        assert_eq!(Tryte::<6>::MAX.to_string(), "++++++");
+        assert_eq!(Tryte::<6>::MIN.to_string(), "------");
+        assert_eq!(Tryte::<6>::from_i64(255).to_string(), "+00++0");
+        assert_eq!(Tryte::<6>::from_i64(-1).to_string(), "00000-");
+        assert_eq!(Tryte::<0>::ZERO.to_string(), "");
+    }
 }
