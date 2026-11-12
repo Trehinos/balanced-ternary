@@ -1,7 +1,37 @@
+use core::error::Error;
+use core::fmt::{Display, Formatter};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
 
 #[cfg(feature = "ternary-string")]
 use crate::Ternary;
+
+/// Error returned when a value cannot represent a balanced ternary digit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DigitConversionError {
+    /// The character is not '+', '0', or '-'.
+    InvalidCharacter(char),
+    /// The integer is not -1, 0, or 1.
+    InvalidValue(i8),
+}
+
+impl Display for DigitConversionError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::InvalidCharacter(character) => write!(
+                f,
+                "invalid balanced ternary character {character:?}; \
+                 expected '+', '0', or '-'"
+            ),
+            Self::InvalidValue(value) => write!(
+                f,
+                "invalid balanced ternary digit value {value}; \
+                 expected -1, 0, or 1"
+            ),
+        }
+    }
+}
+
+impl Error for DigitConversionError {}
 
 /// ## Module: Balanced Ternary `Digit`
 ///
@@ -11,9 +41,9 @@ use crate::Ternary;
 /// Represents a digit in the balanced ternary numeral system.
 ///
 /// A digit can have one of three values:
-/// - `Neg` (-1): Represents the value -1 in the balanced ternary system.
-/// - `Zero` (0): Represents the value 0 in the balanced ternary system.
-/// - `Pos` (+1): Represents the value +1 in the balanced ternary system.
+/// - `Neg` (-1): Represents value -1 in the balanced ternary system.
+/// - `Zero` (0): Represents value 0 in the balanced ternary system.
+/// - `Pos` (+1): Represents value +1 in the balanced ternary system.
 ///
 /// Provides utility functions for converting to/from characters, integers, and negation.
 ///
@@ -48,7 +78,7 @@ use crate::Ternary;
 /// The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
 ///
 /// ### Digits operations
-/// 
+///
 /// ![Digit operations](https://raw.githubusercontent.com/Trehinos/balanced-ternary/refs/heads/master/digit-operations.png)
 ///
 /// `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.
@@ -85,7 +115,6 @@ impl Digit {
         }
     }
 
-
     /// Converts the `Digit` into a character representation.
     ///
     /// - Returns:
@@ -114,19 +143,45 @@ impl Digit {
         }
     }
 
+    /// Attempts to convert 'Θ', '0', or '1' into a balanced ternary digit.
+    ///
+    /// Returns an error containing the invalid character on failure.
+    pub const fn try_from_char_theta(c: char) -> Result<Self, DigitConversionError> {
+        match c {
+            'Θ' => Ok(Self::Neg),
+            '0' => Ok(Self::Zero),
+            '1' => Ok(Self::Pos),
+            _ => Err(DigitConversionError::InvalidCharacter(c)),
+        }
+    }
+
     /// Creates a `Digit` from a character representation.
     ///
     /// - Accepts:
     ///     - `Θ` for `Digit::Neg`
     ///     - `0` for `Digit::Zero`
     ///     - `1` for `Digit::Pos`
-    /// - Panics if the input character is invalid.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the input character is invalid.
+    /// Use [`Self::try_from_char_theta`] for a fallible conversion.
     pub const fn from_char_theta(c: char) -> Digit {
-        match c { 
-            'Θ' => Digit::Neg,
-            '0' => Digit::Zero,
-            '1' => Digit::Pos,
-            _ => panic!("Invalid value. Expected 'Θ', '0', or '1'."),
+        match Self::try_from_char_theta(c) {
+            Ok(digit) => digit,
+            Err(_) => panic!("Invalid value. Expected 'Θ', '0', or '1'."),
+        }
+    }
+
+    /// Attempts to convert 'Z', '0', or '1' into a balanced ternary digit.
+    ///
+    /// Returns an error containing the invalid character on failure.
+    pub const fn try_from_char_z(c: char) -> Result<Self, DigitConversionError> {
+        match c {
+            'Z' => Ok(Self::Neg),
+            '0' => Ok(Self::Zero),
+            '1' => Ok(Self::Pos),
+            _ => Err(DigitConversionError::InvalidCharacter(c)),
         }
     }
 
@@ -136,13 +191,27 @@ impl Digit {
     ///     - `Z` for `Digit::Neg`
     ///     - `0` for `Digit::Zero`
     ///     - `1` for `Digit::Pos`
-    /// - Panics if the input character is invalid.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the input character is invalid.
+    /// Use [`Self::try_from_char_z`] for a fallible conversion.
     pub const fn from_char_z(c: char) -> Digit {
+        match Self::try_from_char_z(c) {
+            Ok(digit) => digit,
+            Err(_) => panic!("Invalid value. Expected 'Z', '0', or '1'."),
+        }
+    }
+
+    /// Attempts to convert 'T', '0', or '1' into a balanced ternary digit.
+    ///
+    /// Returns an error containing the invalid character on failure.
+    pub const fn try_from_char_t(c: char) -> Result<Self, DigitConversionError> {
         match c {
-            'Z' => Digit::Neg,
-            '0' => Digit::Zero,
-            '1' => Digit::Pos,
-            _ => panic!("Invalid value. Expected 'Z', '0', or '1'."),
+            'T' => Ok(Self::Neg),
+            '0' => Ok(Self::Zero),
+            '1' => Ok(Self::Pos),
+            _ => Err(DigitConversionError::InvalidCharacter(c)),
         }
     }
 
@@ -152,16 +221,18 @@ impl Digit {
     ///     - `T` for `Digit::Neg`
     ///     - `0` for `Digit::Zero`
     ///     - `1` for `Digit::Pos`
-    /// - Panics if the input character is invalid.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the input character is invalid.
+    /// Use [`Self::try_from_char_t`] for a fallible conversion.
     pub const fn from_char_t(c: char) -> Digit {
-        match c {
-            'T' => Digit::Neg,
-            '0' => Digit::Zero,
-            '1' => Digit::Pos,
-            _ => panic!("Invalid value. Expected 'T', '0', or '1'."),
+        match Self::try_from_char_t(c) {
+            Ok(digit) => digit,
+            Err(_) => panic!("Invalid value. Expected 'T', '0', or '1'."),
         }
     }
-    
+
     /// Converts the `Digit` into its character representation.
     ///
     /// - Returns:
@@ -176,19 +247,28 @@ impl Digit {
         }
     }
 
-    /// Creates a `Digit` from its character representation.
+    /// Attempts to convert '+', '0', or '-' into a balanced ternary digit.
     ///
-    /// - Accepts:
-    ///     - `-` for `Digit::Neg`
-    ///     - `0` for `Digit::Zero`
-    ///     - `+` for `Digit::Pos`
-    /// - Panics if the input character is invalid.
-    pub const fn from_char(c: char) -> Digit {
+    /// Returns an error containing the invalid character on failure.
+    pub const fn try_from_char(c: char) -> Result<Self, DigitConversionError> {
         match c {
-            '-' => Digit::Neg,
-            '0' => Digit::Zero,
-            '+' => Digit::Pos,
-            _ => panic!("Invalid value. A Ternary must be either -, 0 or +."),
+            '-' => Ok(Self::Neg),
+            '0' => Ok(Self::Zero),
+            '+' => Ok(Self::Pos),
+            _ => Err(DigitConversionError::InvalidCharacter(c)),
+        }
+    }
+
+    /// Converts '+', '0', or '-' into a balanced ternary digit.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the character is invalid.
+    /// Use [`Self::try_from_char`] for a fallible conversion.
+    pub const fn from_char(c: char) -> Self {
+        match Self::try_from_char(c) {
+            Ok(digit) => digit,
+            Err(_) => panic!("Invalid value. Expected '-', '0' or '+'."),
         }
     }
 
@@ -206,19 +286,28 @@ impl Digit {
         }
     }
 
-    /// Creates a `Digit` from its integer representation.
+    /// Attempts to convert -1, 0, or 1 into a balanced ternary digit.
     ///
-    /// - Accepts:
-    ///     - -1 for `Digit::Neg`
-    ///     - 0 for `Digit::Zero`
-    ///     - 1 for `Digit::Pos`
-    /// - Panics if the input integer is invalid.
-    pub const fn from_i8(i: i8) -> Digit {
-        match i {
-            -1 => Digit::Neg,
-            0 => Digit::Zero,
-            1 => Digit::Pos,
-            _ => panic!("Invalid value. A Ternary must be either -1, 0 or +1."),
+    /// This conversion is strict: values are not reduced modulo three.
+    pub const fn try_from_i8(value: i8) -> Result<Self, DigitConversionError> {
+        match value {
+            -1 => Ok(Self::Neg),
+            0 => Ok(Self::Zero),
+            1 => Ok(Self::Pos),
+            _ => Err(DigitConversionError::InvalidValue(value)),
+        }
+    }
+
+    /// Converts -1, 0, or 1 into a balanced ternary digit.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the integer is invalid.
+    /// Use [`Self::try_from_i8`] for a fallible conversion.
+    pub const fn from_i8(value: i8) -> Self {
+        match Self::try_from_i8(value) {
+            Ok(digit) => digit,
+            Err(_) => panic!("Invalid value. A Ternary must be either -1, 0 or +1."),
         }
     }
 
@@ -922,6 +1011,7 @@ impl BitXor for Digit {
 #[cfg(test)]
 mod tests {
     use super::Digit::{Neg, Pos, Zero};
+    use super::*;
 
     #[test]
     fn subtraction_modulo_three() {
@@ -940,5 +1030,158 @@ mod tests {
         for (a, b, expected) in cases {
             assert_eq!(a - b, expected, "{a:?} - {b:?}");
         }
+    }
+
+    #[test]
+    fn try_from_char_valid_and_invalid() {
+        assert_eq!(Digit::try_from_char('-'), Ok(Neg));
+        assert_eq!(Digit::try_from_char('0'), Ok(Zero));
+        assert_eq!(Digit::try_from_char('+'), Ok(Pos));
+        assert_eq!(
+            Digit::try_from_char('x'),
+            Err(DigitConversionError::InvalidCharacter('x'))
+        );
+
+        assert_eq!(Digit::from_char('-'), Neg);
+        assert_eq!(Digit::from_char('0'), Zero);
+        assert_eq!(Digit::from_char('+'), Pos);
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid value. Expected '-', '0' or '+'.")]
+    fn from_char_panic() {
+        Digit::from_char('1');
+    }
+
+    #[test]
+    fn try_from_char_theta_valid_and_invalid() {
+        assert_eq!(Digit::try_from_char_theta('Θ'), Ok(Neg));
+        assert_eq!(Digit::try_from_char_theta('0'), Ok(Zero));
+        assert_eq!(Digit::try_from_char_theta('1'), Ok(Pos));
+        assert_eq!(
+            Digit::try_from_char_theta('x'),
+            Err(DigitConversionError::InvalidCharacter('x'))
+        );
+
+        assert_eq!(Digit::from_char_theta('Θ'), Neg);
+        assert_eq!(Digit::from_char_theta('0'), Zero);
+        assert_eq!(Digit::from_char_theta('1'), Pos);
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid value. Expected 'Θ', '0', or '1'.")]
+    fn from_char_theta_panic() {
+        Digit::from_char_theta('-');
+    }
+
+    #[test]
+    fn try_from_char_z_valid_and_invalid() {
+        assert_eq!(Digit::try_from_char_z('Z'), Ok(Neg));
+        assert_eq!(Digit::try_from_char_z('0'), Ok(Zero));
+        assert_eq!(Digit::try_from_char_z('1'), Ok(Pos));
+        assert_eq!(
+            Digit::try_from_char_z('x'),
+            Err(DigitConversionError::InvalidCharacter('x'))
+        );
+
+        assert_eq!(Digit::from_char_z('Z'), Neg);
+        assert_eq!(Digit::from_char_z('0'), Zero);
+        assert_eq!(Digit::from_char_z('1'), Pos);
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid value. Expected 'Z', '0', or '1'.")]
+    fn from_char_z_panic() {
+        Digit::from_char_z('-');
+    }
+
+    #[test]
+    fn try_from_char_t_valid_and_invalid() {
+        assert_eq!(Digit::try_from_char_t('T'), Ok(Neg));
+        assert_eq!(Digit::try_from_char_t('0'), Ok(Zero));
+        assert_eq!(Digit::try_from_char_t('1'), Ok(Pos));
+        assert_eq!(
+            Digit::try_from_char_t('x'),
+            Err(DigitConversionError::InvalidCharacter('x'))
+        );
+
+        assert_eq!(Digit::from_char_t('T'), Neg);
+        assert_eq!(Digit::from_char_t('0'), Zero);
+        assert_eq!(Digit::from_char_t('1'), Pos);
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid value. Expected 'T', '0', or '1'.")]
+    fn from_char_t_panic() {
+        Digit::from_char_t('-');
+    }
+    #[test]
+    fn digit_character_conversions() {
+        use crate::{Digit, digit::DigitConversionError};
+
+        for (character, expected) in [('-', Neg), ('0', Zero), ('+', Pos)] {
+            assert_eq!(Digit::try_from_char(character), Ok(expected));
+            assert_eq!(Digit::try_from(character), Ok(expected));
+            assert_eq!(Digit::from_char(character), expected);
+            assert_eq!(char::from(expected), character);
+        }
+
+        for character in ['1', '2', 'x', ' ', '\n', '\0', '−', 'Θ', '🙂'] {
+            let expected = Err(DigitConversionError::InvalidCharacter(character));
+
+            assert_eq!(Digit::try_from_char(character), expected);
+            assert_eq!(Digit::try_from(character), expected);
+        }
+    }
+
+    #[test]
+    fn digit_integer_conversions_exhaustive() {
+        use crate::{Digit, digit::DigitConversionError};
+
+        for value in i8::MIN..=i8::MAX {
+            let expected = match value {
+                -1 => Ok(Neg),
+                0 => Ok(Zero),
+                1 => Ok(Pos),
+                _ => Err(DigitConversionError::InvalidValue(value)),
+            };
+
+            assert_eq!(Digit::try_from_i8(value), expected);
+            assert_eq!(Digit::try_from(value), expected);
+
+            if let Ok(digit) = expected {
+                assert_eq!(Digit::from_i8(value), digit);
+                assert_eq!(i8::from(digit), value);
+            }
+        }
+    }
+
+    #[test]
+    fn digit_conversions_are_const() {
+        use crate::{Digit, digit::DigitConversionError};
+
+        const POSITIVE: Result<Digit, DigitConversionError> = Digit::try_from_char('+');
+        const NEGATIVE: Result<Digit, DigitConversionError> = Digit::try_from_i8(-1);
+        const INVALID: Result<Digit, DigitConversionError> = Digit::try_from_i8(2);
+        const ZERO_FROM_CHAR: Digit = Digit::from_char('0');
+        const ZERO_FROM_INTEGER: Digit = Digit::from_i8(0);
+
+        assert_eq!(POSITIVE, Ok(Pos));
+        assert_eq!(NEGATIVE, Ok(Neg));
+        assert_eq!(INVALID, Err(DigitConversionError::InvalidValue(2)));
+        assert_eq!(ZERO_FROM_CHAR, Zero);
+        assert_eq!(ZERO_FROM_INTEGER, Zero);
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid value")]
+    fn digit_from_char_rejects_invalid_input() {
+        let _ = crate::Digit::from_char('x');
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid value")]
+    fn digit_from_i8_rejects_invalid_input() {
+        let _ = crate::Digit::from_i8(2);
     }
 }

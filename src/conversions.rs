@@ -1,34 +1,21 @@
-//! This module provides conversions between `Digit` and `Ternary` types and common Rust types such as `char`, `&str`, and `String`.
+//! Conversions between balanced ternary types and common Rust types.
 //!
-//! # Overview
-//! The module defines `impl From` traits for seamless conversions:
+//! `TryFrom` provides fallible conversions from `char` and `i8` to `Digit`,
+//! and from `&str` and `String` to `Ternary`.
 //!
-//! - `Digit` <-> `char`: Converts digits to and from their character representation.
-//! - `Digit` <-> `i8`: Converts digits to and from their byte representation.
-//! - `Ternary` <-> `&str` / `String`: Allows parsing and generating ternary numbers from strings.
-//! - `Ternary` <-> `i64`: Converts ternary numbers from/to decimal numbers.
+//! Conversions from `Digit` to `char` or `i8`, from `i64` to `Ternary`,
+//! and from `Ternary` to `String` are infallible.
 //!
-//! The primary goal of these conversions is to simplify working with `Digit` and `Ternary` types by leveraging Rust's `From` and `Into` traits.
+//! The legacy `From<Ternary> for i64` conversion still panics on overflow.
+//! Use `Ternary::checked_to_dec()` when the value may exceed the i64 range.
 
-use crate::Digit;
+use crate::{digit::DigitConversionError, Digit};
 
 #[cfg(feature = "ternary-string")]
 use alloc::string::{String, ToString};
 
 #[cfg(feature = "ternary-string")]
-use crate::Ternary;
-
-impl From<char> for Digit {
-    fn from(value: char) -> Self {
-        Self::from_char(value)
-    }
-}
-
-impl From<i8> for Digit {
-    fn from(value: i8) -> Self {
-        Self::from_i8(value)
-    }
-}
+use crate::{ParseTernaryError, Ternary};
 
 impl From<Digit> for char {
     fn from(value: Digit) -> Self {
@@ -41,18 +28,33 @@ impl From<Digit> for i8 {
         value.to_i8()
     }
 }
+impl TryFrom<char> for Digit {
+    type Error = DigitConversionError;
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        Self::try_from_char(value)
+    }
+}
 
-#[cfg(feature = "ternary-string")]
-impl From<&str> for Ternary {
-    fn from(value: &str) -> Self {
-        Self::parse(value)
+impl TryFrom<i8> for Digit {
+    type Error = DigitConversionError;
+    fn try_from(value: i8) -> Result<Self, Self::Error> {
+        Self::try_from_i8(value)
     }
 }
 
 #[cfg(feature = "ternary-string")]
-impl From<String> for Ternary {
-    fn from(value: String) -> Self {
-        Self::from(value.as_str())
+impl TryFrom<&str> for Ternary {
+    type Error = ParseTernaryError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Self::try_parse(value)
+    }
+}
+
+#[cfg(feature = "ternary-string")]
+impl TryFrom<String> for Ternary {
+    type Error = ParseTernaryError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_parse(value.as_str())
     }
 }
 

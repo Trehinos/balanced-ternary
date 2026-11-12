@@ -76,14 +76,27 @@ use core::{
 };
 
 #[cfg(feature = "ternary-string")]
-/// Error returned when parsing a string into a [`Ternary`] fails.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ParseTernaryError;
+/// Error returned when parsing a balanced ternary representation fails.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseTernaryError {
+    /// The input contains a character other than ones expected in a balanced ternary representation.
+    InvalidCharacter {
+        /// The invalid character.
+        character: char,
+        /// The zero-based UTF-8 byte offset in the input.
+        index: usize,
+    },
+}
 
 #[cfg(feature = "ternary-string")]
 impl Display for ParseTernaryError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        write!(f, "invalid character in balanced ternary string")
+        match self {
+            Self::InvalidCharacter { character, index } => write!(
+                f,
+                "invalid balanced ternary character {character:?} at byte index {index}"
+            ),
+        }
     }
 }
 
@@ -267,6 +280,12 @@ pub fn dter(from: &str) -> DataTernary {
 /// The original digit sequence can be accessed through
 /// `to_digit_slice()`.
 ///
+/// Empty representations are valid and have the numeric value zero.
+/// Parsing and formatting preserve the exact digit sequence,
+/// including leading zeros and empty input.
+/// 
+/// Use `trim()` to get a canonical numeric representation.
+///
 /// # Conversions
 ///
 /// Although arithmetic supports arbitrary precision,
@@ -340,21 +359,49 @@ impl Ternary {
         self.digits.get(position)
     }
 
-    /// Parses a string representation of a balanced ternary number into a `Ternary` object.
+    /// Parses a balanced ternary representation.
     ///
-    /// Each character in the string must be one of `+`, `0`, or `-`.
+    /// Leading zeros and empty input are preserved.
+    /// An empty representation has numeric value zero and displays as "".
     ///
-    /// # Example
+    /// # Errors
+    ///
+    /// Returns the first invalid character and its UTF-8 byte offset.
+    /// Only '+', '0', and '-' are accepted; whitespace is not ignored.
+    pub fn try_parse(input: &str) -> Result<Self, ParseTernaryError> {
+        let mut digits = Vec::with_capacity(input.len());
+        for (index, character) in input.char_indices() {
+            let digit = Digit::try_from_char(character)
+                .map_err(|_| ParseTernaryError::InvalidCharacter { character, index })?;
+            digits.push(digit);
+        }
+        Ok(Self::new(digits))
+    }
+
+    /// Parses a balanced ternary representation.
+    ///
+    /// Leading zeros and empty input are preserved.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the input contains a character other than '+', '0', or '-'.
+    /// Use [`Self::try_parse`] or [`FromStr`] for fallible parsing.
+    ///
+    /// # Examples
+    ///
     /// ```
     /// use balanced_ternary::Ternary;
     ///
-    /// let ternary = "+-0".parse::<Ternary>().unwrap();
-    /// assert_eq!(ternary.to_string(), "+-0");
+    /// let value = Ternary::parse("00+-0");
+    /// assert_eq!(value.to_string(), "00+-0");
+    ///
+    /// let empty = Ternary::parse("");
+    /// assert!(empty.to_digit_slice().is_empty());
+    /// assert_eq!(empty.to_string(), "");
+    /// assert_eq!(empty.to_dec(), 0);
     /// ```
     pub fn parse(input: &str) -> Self {
-        let mut digits = Vec::with_capacity(input.len());
-        digits.extend(input.chars().map(Digit::from_char));
-        Self::new(digits)
+        Self::try_parse(input).expect("invalid balanced ternary string")
     }
 
     /// Converts the `Ternary` object to its integer (decimal) representation.
@@ -742,11 +789,7 @@ impl FromStr for Ternary {
     type Err = ParseTernaryError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.chars().all(|c| matches!(c, '+' | '0' | '-')) {
-            Ok(Ternary::parse(s))
-        } else {
-            Err(ParseTernaryError)
-        }
+        Self::try_parse(s)
     }
 }
 
@@ -1142,6 +1185,7 @@ mod tests {
         assert_eq!(Tryte::<0>::ZERO.digit(0), None);
     }
 
+    #[cfg(feature = "ternary-store")]
     #[test]
     fn ter40_carry_wraps_at_fixed_width() {
         use crate::Ter40;
@@ -1252,5 +1296,107 @@ mod tests {
                 assert_eq!(trimmed.trim().to_digit_slice(), trimmed.to_digit_slice());
             }
         }
+    }
+    #[test]
+    fn parsing_preserves_exact_representation() {
+        use crate::Digit::{Neg, Pos, Zero};
+        use alloc::string::String;
+
+        let cases: &[(&str, &[Digit])] = &[
+            ("", &[]),
+            ("0", &[Zero]),
+            ("000", &[Zero, Zero, Zero]),
+            ("+", &[Pos]),
+            ("-", &[Neg]),
+            ("00+-0", &[Zero, Zero, Pos, Neg, Zero]),
+        ];
+
+        for &(input, expected_digits) in cases {
+            let results = [
+                Ternary::try_parse(input),
+                input.parse::<Ternary>(),
+                Ternary::try_from(input),
+                Ternary::try_from(String::from(input)),
+            ];
+
+            for result in results {
+                let value = result.unwrap();
+
+                assert_eq!(value.to_digit_slice(), expected_digits);
+                assert_eq!(value.to_string(), input);
+            }
+
+            assert_eq!(
+                Ternary::parse(input).to_digit_slice(),
+                expected_digits
+            );
+        }
+    }
+
+    #[test]
+    fn parsing_reports_the_first_invalid_character() {
+        use crate::ParseTernaryError;
+        use alloc::string::String;
+
+        let cases = [
+            ("x", 'x', 0),
+            ("+0x-", 'x', 2),
+            ("+x?", 'x', 1),
+            (" 0", ' ', 0),
+            ("0 ", ' ', 1),
+            ("0\n", '\n', 1),
+            ("0\0", '\0', 1),
+            ("0é", 'é', 1),
+            ("0−", '−', 1),
+            ("+🙂", '🙂', 1),
+            ("12", '1', 0),
+        ];
+
+        for (input, character, index) in cases {
+            let expected =
+                ParseTernaryError::InvalidCharacter { character, index };
+
+            let results = [
+                Ternary::try_parse(input),
+                input.parse::<Ternary>(),
+                Ternary::try_from(input),
+                Ternary::try_from(String::from(input)),
+            ];
+
+            for result in results {
+                assert_eq!(result, Err(expected), "Input: {input:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn empty_parsing_preserves_zero_width() {
+        let empty = Ternary::try_parse("").unwrap();
+        let zero = Ternary::from_dec(0);
+
+        // Numeric equality does not imply identical representations.
+        assert_eq!(empty, zero);
+        assert_ne!(empty.to_digit_slice(), zero.to_digit_slice());
+
+        assert_eq!(empty.checked_to_dec(), Some(0));
+        assert_eq!(empty.log(), 0);
+        assert_eq!(empty.to_string(), "");
+        assert_eq!(empty.trim().to_digit_slice(), &[Digit::Zero]);
+    }
+
+    #[test]
+    fn parsing_supports_large_representations() {
+        let input = alloc::format!("000{}", "+0-".repeat(1024));
+        let value = Ternary::try_parse(&input).unwrap();
+
+        assert_eq!(value.to_string(), input);
+        assert_eq!(value.log(), input.len());
+        assert_eq!(value.checked_to_dec(), None);
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid balanced ternary string")]
+    fn infallible_parse_rejects_invalid_input() {
+        let _ = Ternary::parse("+x");
     }
 }
