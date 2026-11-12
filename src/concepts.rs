@@ -166,7 +166,7 @@ pub trait DigitOperate {
     /// [crate::Ternary] preserves a nonzero outgoing carry by
     /// extending the resulting representation.
     ///
-    /// Fixed-width implementations ([crate::Tryte]<N> and [crate::Ter40])
+    /// Fixed-width implementations ([`crate::Tryte<N>`] and [crate::Ter40])
     /// discard the outgoing carry and preserve their width.
     ///
     /// The returned value therefore does not necessarily
