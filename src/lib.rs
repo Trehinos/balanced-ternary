@@ -65,6 +65,7 @@ pub mod concepts;
 use alloc::{format, string::String, vec, vec::Vec};
 
 use crate::concepts::DigitOperate;
+use core::fmt::Write;
 use core::hash::{Hash, Hasher};
 #[cfg(feature = "ternary-string")]
 use core::{
@@ -328,23 +329,15 @@ impl Ternary {
         self.digits.iter()
     }
 
-    /// Returns a reference to the [Digit] indexed by `index` if it exists.
+    /// Returns the digit at the specified position,
+    /// counting from the least significant digit.
     ///
-    /// Digits are indexed **from the right**:
-    /// ```
-    /// use balanced_ternary::Ternary;
+    /// Returns None if the index is out of bounds.
     ///
-    /// // Indexes :
-    /// //                              32
-    /// //                             4||1
-    /// //                            5||||0
-    /// //                            ||||||
-    /// //                            vvvvvv
-    /// let ternary = Ternary::parse("+++--+");
-    /// assert_eq!(ternary.get_digit(1).unwrap().to_char(), '-')
-    /// ```
+    /// Time complexity: O(1).
     pub fn get_digit(&self, index: usize) -> Option<&Digit> {
-        self.digits.iter().rev().nth(index)
+        let position = self.digits.len().checked_sub(index)?.checked_sub(1)?;
+        self.digits.get(position)
     }
 
     /// Parses a string representation of a balanced ternary number into a `Ternary` object.
@@ -358,12 +351,10 @@ impl Ternary {
     /// let ternary = "+-0".parse::<Ternary>().unwrap();
     /// assert_eq!(ternary.to_string(), "+-0");
     /// ```
-    pub fn parse(str: &str) -> Self {
-        let mut repr = Ternary::new(vec![]);
-        for c in str.chars() {
-            repr.digits.push(Digit::from_char(c));
-        }
-        repr
+    pub fn parse(input: &str) -> Self {
+        let mut digits = Vec::with_capacity(input.len());
+        digits.extend(input.chars().map(Digit::from_char));
+        Self::new(digits)
     }
 
     /// Converts the `Ternary` object to its integer (decimal) representation.
@@ -548,14 +539,12 @@ impl Ternary {
     /// assert_eq!(fixed.to_string(), "+");
     /// ```
     pub fn with_length(&self, length: usize) -> Self {
-        if length < self.log() {
-            return self.clone();
-        }
-        let zeroes = vec![Zero; length - self.log()];
-        let mut repr = Ternary::new(vec![]);
-        repr.digits.extend(zeroes);
-        repr.digits.extend(self.digits.iter().cloned());
-        repr
+        let current_length = self.digits.len();
+        let mut digits = Vec::with_capacity(length.max(current_length));
+        digits.resize(length.saturating_sub(current_length), Zero);
+        digits.extend_from_slice(&self.digits);
+
+        Self::new(digits)
     }
 
     /// Converts the `Ternary` number into a string representation by applying a given
@@ -591,11 +580,11 @@ impl Ternary {
     ///   for the ternary number digits.
     /// * Call to `Ternary::to_string()` is equivalent to `Ternary::to_string_repr(Digit::to_char)`.
     pub fn to_string_repr<F: Fn(&Digit) -> char>(&self, transform: F) -> String {
-        let mut str = String::new();
-        for digit in self.digits.iter() {
-            str.push(transform(digit));
+        let mut result = String::with_capacity(self.digits.len());
+        for digit in &self.digits {
+            result.push(transform(digit));
         }
-        str
+        result
     }
 
     /// Concatenates the current `Ternary` number with another `Ternary` number.
@@ -623,10 +612,11 @@ impl Ternary {
     /// assert_eq!(concatenated.to_string(), "+0-+");
     /// ```
     pub fn concat(&self, other: &Ternary) -> Ternary {
-        let mut t = Ternary::new(vec![]);
-        t.digits.extend(self.digits.iter().cloned());
-        t.digits.extend(other.digits.iter().cloned());
-        t
+        let mut digits = Vec::with_capacity(self.digits.len() + other.digits.len());
+        digits.extend_from_slice(&self.digits);
+        digits.extend_from_slice(&other.digits);
+
+        Ternary::new(digits)
     }
 
     fn significant_digits(&self) -> &[Digit] {
@@ -740,7 +730,10 @@ impl DigitOperate for Ternary {
 #[cfg(feature = "ternary-string")]
 impl Display for Ternary {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.to_string_repr(Digit::to_char))
+        for digit in &self.digits {
+            f.write_char(digit.to_char())?;
+        }
+        Ok(())
     }
 }
 

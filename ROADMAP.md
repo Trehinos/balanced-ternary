@@ -2,20 +2,20 @@
 
 ## Priority overview
 
-| ID  | Priority                 | Outstanding task                                                                                   | Primary files                                                      |
-|-----|--------------------------|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| R01 | done                     | ~~Repair `Digit::sub`: the current source still produces incorrect results~~                       | `src/digit.rs`                                                     |
-| R02 | done                     | ~~Repair `checked_to_dec()` for `i64::MIN`: intermediate `i64` overflow~~                          | `src/lib.rs`                                                       |
-| R03 | done                     | ~~Remove `i64` conversion from `Ternary::trim()`~~                                                 | `src/lib.rs`                                                       |
-| R04 | done                     | ~~Enforce `Ter40` range and define fixed-width overflow behavior~~                                 | `src/store.rs`                                                     |
-| R05 | done                     | ~~Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`~~                 | `src/tryte.rs`, `src/store.rs`                                     |
-| R06 | done                     | ~~Implement arbitrary-precision arithmetic directly on `Ternary` digits~~                          | `src/operations.rs`, `src/lib.rs`                                  |
-| R07 | **P1 — performance**     | Eliminate temporary `Ternary` and `String` objects in remaining fixed-width methods and formatting | `src/tryte.rs`, `src/store.rs`, `src/lib.rs`                       |
-| R08 | **P1 — conversion API**  | Normalize conversion and parsing error behavior, including padding/empty input                     | `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs` |
-| R09 | **P2 — architecture**    | Introduce arithmetic directly on `TritsChunk` / `DataTernary` in balanced base 243                 | `src/store.rs`                                                     |
-| R10 | **P2 — semantic design** | Decide numeric-value versus representation equality for `DataTernary`                              | `src/store.rs`                                                     |
-| R11 | **P1 — verification**    | Expand boundary/property tests and CI feature matrix                                               | tests, `.github/workflows/rust.yml`                                |
-| R12 | **P2 — release quality** | Benchmark, documentation consistency, release metadata, optional API extensions                    | docs, benchmarks, `Cargo.toml`, `.changelog/`                      |
+| ID  | Priority                 | Outstanding task                                                                                       | Primary files                                                      |
+|-----|--------------------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| R01 | done                     | ~~Repair `Digit::sub`: the current source still produces incorrect results~~                           | `src/digit.rs`                                                     |
+| R02 | done                     | ~~Repair `checked_to_dec()` for `i64::MIN`: intermediate `i64` overflow~~                              | `src/lib.rs`                                                       |
+| R03 | done                     | ~~Remove `i64` conversion from `Ternary::trim()`~~                                                     | `src/lib.rs`                                                       |
+| R04 | done                     | ~~Enforce `Ter40` range and define fixed-width overflow behavior~~                                     | `src/store.rs`                                                     |
+| R05 | done                     | ~~Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`~~                     | `src/tryte.rs`, `src/store.rs`                                     |
+| R06 | done                     | ~~Implement arbitrary-precision arithmetic directly on `Ternary` digits~~                              | `src/operations.rs`, `src/lib.rs`                                  |
+| R07 | done                     | ~~Eliminate temporary `Ternary` and `String` objects in remaining fixed-width methods and formatting~~ | `src/tryte.rs`, `src/store.rs`, `src/lib.rs`                       |
+| R08 | **P1 — conversion API**  | Normalize conversion and parsing error behavior, including padding/empty input                         | `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs` |
+| R09 | **P2 — architecture**    | Introduce arithmetic directly on `TritsChunk` / `DataTernary` in balanced base 243                     | `src/store.rs`                                                     |
+| R10 | **P2 — semantic design** | Decide numeric-value versus representation equality for `DataTernary`                                  | `src/store.rs`                                                     |
+| R11 | **P1 — verification**    | Expand boundary/property tests and CI feature matrix                                                   | tests, `.github/workflows/rust.yml`                                |
+| R12 | **P2 — release quality** | Benchmark, documentation consistency, release metadata, optional API extensions                        | docs, benchmarks, `Cargo.toml`, `.changelog/`                      |
 
 ---
 
@@ -43,32 +43,7 @@ done
 
 ## R07 — Eliminate remaining allocations/conversions in fixed-width methods [P1]
 
-**Sources:** [`src/tryte.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/tryte.rs),
-[`src/store.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/store.rs),
-[`src/lib.rs`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/src/lib.rs).
-
-The `DigitOperate::each*` methods now work directly over the `Tryte<N>` array or `Ter40` scalar. *
-*Do not redo that work.** Remaining hotspots are elsewhere:
-
-- `Tryte<N>`: `to_i64()` converts through `to_ternary()`; `from_i64()` converts through `Ternary`;
-  For bounded `N<=40`, a direct Horner fold over the array is
-  sufficient for `to_i64()`.
-- `Tryte<N>::fmt`: formats through an allocated `Ternary` and `String`; write characters directly to
-  the formatter.
-- `Ter40::digit()` and `to_digits()` repeatedly materialize `Ternary`. Extract trits using a scalar
-  path; `to_digits()` must necessarily allocate its returned vector, but it should not allocate a
-  temporary `Ternary` first.
-- `Ter40::fmt`: consider writing 40 trits directly, without creating a `Ternary`.
-- `Ternary::fmt`: avoid `to_string_repr()` allocation inside `Display`; write each digit with the
-  formatter.
-- `Ternary::get_digit()`, `with_length()`, `concat()`: simplify indexing/preallocation where
-  supported; benchmark rather than assuming meaningful speedups.
-- `DataTernary::from_ternary()`: presently constructs a fresh `Vec<Digit>` and `Ternary` for every
-  5-trit chunk. Encode each five-trit slice directly into `i8`, with correct range handling.
-  `to_digits()` redundantly calls `.trim()` on a normalized value.
-
-**Acceptance:** No heap allocation in fixed-width digitwise operators; clear count of unavoidable
-allocations; equivalent output and width semantics; benchmark before/after.
+done
 
 ## R08 — Clarify conversions, parsing, and zero-width representation [P1]
 

@@ -1,8 +1,7 @@
 use crate::concepts::DigitOperate;
 use crate::{Digit, Ternary};
-use alloc::vec;
 use alloc::vec::Vec;
-use core::fmt::Display;
+use core::fmt::{Display, Write};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Sub};
 
 /// A compact representation of five balanced ternary digits.
@@ -82,46 +81,40 @@ impl TritsChunk {
         Ternary::from_dec(self.0 as i64)
     }
 
-    /// Converts the `TritsChunk` into its fixed-length ternary representation.
-    ///
-    /// # Returns
-    ///
-    /// A `Ternary` type representing the 5-digit fixed-length ternary form of the `TritsChunk`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use balanced_ternary::{TritsChunk, Ternary};
-    ///
-    /// let chunk = TritsChunk::from_dec(42);
-    /// let fixed_ternary = chunk.to_fixed_ternary();
-    /// assert_eq!(fixed_ternary.to_dec(), 42);
-    /// assert_eq!(fixed_ternary.to_digit_slice().len(), 5);
-    /// ```
+    /// Converts the chunk into a fixed-length five-trit balanced ternary representation.
     pub fn to_fixed_ternary(&self) -> Ternary {
-        Ternary::from_dec(self.0 as i64).with_length(5)
+        Ternary::new(self.to_digits())
     }
 
-    /// Converts the `TritsChunk` into a vector of its individual ternary digits.
-    ///
-    /// # Returns
-    ///
-    /// A `Vec<Digit>` representing the individual ternary digits of the `TritsChunk`.
-    ///
-    /// The resulting vector will always contain 5 digits since the `TritsChunk` is
-    /// represented in a fixed-length ternary form.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use balanced_ternary::{TritsChunk, Digit};
-    ///
-    /// let chunk = TritsChunk::from_dec(42);
-    /// let digits: Vec<Digit> = chunk.to_digits();
-    /// assert_eq!(digits.len(), 5);
-    /// ```
+    /// Returns exactly five digits, including leading zeros.
     pub fn to_digits(&self) -> Vec<Digit> {
-        self.to_fixed_ternary().to_digit_slice().to_vec()
+        self.to_digit_array().to_vec()
+    }
+
+    /// Decodes the chunk into exactly five balanced
+    /// ternary digits, including leading zeros.
+    ///
+    /// The most significant digit comes first.
+    /// No heap allocation is performed.
+    fn to_digit_array(self) -> [Digit; 5] {
+        let mut value = self.0;
+        let mut digits = [Digit::Zero; 5];
+        for digit in digits.iter_mut().rev() {
+            let remainder = value.rem_euclid(3);
+            value = value.div_euclid(3);
+
+            *digit = match remainder {
+                0 => Digit::Zero,
+                1 => Digit::Pos,
+                2 => {
+                    value += 1;
+                    Digit::Neg
+                }
+                _ => unreachable!(),
+            };
+        }
+        debug_assert_eq!(value, 0);
+        digits
     }
 
     /// Creates a `TritsChunk` from a given `Ternary` value.
@@ -171,122 +164,50 @@ pub struct DataTernary {
 }
 
 impl DataTernary {
-    /// Creates a new instance of `DataTernary` from a given `Ternary` value.
+    /// Encodes a balanced ternary representation into
+    /// five-trit chunks.
     ///
-    /// This method ensures that the total number of ternary digits is a multiple of 5
-    /// by padding as necessary. It then divides the ternary number into chunks of
-    /// 5 digits each, which are stored in the `DataTernary` structure.
+    /// Leading zeros are added to complete the first
+    /// chunk when necessary.
     ///
-    /// # Arguments
-    ///
-    /// * `ternary` - A `Ternary` value to be converted into a `DataTernary`.
-    ///
-    /// # Returns
-    ///
-    /// A new `DataTernary` instance containing the converted chunks.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use balanced_ternary::{DataTernary, Ternary};
-    ///
-    /// let ternary = Ternary::from_dec(42);
-    /// let data_ternary = DataTernary::from_ternary(ternary);
-    /// assert_eq!(data_ternary.to_dec(), 42);
-    /// ```
+    /// The original representation length, including
+    /// leading zeros, is otherwise preserved.
     pub fn from_ternary(ternary: Ternary) -> Self {
-        let len = ternary.log();
-        let diff = (5 - len % 5) % 5;
-        let ternary = ternary.with_length(len + diff);
-        let mut chunks = Vec::new();
-        for i in 0..(ternary.log() / 5) {
-            let digits = ternary.to_digit_slice()[i * 5..(i + 1) * 5].to_vec();
-            chunks.push(TritsChunk::from_ternary(Ternary::new(digits)));
+        let digits = ternary.to_digit_slice();
+        let padding = (5 - digits.len() % 5) % 5;
+        let chunk_count = digits.len() / 5 + usize::from(digits.len() % 5 != 0);
+        let mut chunks = Vec::with_capacity(chunk_count);
+        let mut accumulator = 0i16;
+        let mut count = padding;
+        for digit in digits {
+            accumulator = accumulator * 3 + digit.to_i8() as i16;
+            count += 1;
+
+            if count == 5 {
+                debug_assert!((-121..=121).contains(&accumulator));
+                chunks.push(TritsChunk::from_dec(accumulator as i8));
+                accumulator = 0;
+                count = 0;
+            }
         }
+
+        debug_assert_eq!(count, 0);
         Self { chunks }
     }
 
-    /// Converts a `DataTernary` into its equivalent `Ternary` representation.
-    ///
-    /// This function iterates over all the `TritsChunk` instances in the `DataTernary`,
-    /// extracts their ternary representations, and reconstructs them into the full
-    /// `Ternary` value. The resulting `Ternary` value may be trimmed to remove
-    /// any leading zeroes in its ternary digit representation.
-    ///
-    /// # Returns
-    ///
-    /// A `Ternary` value that represents the combined ternary digits of the
-    /// `DataTernary`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use balanced_ternary::{DataTernary, Ternary};
-    ///
-    /// let ternary = Ternary::from_dec(42);
-    /// let data_ternary = DataTernary::from_ternary(ternary.clone());
-    /// assert_eq!(data_ternary.to_ternary(), ternary);
-    /// ```
+    /// Converts the stored value into a normalized balanced ternary representation.
     pub fn to_ternary(&self) -> Ternary {
-        let fixed = self.to_fixed_ternary();
-        let digits = fixed.to_digit_slice();
-
-        match digits.iter().position(|d| *d != Digit::Zero) {
-            Some(index) => Ternary::new(digits[index..].to_vec()),
-            None => Ternary::new(vec![Digit::Zero]),
-        }
+        Ternary::new(self.decode_digits(true))
     }
 
-    /// Converts the `DataTernary` into its fixed-length `Ternary` representation.
-    ///
-    /// This method iterates over all the `TritsChunk` instances in the `DataTernary` and
-    /// extracts and combines their ternary digits into a single `Ternary` value.
-    /// The resulting `Ternary` value will contain a fixed number of digits without trimming
-    /// or removing leading zeroes.
-    ///
-    /// # Returns
-    ///
-    /// A `Ternary` value representing the combined fixed-length ternary digits of the `DataTernary`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use balanced_ternary::{DataTernary, Ternary};
-    ///
-    /// let ternary = Ternary::from_dec(42);
-    /// let data_ternary = DataTernary::from_ternary(ternary);
-    /// let fixed_ternary = data_ternary.to_fixed_ternary();
-    /// assert_eq!(fixed_ternary.to_dec(), 42); // When properly encoded
-    /// ```
+    /// Converts the stored chunks into a fixed-width representation containing five trits per chunk.
     pub fn to_fixed_ternary(&self) -> Ternary {
-        let mut digits = Vec::with_capacity(self.chunks.len() * 5);
-        for chunk in &self.chunks {
-            digits.extend(chunk.to_digits());
-        }
-        Ternary::new(digits)
+        Ternary::new(self.decode_digits(false))
     }
 
-    /// Converts the `DataTernary` into a vector of ternary digits.
-    ///
-    /// This method first converts the `DataTernary` structure into its `Ternary` representation,
-    /// trims any leading zeroes, and then returns the sequence of ternary digits as a `Vec<Digit>`.
-    ///
-    /// # Returns
-    ///
-    /// A `Vec<Digit>` containing the ternary digits that represent the `DataTernary` value.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use balanced_ternary::{DataTernary, Digit, Ternary};
-    ///
-    /// let ternary = Ternary::from_dec(42);
-    /// let data_ternary = DataTernary::from_ternary(ternary);
-    /// let digits = data_ternary.to_digits();
-    /// assert_eq!(digits, vec![Digit::Pos, Digit::Neg, Digit::Neg, Digit::Neg, Digit::Zero]);
-    /// ```
+    /// Returns the normalized digit sequence.
     pub fn to_digits(&self) -> Vec<Digit> {
-        self.to_ternary().trim().to_digit_slice().to_vec()
+        self.decode_digits(true)
     }
 
     /// Converts a decimal number into a `DataTernary` structure.
@@ -312,14 +233,35 @@ impl DataTernary {
     /// let data_ternary = DataTernary::from_dec(42);
     /// assert_eq!(data_ternary.to_dec(), 42);
     /// ```
-    pub fn from_dec(from: i64) -> Self {
-        Self::from_ternary(Ternary::from_dec(from))
+    pub fn from_dec(mut value: i64) -> Self {
+        let mut chunks = Vec::new();
+        loop {
+            let remainder = value.rem_euclid(243);
+            value = value.div_euclid(243);
+
+            let chunk = if remainder <= 121 {
+                remainder as i8
+            } else {
+                value += 1;
+                (remainder - 243) as i8
+            };
+            chunks.push(TritsChunk::from_dec(chunk));
+            if value == 0 {
+                break;
+            }
+        }
+
+        chunks.reverse();
+        Self { chunks }
     }
 
     /// Converts a `DataTernary` into its decimal representation.
     ///
     /// This method reconstructs the ternary value represented by the `DataTernary`
     /// structure and converts it into the corresponding signed 64-bit decimal integer.
+    /// # Panics
+    ///
+    /// Panics if the value does not fit in i64.
     ///
     /// # Returns
     ///
@@ -336,14 +278,46 @@ impl DataTernary {
     /// assert_eq!(decimal, 42);
     /// ```
     pub fn to_dec(&self) -> i64 {
-        self.to_ternary().to_dec()
+        self.chunks
+            .iter()
+            .try_fold(0i128, |acc, chunk| {
+                acc.checked_mul(243)?.checked_add(chunk.to_dec() as i128)
+            })
+            .and_then(|value| i64::try_from(value).ok())
+            .expect("Ternary value does not fit in i64")
+    }
+
+    /// Decodes the stored chunks into balanced ternary digits.
+    ///
+    /// When `trim` is true, leading zeros are removed,
+    /// and an empty or all-zero value becomes [Zero].
+    ///
+    /// When `trim` is false, the result contains
+    /// exactly five digits per chunk.
+    fn decode_digits(&self, trim: bool) -> Vec<Digit> {
+        let mut digits = Vec::with_capacity(self.chunks.len() * 5);
+        for chunk in &self.chunks {
+            for digit in chunk.to_digit_array() {
+                if trim && digits.is_empty() && digit == Digit::Zero {
+                    continue;
+                }
+                digits.push(digit);
+            }
+        }
+
+        if trim && digits.is_empty() {
+            digits.push(Digit::Zero);
+        }
+        digits
     }
 }
 
 impl Display for DataTernary {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         for chunk in &self.chunks {
-            write!(f, "{}", chunk.to_fixed_ternary())?;
+            for digit in chunk.to_digit_array() {
+                f.write_char(digit.to_char())?;
+            }
         }
         Ok(())
     }
@@ -450,10 +424,11 @@ impl Ter40 {
         }
     }
 
-    /// Converts this value into a balanced ternary representation
-    /// containing exactly 40 digits, including leading zeros.
+    /// Converts the value into a balanced ternary
+    /// representation containing exactly 40 trits,
+    /// including leading zeros.
     pub fn to_ternary(&self) -> Ternary {
-        Ternary::from_dec(self.0).with_length(40)
+        Ternary::new(self.to_digit_array().to_vec())
     }
 
     fn pop_trit(value: &mut i64) -> Digit {
@@ -471,6 +446,25 @@ impl Ter40 {
         }
     }
 
+    /// Decodes the value into exactly 40 balanced trits.
+    ///
+    /// Digits are ordered from most significant to
+    /// least significant, including leading zeros.
+    ///
+    /// This method performs no heap allocation.
+    fn to_digit_array(self) -> [Digit; 40] {
+        let mut value = self.0;
+        let mut digits = [Digit::Zero; 40];
+
+        for digit in digits.iter_mut().rev() {
+            *digit = Self::pop_trit(&mut value);
+        }
+
+        debug_assert_eq!(value, 0);
+
+        digits
+    }
+
     fn map_trits(
         &self,
         other: Self,
@@ -486,20 +480,16 @@ impl Ter40 {
 
         let mut lhs = self.0;
         let mut rhs = other.0;
-
         let mut carry = Digit::Zero;
         let mut result = 0i64;
         let mut power = 1i64;
-
         for index in 0..40 {
             let a = Self::pop_trit(&mut lhs);
             let b = Self::pop_trit(&mut rhs);
-
             let (next_carry, digit) = f(a, b, carry);
 
             result += digit.to_i8() as i64 * power;
             carry = next_carry;
-
             if index < 39 {
                 power *= 3;
             }
@@ -547,11 +537,19 @@ impl Ter40 {
 
 impl DigitOperate for Ter40 {
     fn to_digits(&self) -> Vec<Digit> {
-        self.to_ternary().to_digits()
+        self.to_digit_array().to_vec()
     }
 
     fn digit(&self, index: usize) -> Option<Digit> {
-        self.to_ternary().digit(index)
+        if index >= 40 {
+            return None;
+        }
+
+        let mut value = self.0;
+        for _ in 0..index {
+            Self::pop_trit(&mut value);
+        }
+        Some(Self::pop_trit(&mut value))
     }
 
     fn each(&self, f: impl Fn(Digit) -> Digit) -> Self
@@ -586,7 +584,10 @@ impl DigitOperate for Ter40 {
 
 impl Display for Ter40 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.to_ternary())
+        for digit in self.to_digit_array() {
+            f.write_char(digit.to_char())?;
+        }
+        Ok(())
     }
 }
 
@@ -821,5 +822,203 @@ mod tests {
     fn ter40_div_by_zero() {
         use crate::Ter40;
         let _ = Ter40::from_dec(1) / Ter40::ZERO;
+    }
+
+    #[test]
+    fn ter40_direct_digit_access() {
+        use crate::concepts::DigitOperate;
+        use crate::{Digit, Ter40, Ternary};
+
+        let values = [
+            Ter40::MIN.to_dec(),
+            -1_000_000,
+            -1,
+            0,
+            1,
+            1_000_000,
+            Ter40::MAX.to_dec(),
+        ];
+
+        for value in values {
+            let word = Ter40::from_dec(value);
+            let reference = Ternary::from_dec(value).with_length(40);
+            assert_eq!(word.to_digits(), reference.to_digit_slice());
+            assert_eq!(
+                word.to_ternary().to_digit_slice(),
+                reference.to_digit_slice()
+            );
+
+            for index in 0..40 {
+                assert_eq!(
+                    word.digit(index),
+                    reference.get_digit(index).copied(),
+                    "Failed for value {value} at index {index}"
+                );
+            }
+            assert_eq!(word.digit(40), None);
+            assert_eq!(word.digit(100), None);
+        }
+        assert_eq!(Ter40::ZERO.digit(39), Some(Digit::Zero));
+        assert_eq!(Ter40::MAX.digit(39), Some(Digit::Pos));
+        assert_eq!(Ter40::MIN.digit(39), Some(Digit::Neg));
+    }
+
+    #[test]
+    fn ter40_direct_display() {
+        use crate::{Ter40, Ternary};
+        use alloc::string::ToString;
+
+        for value in [Ter40::MIN.to_dec(), -42, -1, 0, 1, 42, Ter40::MAX.to_dec()] {
+            let word = Ter40::from_dec(value);
+            let expected = Ternary::from_dec(value).with_length(40).to_string();
+            assert_eq!(word.to_string(), expected);
+            assert_eq!(word.to_string().len(), 40);
+        }
+        assert_eq!(Ter40::ZERO.to_string(), "0".repeat(40));
+        assert_eq!(Ter40::MAX.to_string(), "+".repeat(40));
+        assert_eq!(Ter40::MIN.to_string(), "-".repeat(40));
+    }
+
+    #[test]
+    fn ter40_direct_conversion_exhaustive() {
+        use crate::concepts::DigitOperate;
+        use crate::{Ter40, Ternary};
+
+        for value in -1000i64..=1000 {
+            let word = Ter40::from_dec(value);
+            let reference = Ternary::from_dec(value).with_length(40);
+            assert_eq!(
+                word.to_ternary().to_digit_slice(),
+                reference.to_digit_slice()
+            );
+            assert_eq!(word.to_digits(), reference.to_digit_slice());
+            assert_eq!(word.to_ternary().to_dec(), value);
+        }
+    }
+
+    #[test]
+    fn ternary_r07_regression() {
+        use crate::{Digit, Ternary};
+        use alloc::string::ToString;
+
+        let value = Ternary::parse("000+-0");
+        assert_eq!(value.to_string(), "000+-0");
+        assert_eq!(value.get_digit(0), Some(&Digit::Zero));
+        assert_eq!(value.get_digit(1), Some(&Digit::Neg));
+        assert_eq!(value.get_digit(2), Some(&Digit::Pos));
+        assert_eq!(value.get_digit(6), None);
+        assert_eq!(value.get_digit(usize::MAX), None);
+        assert_eq!(value.with_length(8).to_string(), "00000+-0");
+        assert_eq!(value.with_length(2).to_string(), "000+-0");
+        assert_eq!(value.concat(&Ternary::parse("-+")).to_string(), "000+-0-+");
+        assert_eq!(value.to_string_repr(Digit::to_char_theta), "0001Θ0");
+
+        let empty = Ternary::parse("");
+        assert_eq!(empty.to_string(), "");
+        assert_eq!(empty.with_length(0).to_string(), "");
+        assert_eq!(empty.with_length(3).to_string(), "000");
+    }
+
+    #[test]
+    fn trits_chunk_direct_decoding() {
+        use crate::{Ternary, TritsChunk};
+
+        for value in -121i8..=121 {
+            let chunk = TritsChunk::from_dec(value);
+            let expected = Ternary::from_dec(value as i64).with_length(5);
+            assert_eq!(chunk.to_digits(), expected.to_digit_slice());
+            assert_eq!(chunk.to_fixed_ternary(), expected);
+        }
+    }
+
+    #[test]
+    fn data_ternary_direct_encoding() {
+        use crate::{DataTernary, Ternary};
+        use alloc::string::ToString;
+
+        let cases = [
+            "",
+            "0",
+            "000",
+            "+",
+            "-",
+            "+-0-+",
+            "+00000",
+            "-00000",
+            "0000000000",
+            "000+--",
+            "+0-0++-",
+        ];
+
+        for input in cases {
+            let original = Ternary::parse(input);
+            let padding = (5 - input.len() % 5) % 5;
+            let expected_fixed = original.with_length(input.len() + padding);
+            let storage = DataTernary::from_ternary(original.clone());
+
+            assert_eq!(
+                storage.to_fixed_ternary(),
+                expected_fixed,
+                "Fixed representation failed for {input}"
+            );
+            assert_eq!(
+                storage.to_ternary(),
+                original.trim(),
+                "Numeric representation failed for {input}"
+            );
+            assert_eq!(storage.to_digits(), original.trim().to_digit_slice());
+            assert_eq!(storage.to_string(), expected_fixed.to_string());
+        }
+    }
+
+    #[test]
+    fn data_ternary_direct_numeric_conversion() {
+        use crate::{DataTernary, Ternary};
+
+        let boundaries = [
+            i64::MIN,
+            -1_000_000,
+            -243,
+            -122,
+            -121,
+            -1,
+            0,
+            1,
+            121,
+            122,
+            243,
+            1_000_000,
+            i64::MAX,
+        ];
+
+        for value in boundaries {
+            let optimized = DataTernary::from_dec(value);
+            let reference = DataTernary::from_ternary(Ternary::from_dec(value));
+            assert_eq!(optimized, reference);
+            assert_eq!(optimized.to_dec(), value);
+        }
+        for value in -10_000i64..=10_000 {
+            assert_eq!(DataTernary::from_dec(value).to_dec(), value);
+        }
+    }
+
+    #[test]
+    fn data_ternary_large_and_empty_values() {
+        use crate::{DataTernary, Digit, Ternary};
+        use alloc::string::ToString;
+
+        let input = "+-0".repeat(100);
+        let original = Ternary::parse(&input);
+        let storage = DataTernary::from_ternary(original.clone());
+        assert_eq!(storage.to_ternary(), original);
+        assert_eq!(storage.to_string(), input);
+        assert_eq!(storage.to_digits().len(), input.len());
+
+        let empty = DataTernary::default();
+        assert_eq!(empty.to_fixed_ternary().to_string(), "");
+        assert_eq!(empty.to_ternary().to_string(), "0");
+        assert_eq!(empty.to_digits(), vec![Digit::Zero]);
+        assert_eq!(empty.to_string(), "");
+        assert_eq!(empty.to_dec(), 0);
     }
 }
