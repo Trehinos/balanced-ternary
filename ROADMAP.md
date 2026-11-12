@@ -114,49 +114,7 @@ cancelled
 
 ## R11 — Test matrix, properties, and CI [P1]
 
-**Sources:** library tests and [
-`.github/workflows/rust.yml`](https://github.com/Trehinos/balanced-ternary/blob/28614306f09289ddfaa19e6d7732ff452d97faf5/.github/workflows/rust.yml).
-
-The workflow only runs `cargo build --verbose` and `cargo test --verbose` for default features.
-Expand it to exercise feature combinations and verify `no_std` compatibility.
-
-**Suggested local commands:**
-
-```sh
-cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features
-cargo test --no-default-features
-cargo test --no-default-features --features ternary-string
-cargo test --no-default-features --features tryte
-cargo test --no-default-features --features ternary-store
-cargo build --no-default-features
-cargo doc --no-deps --all-features
-```
-
-**Required test families:**
-
-1. Exhaustive `Digit` arithmetic (nine inputs for each binary operation; check the intended
-   three-valued logic truth tables separately).
-2. Full signed-64-bit round trips at both boundaries, with many random samples.
-3. Property-based `Ternary` arithmetic once direct arithmetic is implemented (identities, signs,
-   carries, division/remainder contract).
-4. `Ternary` `Eq`/`Ord`/`Hash` consistency, including `HashSet` and `BTreeSet`, leading zeros, and
-   very long representations; the current tests cover equality/order but do not exercise
-   hash-collection consistency.
-5. Fixed-width overflow boundaries for `Tryte<1>`, `<2>`, `<6>`, `<40>` and `Ter40`; explicit tests
-   for `Tryte<0>` if supported.
-6. `DataTernary` round trips for arbitrary blocks, all-zero chunks, prefix padding, and empty
-   storage.
-7. Noncommutative `each_zip` callbacks, retained outgoing carry on `Ternary`, and documented
-   discarded carry on fixed types; the current suite already contains targeted tests but not broad
-   property tests.
-8. A test build for targets without `std` where available (the crate's `no_std` declaration alone
-   does not prove compatibility with every target/allocator setup).
-
-**Acceptance:** Every enabled feature combination builds; tests pass under debug and release; CI
-guards the chosen semantics. Treat clippy output as a review input rather than changing public
-behavior to silence warnings.
+done
 
 ## R12 — Benchmark, documentation, and release hygiene [P2]
 
@@ -168,29 +126,12 @@ behavior to silence warnings.
 - Review API documentation for semantics of balanced versus ordinary ternary, fixed-width carry
   loss, numerical versus structural equality, width-preserving versus normalized formatting, and
   checked/wrapping operations.
-- Update the version metadata consistently. At the reviewed revision, `Cargo.toml` still declares
-  `2.1.0`, while `.changelog/v2.1.1.md` exists but its first heading incorrectly says
-  `# Version 2.1.0`. Do not claim a release has been published simply because a changelog exists.
 - Update `README.md` examples and `AGENTS.md` to match chosen policies; consider MSRV and SemVer
   implications of changing constructors, equality, or operator behavior.
 - Avoid introducing a `BoundedTernary` trait until repeated concrete implementations show a stable
   shared API.
 
 ---
-
-## Recommended implementation sequence
-
-1. ~~**Correctness hotfix:** R01, R02, R03; add regression tests in the same commit(s). Explicitly
-   test `i64::MIN` and long `trim()`.~~
-2. ~~**Fixed-width safety:** R04, then decide R05 before changing operator overloads. Preserve or
-   intentionally break compatibility with a documented release plan.~~
-3. ~~**Arithmetic core:** R06. Start with add/sub and property tests; implement mul and div/rem
-   separately.~~
-4. **Performance cleanup:** R07 with benchmarks rather than making speculative micro-optimizations.
-5. **Conversion semantics:** R08, with edge-case tests and clear error types.
-6. **Compact arithmetic and value semantics:** R09–R10, separately from bug fixes.
-7. **Continuous verification and release:** R11–R12 should be applied progressively, not deferred
-   until the end.
 
 ### Working rules
 
