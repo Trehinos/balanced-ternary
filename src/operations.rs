@@ -446,7 +446,10 @@ mod tests {
                 assert_eq!(&sum - &rhs, lhs);
                 assert_eq!(&difference + &rhs, lhs);
                 assert_eq!(sum.to_digit_slice(), sum.trim().to_digit_slice());
-                assert_eq!(difference.to_digit_slice(), difference.trim().to_digit_slice());
+                assert_eq!(
+                    difference.to_digit_slice(),
+                    difference.trim().to_digit_slice()
+                );
             }
         }
 
@@ -552,7 +555,10 @@ mod tests {
                     assert_eq!(remainder.to_dec().signum(), a.signum());
                 }
                 assert_eq!(quotient.to_digit_slice(), quotient.trim().to_digit_slice());
-                assert_eq!(remainder.to_digit_slice(), remainder.trim().to_digit_slice());
+                assert_eq!(
+                    remainder.to_digit_slice(),
+                    remainder.trim().to_digit_slice()
+                );
             }
         }
     }

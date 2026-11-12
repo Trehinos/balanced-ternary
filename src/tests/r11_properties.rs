@@ -51,10 +51,10 @@ fn digit_logic_truth_tables() {
 mod numeric {
     extern crate std;
 
-    use alloc::vec;
-    use alloc::vec::Vec;
     use crate::concepts::DigitOperate;
     use crate::{Digit, Ternary};
+    use alloc::vec;
+    use alloc::vec::Vec;
     use std::collections::{BTreeSet, HashSet};
     use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -208,8 +208,7 @@ mod numeric {
 
             #[cfg(feature = "tryte")]
             {
-                let word = crate::Tryte::<41>::try_from(&x)
-                    .expect("Every i64 fits in 41 trits");
+                let word = crate::Tryte::<41>::try_from(&x).expect("Every i64 fits in 41 trits");
                 assert_eq!(i64::try_from(word), Ok(a));
             }
 

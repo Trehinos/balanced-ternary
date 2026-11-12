@@ -15,8 +15,13 @@ The crate and all dependencies must remain usable with `#![no_std]`; avoid addin
 
 Before merging new code, ensure that:
 
-1. Every public function has an accompanying unit test.
-2. `cargo build` and `cargo test` run successfully. These steps mirror the CI defined in `.github/workflows/rust.yml`.
+1. Every public function has an accompanying test.
+2. Formatting checks pass.
+3. Builds, unit tests, integration tests, and doctests pass for every
+   effective feature combination in debug and release.
+4. The library builds for `thumbv7em-none-eabi` without `std`.
+5. Documentation builds without warnings.
+6. Clippy diagnostics are reviewed.
 
 ## Arithmetic semantics
 

@@ -930,10 +930,10 @@ pub use crate::tryte::{ParseTryteError, Tryte};
 mod tests {
     use crate::concepts::DigitOperate;
     use crate::{Digit, Ternary};
+    use Digit::{Pos, Zero};
     use alloc::string::ToString;
     use alloc::vec;
     use core::cmp::Ordering;
-    use Digit::{Pos, Zero};
 
     #[test]
     fn test_ternary() {

@@ -14,7 +14,7 @@
 | R08 | done                     | ~~Normalize conversion and parsing error behavior, including padding/empty input~~                     | `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs` |
 | R09 | cancelled                | ~~Introduce arithmetic directly on `TritsChunk` / `DataTernary` in balanced base 243~~                 | `src/store.rs`                                                     |
 | R10 | done                     | ~~Decide numeric-value versus representation equality for `DataTernary`~~                              | `src/store.rs`                                                     |
-| R11 | **P1 — verification**    | Expand boundary/property tests and CI feature matrix                                                   | tests, `.github/workflows/rust.yml`                                |
+| R11 | done                     | ~~Expand boundary/property tests and CI feature matrix~~                                               | tests, `.github/workflows/rust.yml`                                |
 | R12 | **P2 — release quality** | Benchmark, documentation consistency, release metadata, optional API extensions                        | docs, benchmarks, `Cargo.toml`, `.changelog/`                      |
 
 ---

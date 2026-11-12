@@ -1358,19 +1358,14 @@ mod tests {
 
         for suffix in ["+", "-", "+-0"] {
             let short = DataTernary::from_ternary(Ternary::parse(suffix));
-            let same = DataTernary::from_ternary(
-                Ternary::parse(suffix).with_length(5),
-            );
-            let wider = DataTernary::from_ternary(
-                Ternary::parse(suffix).with_length(6),
-            );
+            let same = DataTernary::from_ternary(Ternary::parse(suffix).with_length(5));
+            let wider = DataTernary::from_ternary(Ternary::parse(suffix).with_length(6));
 
             assert_eq!(short, same);
             assert_ne!(short, wider);
             assert_eq!(short.to_ternary(), wider.to_ternary());
 
-            let restored =
-                DataTernary::from_ternary(wider.to_fixed_ternary());
+            let restored = DataTernary::from_ternary(wider.to_fixed_ternary());
             assert_eq!(restored, wider);
         }
 
@@ -1384,19 +1379,12 @@ mod tests {
 
         let empty = DataTernary::default();
         let one_chunk = DataTernary::from_dec(0);
-        let two_chunks =
-            DataTernary::from_ternary(Ternary::parse("000000"));
+        let two_chunks = DataTernary::from_ternary(Ternary::parse("000000"));
 
-        assert_eq!(
-            empty,
-            DataTernary::from_ternary(Ternary::parse(""))
-        );
+        assert_eq!(empty, DataTernary::from_ternary(Ternary::parse("")));
 
         for input in ["0", "000", "00000"] {
-            assert_eq!(
-                one_chunk,
-                DataTernary::from_ternary(Ternary::parse(input))
-            );
+            assert_eq!(one_chunk, DataTernary::from_ternary(Ternary::parse(input)));
         }
 
         assert_ne!(empty, one_chunk);
@@ -1426,9 +1414,7 @@ mod tests {
         assert!(set.insert(wider.clone()));
         assert!(set.insert(DataTernary::default()));
         assert!(set.insert(DataTernary::from_dec(0)));
-        assert!(set.insert(DataTernary::from_ternary(
-            Ternary::parse("000000")
-        )));
+        assert!(set.insert(DataTernary::from_ternary(Ternary::parse("000000"))));
         assert_eq!(set.len(), 5);
 
         let mut map = HashMap::new();
