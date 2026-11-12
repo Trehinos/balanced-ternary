@@ -70,14 +70,14 @@ Add structures to store ternaries efficiently. These types are provided:
 
 ## Types summary
 
-| Type          | Representation    | Behavior                                                   |
-|---------------|-------------------|------------------------------------------------------------|
-| `Digit`       | Single trit       | Arithmetic operations modulo 3                             |
-| `Ternary`     | `Vec<Digit>`      | Arbitrary precision, arithmetic currently limited to `i64` |
-| `Tryte<N>`    | `[Digit; N]`      | Fixed-width word; wrapping add, sub and mul                |
-| `Ter40`       | `i64`             | Bounded signed 40-trit integer with checked arithmetic     |
-| `TritsChunk`  | `i8`              | Compact storage for 5 trits                                |
-| `DataTernary` | `Vec<TritsChunk>` | Compact variable-length storage                            |
+| Type          | Representation    | Behavior                                               |
+|---------------|-------------------|--------------------------------------------------------|
+| `Digit`       | Single trit       | Arithmetic operations modulo 3                         |
+| `Ternary`     | `Vec<Digit>`      | Arbitrary precision                                    |
+| `Tryte<N>`    | `[Digit; N]`      | Fixed-width word; wrapping add, sub and mul            |
+| `Ter40`       | `i64`             | Bounded signed 40-trit integer with checked arithmetic |
+| `TritsChunk`  | `i8`              | Compact storage for 5 trits                            |
+| `DataTernary` | `Vec<TritsChunk>` | Compact variable-length storage                        |
 
 ## Three-valued logic
 
