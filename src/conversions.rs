@@ -9,7 +9,7 @@
 //! The legacy `From<Ternary> for i64` conversion still panics on overflow.
 //! Use `Ternary::checked_to_dec()` when the value may exceed the i64 range.
 
-use crate::{digit::DigitConversionError, Digit};
+use crate::{DigitConversionError, Digit};
 
 #[cfg(feature = "ternary-string")]
 use alloc::string::{String, ToString};

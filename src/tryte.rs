@@ -2,14 +2,42 @@ use crate::concepts::DigitOperate;
 use crate::{
     Digit,
     Digit::{Neg, Pos, Zero},
-    Ternary,
+    ParseTernaryError, Ternary, TernaryConversionError,
 };
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::array;
+use core::error::Error;
 use core::fmt::{Display, Formatter, Write};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg as StdNeg, Not, Sub};
 use core::str::FromStr;
+
+/// Error returned when parsing a fixed-width balanced ternary word.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseTryteError {
+    /// The input contains an invalid character.
+    Parse(ParseTernaryError),
+    /// The value or requested word width cannot be represented.
+    Conversion(TernaryConversionError),
+}
+
+impl Display for ParseTryteError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Parse(error) => Display::fmt(error, f),
+            Self::Conversion(error) => Display::fmt(error, f),
+        }
+    }
+}
+
+impl Error for ParseTryteError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Parse(error) => Some(error),
+            Self::Conversion(error) => Some(error),
+        }
+    }
+}
 
 /// A fixed-width balanced ternary word containing exactly
 /// `SIZE` trits.
@@ -23,7 +51,7 @@ use core::str::FromStr;
 /// # Arithmetic
 ///
 /// - Addition, subtraction, and multiplication wrap modulo 3^SIZE.
-/// - Division (`/`) performs signed integer division,
+/// - Division (`/`) performs a signed integer division,
 ///   truncating toward zero.
 /// - `checked_*` methods return `None` on overflow or
 ///   division by zero.
@@ -53,9 +81,21 @@ use core::str::FromStr;
 /// - 40 trits: -6_078_832_729_528_464_400
 ///           ..= 6_078_832_729_528_464_400
 ///
-/// `Tryte<0>` represents an empty word whose only
-/// numeric value is zero. Its conversion API has
-/// limitations that will be addressed in R08.
+/// `Tryte<0>` is an empty word whose only numeric value is zero.
+/// Numeric conversions accept zero, including empty and all-zero
+/// ternary representations, and reject every nonzero value.
+///
+/// # Conversions
+///
+/// Numeric conversions check significant trits rather than raw length.
+/// Leading zeros are accepted, and successful conversions preserve
+/// exactly SIZE trits.
+///
+/// Constructors do not wrap out-of-range values, even though
+/// addition, subtraction, and multiplication use wrapping arithmetic.
+///
+/// Use `TryFrom` for detailed conversion errors or `checked_from_*`
+/// for an Option result. Parsing through `FromStr` does not allocate.
 ///
 /// # Examples
 ///
@@ -147,27 +187,27 @@ impl<const SIZE: usize> Tryte<SIZE> {
         &self.raw
     }
 
-    /// Creates a `Tryte` from the given `Ternary`.
+    /// Converts a numeric value into a fixed-width word.
     ///
-    /// # Arguments
-    ///
-    /// * `v` - A reference to a `Ternary` object.
+    /// Leading zeros are ignored when checking representability.
+    /// Empty and all-zero representations are accepted, including for SIZE = 0.
     ///
     /// # Panics
     ///
-    /// This function panics if the `Ternary` contains more than SIZE digits.
-    pub fn from_ternary(v: &Ternary) -> Self {
-        if v.log() > SIZE {
-            panic!(
-                "Cannot convert a Ternary with more than {} digits to a Tryte<{}>.",
-                SIZE, SIZE
-            );
-        }
-        let mut digits = [Zero; SIZE];
-        for (i, d) in v.digits.iter().rev().enumerate() {
-            digits[SIZE - 1 - i] = *d;
-        }
-        Self::new(digits)
+    /// Panics if SIZE exceeds 40 or the numeric value does not fit.
+    pub fn from_ternary(value: &Ternary) -> Self {
+        Self::try_from(value).expect("Value does not fit in Tryte or width is unsupported")
+    }
+
+    /// Attempts to convert a numeric value into a fixed-width word.
+    ///
+    /// Leading zeros do not affect representability.
+    /// Empty and all-zero representations are accepted, including for SIZE = 0.
+    ///
+    /// Returns None if SIZE exceeds 40 or the value does not fit.
+    /// No heap allocation is performed.
+    pub fn checked_from_ternary(value: &Ternary) -> Option<Self> {
+        Self::try_from(value).ok()
     }
 
     /// Converts the word into a signed 64-bit integer.
@@ -182,36 +222,25 @@ impl<const SIZE: usize> Tryte<SIZE> {
             .fold(0i64, |acc, digit| acc * 3 + digit.to_i8() as i64)
     }
 
-    /// Creates a fixed-width ternary word from an i64.
+    /// Converts an i64 into a fixed-width word without wrapping.
     ///
-    /// Converts the value directly into the raw digit array,
-    /// without allocating an intermediate Ternary.
+    /// SIZE = 0 accepts only zero.
     ///
     /// # Panics
     ///
-    /// Panics if the value does not fit within SIZE trits.
-    /// Zero-width conversion remains unsupported pending R08.
-    pub fn from_i64(mut value: i64) -> Self {
-        if SIZE == 0 {
-            panic!("Cannot convert an i64 to Tryte<0>");
-        }
-        let mut digits = [Zero; SIZE];
-        for digit in digits.iter_mut().rev() {
-            let remainder = value.rem_euclid(3);
-            value = value.div_euclid(3);
-            *digit = match remainder {
-                0 => Zero,
-                1 => Pos,
-                2 => {
-                    value += 1;
-                    Neg
-                }
-                _ => unreachable!(),
-            };
-        }
+    /// Panics if SIZE exceeds 40 or the numeric value does not fit.
+    pub fn from_i64(value: i64) -> Self {
+        Self::try_from(value).expect("Value does not fit in Tryte or width is unsupported")
+    }
 
-        assert_eq!(value, 0, "Value does not fit in Tryte<{}>", SIZE);
-        Self::new(digits)
+    /// Attempts to convert an i64 into a fixed-width word.
+    ///
+    /// SIZE = 0 accepts only zero.
+    ///
+    /// Returns None if SIZE exceeds 40 or the value does not fit.
+    /// No heap allocation is performed.
+    pub fn checked_from_i64(value: i64) -> Option<Self> {
+        Self::try_from(value).ok()
     }
 
     /// Adds two fixed-width ternary words and returns
@@ -484,6 +513,14 @@ impl<const SIZE: usize> Tryte<SIZE> {
 
         (Self::new(digits), carry)
     }
+
+    fn validate_width() -> Result<(), TernaryConversionError> {
+        if SIZE > 40 {
+            Err(TernaryConversionError::UnsupportedWidth { width: SIZE })
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
@@ -611,9 +648,54 @@ impl<const SIZE: usize> Not for Tryte<SIZE> {
     }
 }
 
-impl<const SIZE: usize> From<Ternary> for Tryte<SIZE> {
-    fn from(value: Ternary) -> Self {
-        Tryte::from_ternary(&value)
+impl<const SIZE: usize> TryFrom<&Ternary> for Tryte<SIZE> {
+    type Error = TernaryConversionError;
+
+    fn try_from(value: &Ternary) -> Result<Self, Self::Error> {
+        Self::validate_width()?;
+        let significant = value.significant_digits();
+        if significant.len() > SIZE {
+            return Err(TernaryConversionError::OutOfRange);
+        }
+        let mut digits = [Zero; SIZE];
+        digits[SIZE - significant.len()..].copy_from_slice(significant);
+        Ok(Self { raw: digits })
+    }
+}
+
+impl<const SIZE: usize> TryFrom<Ternary> for Tryte<SIZE> {
+    type Error = TernaryConversionError;
+
+    fn try_from(value: Ternary) -> Result<Self, Self::Error> {
+        Self::try_from(&value)
+    }
+}
+
+impl<const SIZE: usize> TryFrom<i64> for Tryte<SIZE> {
+    type Error = TernaryConversionError;
+
+    fn try_from(mut value: i64) -> Result<Self, Self::Error> {
+        Self::validate_width()?;
+        let mut digits = [Zero; SIZE];
+        for digit in digits.iter_mut().rev() {
+            let remainder = value.rem_euclid(3);
+            value = value.div_euclid(3);
+
+            *digit = match remainder {
+                0 => Zero,
+                1 => Pos,
+                2 => {
+                    value += 1;
+                    Neg
+                }
+                _ => unreachable!(),
+            };
+        }
+
+        if value != 0 {
+            return Err(TernaryConversionError::OutOfRange);
+        }
+        Ok(Self { raw: digits })
     }
 }
 
@@ -623,27 +705,23 @@ impl<const SIZE: usize> From<Tryte<SIZE>> for Ternary {
     }
 }
 
-impl<const SIZE: usize> From<&str> for Tryte<SIZE> {
-    fn from(value: &str) -> Self {
-        Self::from_ternary(&Ternary::parse(value))
+impl<const SIZE: usize> TryFrom<&str> for Tryte<SIZE> {
+    type Error = ParseTryteError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.parse()
     }
 }
 
-impl<const SIZE: usize> From<String> for Tryte<SIZE> {
-    fn from(value: String) -> Self {
-        Self::from(value.as_str())
+impl<const SIZE: usize> TryFrom<String> for Tryte<SIZE> {
+    type Error = ParseTryteError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        value.parse()
     }
 }
 
 impl<const SIZE: usize> From<Tryte<SIZE>> for String {
     fn from(value: Tryte<SIZE>) -> Self {
         value.to_string()
-    }
-}
-
-impl<const SIZE: usize> From<i64> for Tryte<SIZE> {
-    fn from(value: i64) -> Self {
-        Self::from_i64(value)
     }
 }
 
@@ -654,10 +732,46 @@ impl<const SIZE: usize> From<Tryte<SIZE>> for i64 {
 }
 
 impl<const SIZE: usize> FromStr for Tryte<SIZE> {
-    type Err = crate::ParseTernaryError;
+    type Err = ParseTryteError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Tryte::from_ternary(&Ternary::from_str(s)?))
+    /// Parses a numeric value into a fixed-width word.
+    ///
+    /// Leading zeros are ignored when checking representability.
+    /// Empty input represents zero.
+    ///
+    /// Unsupported widths are rejected before inspecting the input.
+    /// For supported widths, invalid characters take precedence over
+    /// numeric overflow.
+    ///
+    /// No heap allocation is performed.
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Self::validate_width().map_err(ParseTryteError::Conversion)?;
+
+        let mut digits = [Zero; SIZE];
+        let mut significant_len = 0usize;
+        for (index, character) in input.char_indices() {
+            let digit = Digit::try_from_char(character).map_err(|_| {
+                ParseTryteError::Parse(ParseTernaryError::InvalidCharacter { character, index })
+            })?;
+            if significant_len != 0 || digit != Zero {
+                if significant_len < SIZE {
+                    digits[significant_len] = digit;
+                }
+                significant_len += 1;
+            }
+        }
+
+        if significant_len > SIZE {
+            return Err(ParseTryteError::Conversion(
+                TernaryConversionError::OutOfRange,
+            ));
+        }
+
+        let padding = SIZE - significant_len;
+        digits.copy_within(..significant_len, padding);
+        digits[..padding].fill(Zero);
+
+        Ok(Self { raw: digits })
     }
 }
 
@@ -1056,5 +1170,163 @@ mod tests {
         assert_eq!(Tryte::<6>::from_i64(255).to_string(), "+00++0");
         assert_eq!(Tryte::<6>::from_i64(-1).to_string(), "00000-");
         assert_eq!(Tryte::<0>::ZERO.to_string(), "");
+    }
+
+    fn check_numeric_conversion<const N: usize>(value: i64) {
+        use crate::{ParseTryteError, Ternary, TernaryConversionError};
+
+        let max = ((3i128.pow(N as u32) - 1) / 2) as i64;
+        let expected = if (-max..=max).contains(&value) {
+            Ok(value)
+        } else {
+            Err(TernaryConversionError::OutOfRange)
+        };
+
+        let ternary = Ternary::from_dec(value).with_length(80);
+        let text = ternary.to_string();
+
+        assert_eq!(
+            Tryte::<N>::try_from(value).map(|word| word.to_i64()),
+            expected
+        );
+        assert_eq!(
+            Tryte::<N>::try_from(&ternary).map(|word| word.to_i64()),
+            expected
+        );
+        assert_eq!(
+            Tryte::<N>::try_from(ternary.clone()).map(|word| word.to_i64()),
+            expected
+        );
+
+        assert_eq!(
+            Tryte::<N>::checked_from_i64(value).map(|word| word.to_i64()),
+            expected.ok()
+        );
+        assert_eq!(
+            Tryte::<N>::checked_from_ternary(&ternary).map(|word| word.to_i64()),
+            expected.ok()
+        );
+
+        let parsed_expected = expected.map_err(ParseTryteError::Conversion);
+
+        for result in [
+            text.parse::<Tryte<N>>(),
+            Tryte::<N>::try_from(text.as_str()),
+            Tryte::<N>::try_from(text.clone()),
+        ] {
+            assert_eq!(
+                result.as_ref().map(|word| word.to_i64()).map_err(|e| *e),
+                parsed_expected
+            );
+
+            if let Ok(word) = result {
+                assert_eq!(word.to_digit_slice().len(), N);
+                assert_eq!(word.to_string().len(), N);
+            }
+        }
+    }
+
+    #[test]
+    fn checked_conversions_small_widths_exhaustive() {
+        for value in -365..=365 {
+            check_numeric_conversion::<0>(value);
+            check_numeric_conversion::<1>(value);
+            check_numeric_conversion::<2>(value);
+            check_numeric_conversion::<6>(value);
+        }
+    }
+
+    #[test]
+    fn checked_conversions_40_trit_boundaries() {
+        let max = 6_078_832_729_528_464_400i64;
+
+        for value in [i64::MIN, -max - 1, -max, -1, 0, 1, max, max + 1, i64::MAX] {
+            check_numeric_conversion::<40>(value);
+        }
+    }
+
+    #[test]
+    fn empty_and_zero_width_conversions() {
+        use crate::Ternary;
+
+        for input in ["", "0", "000", "0000000000"] {
+            let ternary = Ternary::parse(input);
+
+            assert_eq!(Tryte::<0>::from_ternary(&ternary), Tryte::<0>::ZERO);
+            assert_eq!(input.parse::<Tryte<0>>().unwrap().to_string(), "");
+            assert_eq!(input.parse::<Tryte<6>>().unwrap().to_string(), "000000");
+        }
+
+        assert_eq!(Tryte::<0>::from_i64(0), Tryte::<0>::ZERO);
+        assert_eq!(Tryte::<0>::ZERO.to_ternary().to_digit_slice(), &[]);
+    }
+
+    #[test]
+    fn unsupported_width_returns_errors() {
+        use crate::{ParseTryteError, Ternary, TernaryConversionError};
+
+        let error = TernaryConversionError::UnsupportedWidth { width: 41 };
+        let zero = Ternary::from_dec(0);
+
+        assert_eq!(Tryte::<41>::try_from(0i64), Err(error));
+        assert_eq!(Tryte::<41>::try_from(&zero), Err(error));
+        assert_eq!(Tryte::<41>::checked_from_i64(0), None);
+        assert_eq!(Tryte::<41>::checked_from_ternary(&zero), None);
+
+        for input in ["", "0", "+", "x"] {
+            assert_eq!(
+                input.parse::<Tryte<41>>(),
+                Err(ParseTryteError::Conversion(error))
+            );
+        }
+    }
+
+    #[test]
+    fn parsing_validates_characters_even_after_overflow() {
+        use crate::{ParseTernaryError, ParseTryteError};
+
+        for (input, character, index) in [
+            ("x", 'x', 0),
+            ("+-x", 'x', 2),
+            ("000+🙂", '🙂', 4),
+            ("+ ", ' ', 1),
+            ("−", '−', 0),
+        ] {
+            assert_eq!(
+                input.parse::<Tryte<1>>(),
+                Err(ParseTryteError::Parse(
+                    ParseTernaryError::InvalidCharacter { character, index }
+                ))
+            );
+        }
+    }
+
+    #[test]
+    fn long_padding_and_large_values() {
+        use crate::{ParseTryteError, Ternary, TernaryConversionError};
+
+        for suffix in ["+", "-"] {
+            let input = alloc::format!("{}{suffix}", "0".repeat(4096));
+            let value = Ternary::parse(&input);
+
+            assert_eq!(Tryte::<1>::from_ternary(&value).to_string(), suffix);
+            assert_eq!(input.parse::<Tryte<1>>().unwrap().to_string(), suffix);
+        }
+
+        for symbol in ["+", "-"] {
+            let input = symbol.repeat(4096);
+            let value = Ternary::parse(&input);
+
+            assert_eq!(
+                Tryte::<40>::try_from(&value),
+                Err(TernaryConversionError::OutOfRange)
+            );
+            assert_eq!(
+                input.parse::<Tryte<40>>(),
+                Err(ParseTryteError::Conversion(
+                    TernaryConversionError::OutOfRange
+                ))
+            );
+        }
     }
 }

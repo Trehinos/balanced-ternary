@@ -101,6 +101,34 @@ impl Display for ParseTernaryError {
 }
 
 #[cfg(feature = "ternary-string")]
+/// Error returned when a numeric conversion cannot be performed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TernaryConversionError {
+    /// The numeric value is outside the destination type's range.
+    OutOfRange,
+    /// The requested fixed-word width is not supported.
+    UnsupportedWidth {
+        /// The requested number of trits.
+        width: usize,
+    },
+}
+
+#[cfg(feature = "ternary-string")]
+impl Display for TernaryConversionError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::OutOfRange => f.write_str("value is outside the destination type's range"),
+            Self::UnsupportedWidth { width } => {
+                write!(f, "unsupported Tryte width {width}; maximum is 40")
+            }
+        }
+    }
+}
+
+#[cfg(feature = "ternary-string")]
+impl Error for TernaryConversionError {}
+
+#[cfg(feature = "ternary-string")]
 impl Error for ParseTernaryError {}
 
 /// Provides helper functions for formatting integers in a given radix.
@@ -135,6 +163,7 @@ mod digit;
 pub use crate::digit::{
     Digit,
     Digit::{Neg, Pos, Zero},
+    DigitConversionError,
 };
 
 /// Converts a character into a `Digit`.
@@ -187,35 +216,25 @@ pub fn ter(from: &str) -> Ternary {
 }
 
 #[cfg(feature = "tryte")]
-/// Creates a `Tryte` object from a string representation of a balanced ternary number.
-/// It contains approximately 9.5 bits of information.
+/// Parses a balanced ternary value into a six-trit word.
 ///
-/// This function first converts the input string representation into a `Ternary` object
-/// using the `ter` function, and then constructs a `Tryte` from that `Ternary`.
+/// Leading zeros are accepted. Empty input represents zero.
 ///
 /// # Panics
 ///
-/// This function panics if the `Ternary` contains more than 6 digits or if an input character is invalid.
+/// Panics if the input contains an invalid character or the numeric
+/// value does not fit in six trits.
 ///
-/// # Arguments
+/// # Examples
 ///
-/// * `from` - A string slice representing the balanced ternary number. It must contain
-///   valid balanced ternary characters (`+`, `0`, or `-`) only.
-/// * Panics if an input character is invalid.
-///
-/// # Returns
-///
-/// A `Tryte` object constructed from the provided balanced ternary string.
-///
-/// # Example
 /// ```
-/// use balanced_ternary::{tryte, Tryte};
+/// use balanced_ternary::tryte;
 ///
-/// let tryte_value = tryte("+0+0");
-/// assert_eq!(tryte_value.to_string(), "00+0+0");
+/// assert_eq!(tryte("000000+").to_string(), "00000+");
+/// assert_eq!(tryte("").to_string(), "000000");
 /// ```
 pub fn tryte(from: &str) -> Tryte {
-    Tryte::from_ternary(&ter(from))
+    from.parse().expect("invalid six-trit word")
 }
 
 /// Creates a `DataTernary` object from a string representation of a balanced ternary number.
@@ -283,7 +302,7 @@ pub fn dter(from: &str) -> DataTernary {
 /// Empty representations are valid and have the numeric value zero.
 /// Parsing and formatting preserve the exact digit sequence,
 /// including leading zeros and empty input.
-/// 
+///
 /// Use `trim()` to get a canonical numeric representation.
 ///
 /// # Conversions
@@ -855,7 +874,7 @@ pub use crate::store::{DataTernary, Ter40, TritsChunk};
 mod tryte;
 
 #[cfg(feature = "tryte")]
-pub use crate::tryte::Tryte;
+pub use crate::tryte::{ParseTryteError, Tryte};
 
 #[cfg(test)]
 #[cfg(feature = "ternary-string")]
@@ -1326,10 +1345,7 @@ mod tests {
                 assert_eq!(value.to_string(), input);
             }
 
-            assert_eq!(
-                Ternary::parse(input).to_digit_slice(),
-                expected_digits
-            );
+            assert_eq!(Ternary::parse(input).to_digit_slice(), expected_digits);
         }
     }
 
@@ -1353,8 +1369,7 @@ mod tests {
         ];
 
         for (input, character, index) in cases {
-            let expected =
-                ParseTernaryError::InvalidCharacter { character, index };
+            let expected = ParseTernaryError::InvalidCharacter { character, index };
 
             let results = [
                 Ternary::try_parse(input),

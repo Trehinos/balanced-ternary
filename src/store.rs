@@ -1,5 +1,5 @@
 use crate::concepts::DigitOperate;
-use crate::{Digit, Ternary};
+use crate::{Digit, Ternary, TernaryConversionError};
 use alloc::vec::Vec;
 use core::fmt::{Display, Write};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Sub};
@@ -18,6 +18,17 @@ impl TritsChunk {
     pub const ZERO: Self = Self(0);
     pub const MIN: Self = Self(-121);
     pub const MAX: Self = Self(121);
+
+    /// Attempts to construct a chunk from an i8.
+    ///
+    /// Returns None outside the inclusive range -121..=121.
+    pub const fn checked_from_dec(value: i8) -> Option<Self> {
+        if value < Self::MIN.0 || value > Self::MAX.0 {
+            None
+        } else {
+            Some(Self(value))
+        }
+    }
 
     /// Creates a `TritsChunk` from a given decimal value.
     ///
@@ -38,10 +49,7 @@ impl TritsChunk {
     /// assert_eq!(chunk.to_dec(), 42);
     /// ```
     pub fn from_dec(from: i8) -> Self {
-        if !(-121..=121).contains(&from) {
-            panic!("TritsChunk::from_dec(): Invalid value: {}", from);
-        }
-        Self(from)
+        Self::checked_from_dec(from).expect("TritsChunk value out of range")
     }
 
     /// Converts the `TritsChunk` into its decimal representation.
@@ -117,34 +125,55 @@ impl TritsChunk {
         digits
     }
 
-    /// Creates a `TritsChunk` from a given `Ternary` value.
+    /// Converts a numeric value into a five-trit chunk.
     ///
-    /// # Arguments
-    ///
-    /// * `ternary` - A `Ternary` value to be converted into a `TritsChunk`.
+    /// Leading zeros are ignored. Empty input represents zero.
     ///
     /// # Panics
     ///
-    /// This function panics if the provided `ternary` value has a logarithmic length greater than 5,
-    /// indicating that it cannot be represented by a single `TritsChunk`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use balanced_ternary::{TritsChunk, Ternary};
-    ///
-    /// let ternary = Ternary::from_dec(42);
-    /// let chunk = TritsChunk::from_ternary(ternary);
-    /// assert_eq!(chunk.to_dec(), 42);
-    /// ```
+    /// Panics if the numeric value is outside -121..=121.
     pub fn from_ternary(ternary: Ternary) -> Self {
-        if ternary.log() > 5 {
-            panic!(
-                "TritsChunk::from_ternary(): Ternary is too long: {}",
-                ternary
-            );
+        Self::checked_from_ternary(&ternary).expect("TritsChunk value out of range")
+    }
+
+    /// Attempts to convert a numeric value into a five-trit chunk.
+    ///
+    /// Leading zeros are ignored. Empty input represents zero.
+    /// Returns None if more than five significant trits are required.
+    ///
+    /// No heap allocation is performed.
+    pub fn checked_from_ternary(ternary: &Ternary) -> Option<Self> {
+        let digits = ternary.significant_digits();
+        if digits.len() > 5 {
+            return None;
         }
-        Self(ternary.to_dec() as i8)
+
+        let value = digits
+            .iter()
+            .fold(0i8, |acc, digit| acc * 3 + digit.to_i8());
+        Some(Self(value))
+    }
+}
+
+impl TryFrom<i8> for TritsChunk {
+    type Error = TernaryConversionError;
+    fn try_from(value: i8) -> Result<Self, Self::Error> {
+        Self::checked_from_dec(value).ok_or(TernaryConversionError::OutOfRange)
+    }
+}
+
+impl TryFrom<&Ternary> for TritsChunk {
+    type Error = TernaryConversionError;
+    fn try_from(value: &Ternary) -> Result<Self, Self::Error> {
+        Self::checked_from_ternary(value).ok_or(TernaryConversionError::OutOfRange)
+    }
+}
+
+impl TryFrom<Ternary> for TritsChunk {
+    type Error = TernaryConversionError;
+
+    fn try_from(value: Ternary) -> Result<Self, Self::Error> {
+        Self::try_from(&value)
     }
 }
 
@@ -204,7 +233,6 @@ impl DataTernary {
         Ternary::new(self.decode_digits(true))
     }
 
-
     /// Decodes the stored chunks into a fixed-length
     /// balanced ternary representation.
     ///
@@ -226,7 +254,6 @@ impl DataTernary {
     pub fn to_digits(&self) -> Vec<Digit> {
         self.decode_digits(true)
     }
-
 
     /// Creates a DataTernary from a signed 64-bit integer.
     ///
@@ -265,7 +292,6 @@ impl DataTernary {
         chunks.reverse();
         Self { chunks }
     }
-
 
     /// Converts the stored chunks into a signed 64-bit integer.
     ///
@@ -658,21 +684,30 @@ impl BitXor for Ter40 {
     }
 }
 
-impl From<i64> for Ter40 {
-    fn from(value: i64) -> Self {
-        Self::from_dec(value)
+impl TryFrom<i64> for Ter40 {
+    type Error = TernaryConversionError;
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        Self::checked_from_dec(value).ok_or(TernaryConversionError::OutOfRange)
+    }
+}
+
+impl TryFrom<&Ternary> for Ter40 {
+    type Error = TernaryConversionError;
+    fn try_from(value: &Ternary) -> Result<Self, Self::Error> {
+        Self::checked_from_ternary(value).ok_or(TernaryConversionError::OutOfRange)
+    }
+}
+
+impl TryFrom<Ternary> for Ter40 {
+    type Error = TernaryConversionError;
+    fn try_from(value: Ternary) -> Result<Self, Self::Error> {
+        Self::try_from(&value)
     }
 }
 
 impl From<Ter40> for i64 {
     fn from(value: Ter40) -> Self {
         value.0
-    }
-}
-
-impl From<Ternary> for Ter40 {
-    fn from(value: Ternary) -> Self {
-        Self::from_ternary(value)
     }
 }
 
@@ -684,7 +719,7 @@ impl From<Ter40> for Ternary {
 
 #[cfg(test)]
 mod tests {
-    use crate::DataTernary;
+    use crate::{DataTernary, TernaryConversionError};
     use alloc::string::ToString;
     use alloc::vec;
 
@@ -739,8 +774,7 @@ mod tests {
 
         for value in [Ter40::MIN.to_dec(), -1, 0, 1, Ter40::MAX.to_dec()] {
             assert_eq!(Ter40::checked_from_dec(value), Some(Ter40::from_dec(value)));
-
-            assert_eq!(Ter40::from(value).to_dec(), value);
+            assert_eq!(Ter40::try_from(value).unwrap().to_dec(), value);
         }
 
         for value in [
@@ -792,17 +826,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Ter40 value out of range")]
     fn ter40_from_i64_overflow() {
         use crate::Ter40;
-        let _: Ter40 = i64::MIN.into();
+        assert_eq!(
+            Ter40::try_from(i64::MIN),
+            Err(TernaryConversionError::OutOfRange)
+        );
     }
 
     #[test]
-    #[should_panic(expected = "Ter40 value out of range")]
     fn ter40_from_ternary_overflow() {
         use crate::{Ter40, Ternary};
-        let _: Ter40 = Ternary::from_dec(i64::MAX).into();
+        assert_eq!(
+            Ter40::try_from(Ternary::from_dec(i64::MAX)),
+            Err(TernaryConversionError::OutOfRange)
+        );
     }
 
     #[test]
@@ -1029,5 +1067,106 @@ mod tests {
         assert_eq!(empty.to_digits(), vec![Digit::Zero]);
         assert_eq!(empty.to_string(), "");
         assert_eq!(empty.to_dec(), 0);
+    }
+
+    #[test]
+    fn chunk_conversions_exhaustive() {
+        use crate::{Ternary, TernaryConversionError, TritsChunk};
+
+        for value in i8::MIN..=i8::MAX {
+            let expected = if (-121..=121).contains(&value) {
+                Ok(value)
+            } else {
+                Err(TernaryConversionError::OutOfRange)
+            };
+
+            let ternary = Ternary::from_dec(value as i64).with_length(80);
+
+            assert_eq!(
+                TritsChunk::try_from(value).map(|chunk| chunk.to_dec()),
+                expected
+            );
+            assert_eq!(
+                TritsChunk::try_from(&ternary).map(|chunk| chunk.to_dec()),
+                expected
+            );
+            assert_eq!(
+                TritsChunk::try_from(ternary.clone()).map(|chunk| chunk.to_dec()),
+                expected
+            );
+            assert_eq!(
+                TritsChunk::checked_from_dec(value).map(|chunk| chunk.to_dec()),
+                expected.ok()
+            );
+            assert_eq!(
+                TritsChunk::checked_from_ternary(&ternary).map(|chunk| chunk.to_dec()),
+                expected.ok()
+            );
+
+            if let Ok(value) = expected {
+                assert_eq!(TritsChunk::from_ternary(ternary).to_dec(), value);
+            }
+        }
+    }
+
+    #[test]
+    fn bounded_storage_accepts_empty_and_padded_zero() {
+        use crate::{Ter40, Ternary, TritsChunk};
+
+        for input in ["", "0", "0000000000"] {
+            let value = Ternary::parse(input);
+
+            assert_eq!(TritsChunk::try_from(&value), Ok(TritsChunk::ZERO));
+            assert_eq!(Ter40::try_from(&value), Ok(Ter40::ZERO));
+        }
+    }
+
+    #[test]
+    fn ter40_conversion_traits_check_boundaries() {
+        use crate::{Ter40, Ternary, TernaryConversionError};
+
+        let min = Ter40::MIN.to_dec();
+        let max = Ter40::MAX.to_dec();
+
+        for value in [i64::MIN, min - 1, min, -1, 0, 1, max, max + 1, i64::MAX] {
+            let expected = if (min..=max).contains(&value) {
+                Ok(value)
+            } else {
+                Err(TernaryConversionError::OutOfRange)
+            };
+
+            let ternary = Ternary::from_dec(value).with_length(100);
+
+            assert_eq!(
+                Ter40::try_from(value).map(|number| number.to_dec()),
+                expected
+            );
+            assert_eq!(
+                Ter40::try_from(&ternary).map(|number| number.to_dec()),
+                expected
+            );
+            assert_eq!(
+                Ter40::try_from(ternary).map(|number| number.to_dec()),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn bounded_storage_rejects_arbitrary_precision_overflow() {
+        use crate::{Ter40, Ternary, TernaryConversionError, TritsChunk};
+
+        for symbol in ["+", "-"] {
+            let value = Ternary::parse(&symbol.repeat(4096));
+
+            assert_eq!(
+                TritsChunk::try_from(&value),
+                Err(TernaryConversionError::OutOfRange)
+            );
+            assert_eq!(
+                Ter40::try_from(&value),
+                Err(TernaryConversionError::OutOfRange)
+            );
+        }
     }
 }

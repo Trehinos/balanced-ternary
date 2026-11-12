@@ -8,7 +8,7 @@ use crate::Ternary;
 /// Error returned when a value cannot represent a balanced ternary digit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DigitConversionError {
-    /// The character is not '+', '0', or '-'.
+    /// The character is invalid for the selected digit representation.
     InvalidCharacter(char),
     /// The integer is not -1, 0, or 1.
     InvalidValue(i8),
@@ -17,11 +17,9 @@ pub enum DigitConversionError {
 impl Display for DigitConversionError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::InvalidCharacter(character) => write!(
-                f,
-                "invalid balanced ternary character {character:?}; \
-                 expected '+', '0', or '-'"
-            ),
+            Self::InvalidCharacter(character) => {
+                write!(f, "invalid balanced ternary character {character:?}")
+            }
             Self::InvalidValue(value) => write!(
                 f,
                 "invalid balanced ternary digit value {value}; \
@@ -1117,7 +1115,7 @@ mod tests {
     }
     #[test]
     fn digit_character_conversions() {
-        use crate::{Digit, digit::DigitConversionError};
+        use crate::{Digit, DigitConversionError};
 
         for (character, expected) in [('-', Neg), ('0', Zero), ('+', Pos)] {
             assert_eq!(Digit::try_from_char(character), Ok(expected));
@@ -1136,7 +1134,7 @@ mod tests {
 
     #[test]
     fn digit_integer_conversions_exhaustive() {
-        use crate::{Digit, digit::DigitConversionError};
+        use crate::{Digit, DigitConversionError};
 
         for value in i8::MIN..=i8::MAX {
             let expected = match value {
@@ -1158,7 +1156,7 @@ mod tests {
 
     #[test]
     fn digit_conversions_are_const() {
-        use crate::{Digit, digit::DigitConversionError};
+        use crate::{Digit, DigitConversionError};
 
         const POSITIVE: Result<Digit, DigitConversionError> = Digit::try_from_char('+');
         const NEGATIVE: Result<Digit, DigitConversionError> = Digit::try_from_i8(-1);
