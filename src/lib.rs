@@ -106,21 +106,13 @@ impl Display for ParseTernaryError {
 pub enum TernaryConversionError {
     /// The numeric value is outside the destination type's range.
     OutOfRange,
-    /// The requested fixed-word width is not supported.
-    UnsupportedWidth {
-        /// The requested number of trits.
-        width: usize,
-    },
 }
 
 #[cfg(feature = "ternary-string")]
 impl Display for TernaryConversionError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::OutOfRange => f.write_str("value is outside the destination type's range"),
-            Self::UnsupportedWidth { width } => {
-                write!(f, "unsupported Tryte width {width}; maximum is 40")
-            }
+            Self::OutOfRange => f.write_str("value is outside the destination type's range")
         }
     }
 }

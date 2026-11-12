@@ -17,7 +17,7 @@ use core::str::FromStr;
 pub enum ParseTryteError {
     /// The input contains an invalid character.
     Parse(ParseTernaryError),
-    /// The value or requested word width cannot be represented.
+    /// The numeric value does not fit in the destination word.
     Conversion(TernaryConversionError),
 }
 
@@ -67,9 +67,15 @@ impl Error for ParseTryteError {
 ///
 /// # Width
 ///
-/// The default width is 6 trits, as in the Setun computer.
+/// SIZE is fixed at compile time and has no numeric upper limit.
+/// Practical widths are constrained by memory and Rust type-layout limits.
 ///
-/// Supported widths range from 0 to 40 trits.
+/// Arithmetic operates directly on digit arrays without heap allocation.
+/// Temporary storage grows linearly with SIZE.
+///
+/// The type is Copy, but copying a word has a cost proportional to SIZE.
+///
+/// The default width is 6 trits, as in the Setun computer.
 ///
 /// The signed numeric range for SIZE > 0 is:
 ///
@@ -96,6 +102,11 @@ impl Error for ParseTryteError {
 ///
 /// Use `TryFrom` for detailed conversion errors or `checked_from_*`
 /// for an Option result. Parsing through `FromStr` does not allocate.
+///
+/// Conversion into i64 is fallible and depends on the numeric value,
+/// not the word width. Use `checked_to_i64()` or `i64::try_from()`.
+///
+/// Every i64 value can be represented using 41 or more balanced trits.
 ///
 /// # Examples
 ///
@@ -136,33 +147,10 @@ impl<const SIZE: usize> Tryte<SIZE> {
     /// `00...00`
     pub const ZERO: Self = Self::new([Zero; SIZE]);
 
-    /// Creates a new `Tryte` instance from a given array of `Digit`s.
+    /// Creates a word containing exactly SIZE balanced ternary digits.
     ///
-    /// # Arguments
-    ///
-    /// * `raw` - An array of exactly SIZE `Digit` values representing the balanced ternary digits.
-    ///
-    /// # Returns
-    ///
-    /// A new `Tryte` instance with the specified balanced ternary digits.
-    ///
-    /// # Panics
-    ///
-    /// Panic if `SIZE > 40` as 41 trits would be too much information for 64 bits.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use balanced_ternary::{Tryte, Digit::{Pos, Zero, Neg}};
-    ///
-    /// let digits = [Pos, Zero, Neg, Zero, Pos, Neg];
-    /// let tryte = Tryte::new(digits);
-    /// assert_eq!(tryte.to_digit_slice(), &digits);
-    /// ```
+    /// Storage requirements grow linearly with SIZE.
     pub const fn new(digits: [Digit; SIZE]) -> Self {
-        if SIZE > 40 {
-            panic!("Cannot construct a Tryte with more than 40 digits (~63.5 bits).")
-        }
         Self { raw: digits }
     }
 
@@ -194,9 +182,9 @@ impl<const SIZE: usize> Tryte<SIZE> {
     ///
     /// # Panics
     ///
-    /// Panics if SIZE exceeds 40 or the numeric value does not fit.
+    /// Panics if the numeric value does not fit.
     pub fn from_ternary(value: &Ternary) -> Self {
-        Self::try_from(value).expect("Value does not fit in Tryte or width is unsupported")
+        Self::try_from(value).expect("Value does not fit in Tryte")
     }
 
     /// Attempts to convert a numeric value into a fixed-width word.
@@ -204,22 +192,35 @@ impl<const SIZE: usize> Tryte<SIZE> {
     /// Leading zeros do not affect representability.
     /// Empty and all-zero representations are accepted, including for SIZE = 0.
     ///
-    /// Returns None if SIZE exceeds 40 or the value does not fit.
+    /// Returns None if the value does not fit.
     /// No heap allocation is performed.
     pub fn checked_from_ternary(value: &Ternary) -> Option<Self> {
         Self::try_from(value).ok()
     }
 
-    /// Converts the word into a signed 64-bit integer.
+    /// Attempts to convert the numeric value into an i64.
     ///
-    /// Uses Horner's method without heap allocation.
+    /// Leading zeros do not affect representability.
+    /// An empty word converts to zero.
     ///
-    /// The conversion cannot overflow because a
-    /// valid Tryte contains at most 40 trits.
+    /// No heap allocation is performed.
+    pub fn checked_to_i64(&self) -> Option<i64> {
+        let value = self.raw.iter().try_fold(0i128, |acc, digit| {
+            acc.checked_mul(3)?.checked_add(digit.to_i8() as i128)
+        })?;
+
+        i64::try_from(value).ok()
+    }
+
+    /// Converts the numeric value into an i64.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is outside the i64 range.
+    /// Use [`Self::checked_to_i64`] for a fallible conversion.
     pub fn to_i64(&self) -> i64 {
-        self.raw
-            .iter()
-            .fold(0i64, |acc, digit| acc * 3 + digit.to_i8() as i64)
+        self.checked_to_i64()
+            .expect("Tryte value does not fit in i64")
     }
 
     /// Converts an i64 into a fixed-width word without wrapping.
@@ -228,16 +229,15 @@ impl<const SIZE: usize> Tryte<SIZE> {
     ///
     /// # Panics
     ///
-    /// Panics if SIZE exceeds 40 or the numeric value does not fit.
+    /// Panics if the numeric value does not fit.
     pub fn from_i64(value: i64) -> Self {
-        Self::try_from(value).expect("Value does not fit in Tryte or width is unsupported")
+        Self::try_from(value).expect("Value does not fit in Tryte")
     }
 
     /// Attempts to convert an i64 into a fixed-width word.
     ///
     /// SIZE = 0 accepts only zero.
     ///
-    /// Returns None if SIZE exceeds 40 or the value does not fit.
     /// No heap allocation is performed.
     pub fn checked_from_i64(value: i64) -> Option<Self> {
         Self::try_from(value).ok()
@@ -330,86 +330,199 @@ impl<const SIZE: usize> Tryte<SIZE> {
         }
     }
 
-    /// Evaluates the numeric value without allocation.
-    fn to_i128(self) -> i128 {
+    /// Returns -1, 0, or 1 according to the numeric value.
+    fn numeric_sign(&self) -> i8 {
         self.raw
             .iter()
-            .fold(0i128, |acc, digit| acc * 3 + digit.to_i8() as i128)
+            .find(|digit| **digit != Zero)
+            .map_or(0, Digit::to_i8)
     }
 
-    /// Converts an i128 into a wrapped SIZE-trit word.
+    /// Multiplies into one or two SIZE-trit parts.
     ///
-    /// Also reports whether the original value was
-    /// outside the signed SIZE-trit range.
-    fn from_i128_wrapping(value: i128) -> (Self, bool) {
-        let modulus = 3_i128.pow(SIZE as u32);
-        let max = (modulus - 1) / 2;
+    /// Both parts and their digits are stored least-significant first.
+    /// PARTS = 1 retains only the wrapped product.
+    /// PARTS = 2 retains the complete exact product.
+    fn multiply_digits<const PARTS: usize>(&self, rhs: &Self) -> [[Digit; SIZE]; PARTS] {
+        debug_assert!(PARTS == 1 || PARTS == 2);
 
-        let overflow = value < -max || value > max;
-        let mut value = (value + max).rem_euclid(modulus) - max;
-        let mut digits = [Zero; SIZE];
-
-        for i in (0..SIZE).rev() {
-            let remainder = value.rem_euclid(3);
-            value = value.div_euclid(3);
-            digits[i] = match remainder {
-                0 => Zero,
-                1 => Pos,
-                2 => {
-                    value += 1;
-                    Neg
-                }
-                _ => unreachable!(),
-            };
+        let mut product = [[Zero; SIZE]; PARTS];
+        if SIZE == 0 {
+            return product;
         }
-        debug_assert_eq!(value, 0);
-        (Self::new(digits), overflow)
+
+        for (j, b) in rhs.raw.iter().rev().enumerate() {
+            if *b == Zero {
+                continue;
+            }
+
+            let mut carry = 0i8;
+            for (i, a) in self.raw.iter().rev().enumerate() {
+                let index = i + j;
+                let part = index / SIZE;
+                if part >= PARTS {
+                    break;
+                }
+
+                let digit = &mut product[part][index % SIZE];
+                let sum = digit.to_i8() + a.to_i8() * b.to_i8() + carry;
+                carry = (sum + 1).div_euclid(3);
+                *digit = Digit::from_i8(sum - 3 * carry);
+            }
+
+            let mut index = SIZE + j;
+            while carry != 0 && index / SIZE < PARTS {
+                let digit = &mut product[index / SIZE][index % SIZE];
+                let sum = digit.to_i8() + carry;
+                carry = (sum + 1).div_euclid(3);
+                *digit = Digit::from_i8(sum - 3 * carry);
+                index += 1;
+            }
+            if PARTS == 2 {
+                debug_assert_eq!(carry, 0);
+            }
+        }
+
+        product
+    }
+
+    /// Converts the absolute value into ordinary base-3 digits.
+    ///
+    /// Digits are stored most-significant first.
+    /// The magnitude always fits in SIZE ordinary ternary digits.
+    fn magnitude_base3(&self) -> [u8; SIZE] {
+        let sign = self.numeric_sign();
+        let mut digits = [0u8; SIZE];
+        let mut carry = 0i8;
+        for i in (0..SIZE).rev() {
+            let value = self.raw[i].to_i8() * sign + carry;
+            digits[i] = value.rem_euclid(3) as u8;
+            carry = value.div_euclid(3);
+        }
+        debug_assert_eq!(carry, 0);
+        digits
+    }
+
+    /// Converts an ordinary base-3 magnitude into a signed word.
+    ///
+    /// The magnitude must fit in the signed SIZE-trit range.
+    fn from_magnitude_base3(magnitude: &[u8; SIZE], negative: bool) -> Self {
+        let mut digits = [Zero; SIZE];
+        let mut carry = 0u8;
+        for i in (0..SIZE).rev() {
+            let value = magnitude[i] + carry;
+            let digit = if value <= 1 {
+                carry = 0;
+                Digit::from_i8(value as i8)
+            } else {
+                carry = 1;
+                Digit::from_i8(value as i8 - 3)
+            };
+            digits[i] = if negative { -digit } else { digit };
+        }
+
+        debug_assert_eq!(carry, 0);
+        Self::new(digits)
     }
 
     /// Multiplies two words modulo 3^SIZE.
+    ///
+    /// Only the low SIZE trits are computed.
+    /// No heap allocation is performed.
     pub fn wrapping_mul(self, rhs: Self) -> Self {
-        self.overflowing_mul(rhs).0
+        let [mut digits] = self.multiply_digits::<1>(&rhs);
+        digits.reverse();
+        Self::new(digits)
     }
 
-    /// Multiplies and reports signed ternary overflow.
+    /// Multiplies and reports signed numeric overflow.
+    ///
+    /// Overflow is detected from the high trits of the complete product,
+    /// after all carries and cancellations have been resolved.
     pub fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
-        let product = self.to_i128() * rhs.to_i128();
-        Self::from_i128_wrapping(product)
+        let [mut low, high] = self.multiply_digits::<2>(&rhs);
+
+        let overflow = high.iter().any(|digit| *digit != Zero);
+        low.reverse();
+
+        (Self::new(low), overflow)
     }
 
-    /// Returns None if the exact product cannot
-    /// be represented using SIZE balanced trits.
+    /// Returns None if the exact product is outside the signed word range.
     pub fn checked_mul(self, rhs: Self) -> Option<Self> {
         let (result, overflow) = self.overflowing_mul(rhs);
+
         if overflow { None } else { Some(result) }
     }
 
-    /// Multiplies, clamping to MIN or MAX on overflow.
+    /// Multiplies, clamping the exact result to MIN or MAX on overflow.
     pub fn saturating_mul(self, rhs: Self) -> Self {
-        let product = self.to_i128() * rhs.to_i128();
-        let max = (3_i128.pow(SIZE as u32) - 1) / 2;
-        if product > max {
-            Self::MAX
-        } else if product < -max {
+        let (result, overflow) = self.overflowing_mul(rhs);
+
+        if !overflow {
+            result
+        } else if self.numeric_sign() != rhs.numeric_sign() {
             Self::MIN
         } else {
-            Self::from_i128_wrapping(product).0
+            Self::MAX
         }
     }
 
-    /// Divides two signed ternary values.
+    /// Divides two signed ternary values, truncating toward zero.
     ///
-    /// Division truncates toward zero.
     /// Returns None if the divisor is zero.
+    /// A nonzero divisor cannot cause numeric overflow because the
+    /// signed balanced ternary range is symmetric.
     ///
-    /// This is an integer division, not a modular division.
+    /// Uses long division in ordinary base three.
+    /// No heap allocation is performed.
     pub fn checked_div(self, rhs: Self) -> Option<Self> {
-        let divisor = rhs.to_i128();
-        if divisor == 0 {
+        let divisor_sign = rhs.numeric_sign();
+        if divisor_sign == 0 {
             return None;
         }
-        let quotient = self.to_i128() / divisor;
-        Some(Self::from_i128_wrapping(quotient).0)
+
+        let dividend_sign = self.numeric_sign();
+        if dividend_sign == 0 {
+            return Some(Self::ZERO);
+        }
+
+        let dividend = self.magnitude_base3();
+        let divisor = rhs.magnitude_base3();
+        if dividend < divisor {
+            return Some(Self::ZERO);
+        }
+
+        let mut remainder = [0u8; SIZE];
+        let mut quotient = [0u8; SIZE];
+        for position in 0..SIZE {
+            debug_assert_eq!(remainder[0], 0);
+            remainder.copy_within(1.., 0);
+            remainder[SIZE - 1] = dividend[position];
+            while remainder >= divisor {
+                let mut borrow = 0i8;
+                for i in (0..SIZE).rev() {
+                    let difference = remainder[i] as i8 - divisor[i] as i8 - borrow;
+                    if difference < 0 {
+                        remainder[i] = (difference + 3) as u8;
+                        borrow = 1;
+                    } else {
+                        remainder[i] = difference as u8;
+                        borrow = 0;
+                    }
+                }
+
+                debug_assert_eq!(borrow, 0);
+                quotient[position] += 1;
+            }
+
+            debug_assert!(quotient[position] <= 2);
+        }
+
+        Some(Self::from_magnitude_base3(
+            &quotient,
+            dividend_sign != divisor_sign,
+        ))
     }
 
     /// Performs signed integer division.
@@ -445,32 +558,43 @@ impl<const SIZE: usize> Tryte<SIZE> {
 
     /// Returns the multiplicative inverse modulo 3^SIZE.
     ///
-    /// An inverse exists only if the value is not
-    /// divisible by 3.
+    /// Returns None for SIZE = 0 or when the least-significant
+    /// trit is zero.
     ///
-    /// Returns None for SIZE == 0 or a non-invertible value.
+    /// The inverse is constructed one trit at a time.
+    /// No heap allocation is performed.
     pub fn checked_modular_inverse(self) -> Option<Self> {
         if SIZE == 0 {
             return None;
         }
 
-        let modulus = 3_i128.pow(SIZE as u32);
-        let value = self.to_i128().rem_euclid(modulus);
-        if value % 3 == 0 {
+        let unit = self.raw[SIZE - 1].to_i8();
+        if unit == 0 {
             return None;
         }
 
-        let (mut old_r, mut r) = (modulus, value);
-        let (mut old_t, mut t) = (0_i128, 1_i128);
-        while r != 0 {
-            let quotient = old_r / r;
-            (old_r, r) = (r, old_r - quotient * r);
-            (old_t, t) = (t, old_t - quotient * t);
-        }
-        debug_assert_eq!(old_r, 1);
+        let mut inverse = Self::ZERO;
+        let mut product = Self::ZERO;
+        for shift in 0..SIZE {
+            let position = SIZE - 1 - shift;
+            let target = if shift == 0 { 1i8 } else { 0i8 };
+            let digit = (target - product.raw[position].to_i8()) * unit;
+            inverse.raw[position] = Digit::from_i8(digit);
+            if digit == 0 {
+                continue;
+            }
 
-        let inverse = old_t.rem_euclid(modulus);
-        Some(Self::from_i128_wrapping(inverse).0)
+            let mut carry = 0i8;
+            for offset in 0..SIZE - shift {
+                let index = SIZE - 1 - shift - offset;
+                let sum = product.raw[index].to_i8()
+                    + digit * self.raw[SIZE - 1 - offset].to_i8()
+                    + carry;
+                carry = (sum + 1).div_euclid(3);
+                product.raw[index] = Digit::from_i8(sum - 3 * carry);
+            }
+        }
+        Some(inverse)
     }
 
     /// Computes division modulo 3^SIZE by multiplying
@@ -512,14 +636,6 @@ impl<const SIZE: usize> Tryte<SIZE> {
         }
 
         (Self::new(digits), carry)
-    }
-
-    fn validate_width() -> Result<(), TernaryConversionError> {
-        if SIZE > 40 {
-            Err(TernaryConversionError::UnsupportedWidth { width: SIZE })
-        } else {
-            Ok(())
-        }
     }
 }
 
@@ -652,7 +768,6 @@ impl<const SIZE: usize> TryFrom<&Ternary> for Tryte<SIZE> {
     type Error = TernaryConversionError;
 
     fn try_from(value: &Ternary) -> Result<Self, Self::Error> {
-        Self::validate_width()?;
         let significant = value.significant_digits();
         if significant.len() > SIZE {
             return Err(TernaryConversionError::OutOfRange);
@@ -675,7 +790,6 @@ impl<const SIZE: usize> TryFrom<i64> for Tryte<SIZE> {
     type Error = TernaryConversionError;
 
     fn try_from(mut value: i64) -> Result<Self, Self::Error> {
-        Self::validate_width()?;
         let mut digits = [Zero; SIZE];
         for digit in digits.iter_mut().rev() {
             let remainder = value.rem_euclid(3);
@@ -725,9 +839,19 @@ impl<const SIZE: usize> From<Tryte<SIZE>> for String {
     }
 }
 
-impl<const SIZE: usize> From<Tryte<SIZE>> for i64 {
-    fn from(value: Tryte<SIZE>) -> Self {
-        value.to_i64()
+impl<const SIZE: usize> TryFrom<&Tryte<SIZE>> for i64 {
+    type Error = TernaryConversionError;
+    fn try_from(value: &Tryte<SIZE>) -> Result<Self, Self::Error> {
+        value
+            .checked_to_i64()
+            .ok_or(TernaryConversionError::OutOfRange)
+    }
+}
+
+impl<const SIZE: usize> TryFrom<Tryte<SIZE>> for i64 {
+    type Error = TernaryConversionError;
+    fn try_from(value: Tryte<SIZE>) -> Result<Self, Self::Error> {
+        Self::try_from(&value)
     }
 }
 
@@ -739,14 +863,10 @@ impl<const SIZE: usize> FromStr for Tryte<SIZE> {
     /// Leading zeros are ignored when checking representability.
     /// Empty input represents zero.
     ///
-    /// Unsupported widths are rejected before inspecting the input.
-    /// For supported widths, invalid characters take precedence over
-    /// numeric overflow.
+    /// Invalid characters take precedence over numeric overflow.
     ///
     /// No heap allocation is performed.
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        Self::validate_width().map_err(ParseTryteError::Conversion)?;
-
         let mut digits = [Zero; SIZE];
         let mut significant_len = 0usize;
         for (index, character) in input.char_indices() {
@@ -959,6 +1079,7 @@ mod tests {
         check::<1>();
         check::<2>();
         check::<3>();
+        check::<4>();
     }
 
     #[test]
@@ -996,6 +1117,7 @@ mod tests {
         check::<1>();
         check::<2>();
         check::<3>();
+        check::<4>();
     }
 
     #[test]
@@ -1175,11 +1297,15 @@ mod tests {
     fn check_numeric_conversion<const N: usize>(value: i64) {
         use crate::{ParseTryteError, Ternary, TernaryConversionError};
 
-        let max = ((3i128.pow(N as u32) - 1) / 2) as i64;
-        let expected = if (-max..=max).contains(&value) {
+        let expected = if N >= 41 {
             Ok(value)
         } else {
-            Err(TernaryConversionError::OutOfRange)
+            let max = ((3i128.pow(N as u32) - 1) / 2) as i64;
+            if (-max..=max).contains(&value) {
+                Ok(value)
+            } else {
+                Err(TernaryConversionError::OutOfRange)
+            }
         };
 
         let ternary = Ternary::from_dec(value).with_length(80);
@@ -1262,26 +1388,6 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_width_returns_errors() {
-        use crate::{ParseTryteError, Ternary, TernaryConversionError};
-
-        let error = TernaryConversionError::UnsupportedWidth { width: 41 };
-        let zero = Ternary::from_dec(0);
-
-        assert_eq!(Tryte::<41>::try_from(0i64), Err(error));
-        assert_eq!(Tryte::<41>::try_from(&zero), Err(error));
-        assert_eq!(Tryte::<41>::checked_from_i64(0), None);
-        assert_eq!(Tryte::<41>::checked_from_ternary(&zero), None);
-
-        for input in ["", "0", "+", "x"] {
-            assert_eq!(
-                input.parse::<Tryte<41>>(),
-                Err(ParseTryteError::Conversion(error))
-            );
-        }
-    }
-
-    #[test]
     fn parsing_validates_characters_even_after_overflow() {
         use crate::{ParseTernaryError, ParseTryteError};
 
@@ -1328,5 +1434,241 @@ mod tests {
                 ))
             );
         }
+    }
+
+    #[test]
+    fn large_width_numeric_conversions() {
+        for value in [i64::MIN, i64::MIN + 1, -1, 0, 1, i64::MAX - 1, i64::MAX] {
+            check_numeric_conversion::<41>(value);
+            check_numeric_conversion::<64>(value);
+            check_numeric_conversion::<128>(value);
+
+            let word = Tryte::<128>::from_i64(value);
+
+            assert_eq!(word.checked_to_i64(), Some(value));
+            assert_eq!(i64::try_from(&word), Ok(value));
+            assert_eq!(i64::try_from(word), Ok(value));
+        }
+
+        assert_eq!(Tryte::<0>::ZERO.checked_to_i64(), Some(0));
+        assert_eq!(Tryte::<1024>::ZERO.checked_to_i64(), Some(0));
+    }
+
+    #[test]
+    fn large_width_i64_overflow() {
+        use crate::{Ternary, TernaryConversionError};
+
+        let one = Ternary::from_dec(1);
+        let above_max = &Ternary::from_dec(i64::MAX) + &one;
+        let below_min = &Ternary::from_dec(i64::MIN) - &one;
+
+        for value in [above_max, below_min] {
+            let word = Tryte::<128>::try_from(&value).unwrap();
+
+            assert_eq!(word.checked_to_i64(), None);
+            assert_eq!(
+                i64::try_from(&word),
+                Err(TernaryConversionError::OutOfRange)
+            );
+            assert_eq!(i64::try_from(word), Err(TernaryConversionError::OutOfRange));
+        }
+
+        assert_eq!(Tryte::<1024>::MAX.checked_to_i64(), None);
+        assert_eq!(Tryte::<1024>::MIN.checked_to_i64(), None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Tryte value does not fit in i64")]
+    fn large_word_to_i64_panics_on_overflow() {
+        let _ = Tryte::<128>::MAX.to_i64();
+    }
+
+    #[test]
+    fn large_width_parsing() {
+        use crate::{Digit, ParseTernaryError, ParseTryteError};
+
+        let input = "+0-".repeat(128);
+        let word = input.parse::<Tryte<384>>().unwrap();
+
+        assert_eq!(word.to_string(), input);
+        assert_eq!(word.to_digit_slice().len(), 384);
+
+        let zero = "".parse::<Tryte<128>>().unwrap();
+        assert_eq!(zero.to_digit_slice(), &[Digit::Zero; 128]);
+
+        assert_eq!(
+            "x".parse::<Tryte<128>>(),
+            Err(ParseTryteError::Parse(
+                ParseTernaryError::InvalidCharacter {
+                    character: 'x',
+                    index: 0,
+                }
+            ))
+        );
+    }
+
+    fn check_wide_arithmetic<const N: usize>() {
+        use crate::{Digit, Ternary};
+        use Digit::{Neg, Pos, Zero};
+
+        fn next_digit(seed: &mut u64) -> Digit {
+            *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+
+            match (*seed >> 32) % 3 {
+                0 => Neg,
+                1 => Zero,
+                _ => Pos,
+            }
+        }
+
+        let zero = Ternary::from_dec(0);
+        let one = Ternary::from_dec(1);
+        let modulus = Ternary::parse(&alloc::format!("+{}", "0".repeat(N)));
+
+        let mut seed = 0x9E3779B97F4A7C15u64;
+
+        for case in 0..24 {
+            let lhs = Tryte::<N>::new(core::array::from_fn(|_| next_digit(&mut seed)));
+
+            let rhs = Tryte::<N>::new(core::array::from_fn(|index| {
+                let digit = next_digit(&mut seed);
+
+                // Alternate between full-width and shorter divisors.
+                if case % 2 == 0 && index < N / 2 {
+                    Zero
+                } else {
+                    digit
+                }
+            }));
+
+            let a = lhs.to_ternary();
+            let b = rhs.to_ternary();
+            let exact_product = &a * &b;
+
+            let mut low_digits = [Zero; N];
+            for (slot, digit) in low_digits
+                .iter_mut()
+                .rev()
+                .zip(exact_product.to_digit_slice().iter().rev())
+            {
+                *slot = *digit;
+            }
+
+            let wrapped = Tryte::<N>::new(low_digits);
+            let checked = Tryte::<N>::checked_from_ternary(&exact_product);
+
+            assert_eq!(lhs * rhs, wrapped);
+            assert_eq!(lhs.wrapping_mul(rhs), wrapped);
+            let (overflowing_result, overflowed) = lhs.overflowing_mul(rhs);
+            assert_eq!(overflowing_result, wrapped);
+            assert_eq!(overflowed, checked.is_none());
+            assert_eq!(lhs.checked_mul(rhs), checked);
+
+            let saturated = match checked {
+                Some(value) => value,
+                None if exact_product < zero => Tryte::<N>::MIN,
+                None => Tryte::<N>::MAX,
+            };
+            assert_eq!(lhs.saturating_mul(rhs), saturated);
+
+            if b == zero {
+                assert_eq!(lhs.checked_div(rhs), None);
+            } else {
+                let expected = &a / &b;
+                let quotient = lhs.checked_div(rhs).unwrap();
+
+                assert_eq!(quotient.to_ternary(), expected);
+                assert_eq!(lhs / rhs, quotient);
+                assert_eq!(lhs.wrapping_div(rhs), quotient);
+                let (overflowing_result, overflowed) = lhs.overflowing_div(rhs);
+                assert_eq!(overflowing_result, quotient);
+                assert!(!overflowed);
+                assert_eq!(lhs.saturating_div(rhs), quotient);
+            }
+
+            let inverse = lhs.checked_modular_inverse();
+            let invertible = lhs.to_digit_slice()[N - 1] != Zero;
+
+            assert_eq!(inverse.is_some(), invertible);
+
+            if let Some(inverse) = inverse {
+                let product = &a * &inverse.to_ternary();
+                let difference = &product - &one;
+
+                // Verify the congruence using independent arithmetic.
+                assert_eq!(&difference % &modulus, zero);
+
+                let quotient = rhs.checked_modular_div(lhs).unwrap();
+                let product = &quotient.to_ternary() * &a;
+                let difference = &product - &b;
+
+                assert_eq!(&difference % &modulus, zero);
+            } else {
+                assert_eq!(rhs.checked_modular_div(lhs), None);
+            }
+        }
+    }
+
+    #[test]
+    fn wide_arithmetic_matches_arbitrary_precision() {
+        check_wide_arithmetic::<41>();
+        check_wide_arithmetic::<64>();
+        check_wide_arithmetic::<128>();
+        check_wide_arithmetic::<256>();
+    }
+
+    #[test]
+    fn wide_arithmetic_boundaries() {
+        type Word = Tryte<128>;
+
+        let one = Word::from_i64(1);
+        let two = Word::from_i64(2);
+        let negative_one = Word::from_i64(-1);
+
+        assert_eq!(Word::MAX + one, Word::MIN);
+        assert_eq!(Word::MIN - one, Word::MAX);
+        assert_eq!(Word::MAX.checked_add(one), None);
+        assert_eq!(Word::MIN.checked_sub(one), None);
+
+        assert_eq!(Word::MAX.wrapping_mul(two), negative_one);
+        assert_eq!(Word::MIN.wrapping_mul(two), one);
+        let (max_mul_result, max_mul_overflowed) = Word::MAX.overflowing_mul(two);
+        assert_eq!(max_mul_result, negative_one);
+        assert!(max_mul_overflowed);
+        let (min_mul_result, min_mul_overflowed) = Word::MIN.overflowing_mul(two);
+        assert_eq!(min_mul_result, one);
+        assert!(min_mul_overflowed);
+
+        assert_eq!(Word::MAX.saturating_mul(two), Word::MAX);
+        assert_eq!(Word::MIN.saturating_mul(two), Word::MIN);
+        assert_eq!(Word::MAX.checked_mul(one), Some(Word::MAX));
+        assert_eq!(Word::MIN.checked_mul(negative_one), Some(Word::MAX));
+        assert_eq!(Word::MAX * Word::ZERO, Word::ZERO);
+        assert_eq!(Word::MIN / negative_one, Word::MAX);
+        assert_eq!(Word::MAX / negative_one, Word::MIN);
+        assert_eq!(one / two, Word::ZERO);
+        assert_eq!(negative_one / two, Word::ZERO);
+        assert_eq!(Word::MAX.checked_div(Word::ZERO), None);
+        assert_eq!(one.checked_modular_inverse(), Some(one));
+        assert_eq!(negative_one.checked_modular_inverse(), Some(negative_one));
+        assert_eq!(Word::from_i64(3).checked_modular_inverse(), None);
+        assert_eq!(two.checked_modular_inverse(), Some(-Word::MAX));
+    }
+
+    #[test]
+    fn multiplication_can_overflow_to_zero() {
+        use crate::Digit::{Pos, Zero};
+
+        let mut digits = [Zero; 128];
+        digits[63] = Pos; // 3^64.
+
+        let power = Tryte::<128>::new(digits);
+
+        let (result, overflowed) = power.overflowing_mul(power);
+        assert_eq!(result.to_digit_slice(), Tryte::<128>::ZERO.to_digit_slice());
+        assert!(overflowed);
+        assert_eq!(power.checked_mul(power), None);
+        assert_eq!(power.saturating_mul(power), Tryte::<128>::MAX);
+        assert_eq!(power.saturating_mul(-power), Tryte::<128>::MIN);
     }
 }
