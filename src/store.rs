@@ -165,13 +165,17 @@ pub struct DataTernary {
 
 impl DataTernary {
     /// Encodes a balanced ternary representation into
-    /// five-trit chunks.
+    /// a sequence of five-trit chunks.
     ///
-    /// Leading zeros are added to complete the first
-    /// chunk when necessary.
+    /// Leading zeros are added when necessary to make
+    /// the total representation length a multiple of five.
     ///
-    /// The original representation length, including
-    /// leading zeros, is otherwise preserved.
+    /// The original digit sequence is otherwise preserved.
+    ///
+    /// Chunks are encoded directly in balanced base 243,
+    /// without creating intermediate Ternary objects.
+    ///
+    /// Time complexity: O(n), where n is the number of trits.
     pub fn from_ternary(ternary: Ternary) -> Self {
         let digits = ternary.to_digit_slice();
         let padding = (5 - digits.len() % 5) % 5;
@@ -200,32 +204,39 @@ impl DataTernary {
         Ternary::new(self.decode_digits(true))
     }
 
-    /// Converts the stored chunks into a fixed-width representation containing five trits per chunk.
+
+    /// Decodes the stored chunks into a fixed-length
+    /// balanced ternary representation.
+    ///
+    /// Each chunk contributes exactly five digits,
+    /// including leading zeros.
+    ///
+    /// Empty storage produces an empty representation.
     pub fn to_fixed_ternary(&self) -> Ternary {
         Ternary::new(self.decode_digits(false))
     }
 
-    /// Returns the normalized digit sequence.
+    /// Returns the normalized balanced ternary digit sequence.
+    ///
+    /// Chunks are decoded directly, without constructing
+    /// an intermediate Ternary.
+    ///
+    /// Leading zeros are removed. Empty storage and
+    /// all-zero representations produce a single Zero digit.
     pub fn to_digits(&self) -> Vec<Digit> {
         self.decode_digits(true)
     }
 
-    /// Converts a decimal number into a `DataTernary` structure.
+
+    /// Creates a DataTernary from a signed 64-bit integer.
     ///
-    /// This method takes a signed 64-bit integer as input and converts it into a
-    /// `Ternary` representation, which is then stored in the compact `DataTernary`
-    /// structure. The conversion ensures that the ternary representation uses
-    /// fixed-length chunks for efficient storage.
+    /// The value is converted directly into balanced
+    /// base-243 chunks, without constructing a Ternary.
     ///
-    /// # Arguments
+    /// The resulting representation uses the minimum
+    /// number of chunks required to store the value.
     ///
-    /// * `from` - A signed 64-bit integer value to be converted into `DataTernary`.
-    ///
-    /// # Returns
-    ///
-    /// A `DataTernary` instance that represents the given decimal number.
-    ///
-    /// # Example
+    /// Zero is represented by a single zero chunk.
     ///
     /// ```
     /// use balanced_ternary::{DataTernary};
@@ -255,18 +266,16 @@ impl DataTernary {
         Self { chunks }
     }
 
-    /// Converts a `DataTernary` into its decimal representation.
+
+    /// Converts the stored chunks into a signed 64-bit integer.
     ///
-    /// This method reconstructs the ternary value represented by the `DataTernary`
-    /// structure and converts it into the corresponding signed 64-bit decimal integer.
+    /// Uses direct balanced base-243 evaluation without
+    /// constructing an intermediate Ternary.
+    ///
     /// # Panics
     ///
-    /// Panics if the value does not fit in i64.
-    ///
-    /// # Returns
-    ///
-    /// A signed 64-bit integer (`i64`) representing the decimal equivalent of the
-    /// `DataTernary` structure.
+    /// Panics if the numeric value cannot be represented
+    /// by an i64.
     ///
     /// # Example
     ///

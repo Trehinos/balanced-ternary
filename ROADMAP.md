@@ -41,9 +41,41 @@
 
 done
 
-## R07 — Eliminate remaining allocations/conversions in fixed-width methods [P1]
+## R07 — Eliminate Unnecessary Allocations and Conversions [DONE]
 
-done
+**Sources:** `src/tryte.rs`, `src/store.rs`, `src/lib.rs`.
+
+### Completed
+
+- Replaced intermediate `Ternary` conversions in
+  `Tryte<N>` numeric conversions and bitwise operators.
+- Implemented allocation-free formatting for `Tryte<N>`.
+- Optimized `Ter40` digit access and decoding.
+- Removed intermediate allocations from `Ter40` formatting.
+- Optimized `Ternary::get_digit()` to O(1).
+- Improved allocation efficiency in `Ternary` parsing,
+  padding, concatenation, and formatting.
+- Implemented direct five-trit decoding for `TritsChunk`.
+- Implemented direct balanced base-243 encoding and
+  decoding for `DataTernary`.
+- Optimized `DataTernary` numeric conversions and formatting.
+
+### Preserved Invariants
+
+- Public API signatures remain unchanged.
+- Fixed-width types preserve their exact width.
+- Leading zeros and raw digit sequences are preserved
+  where required.
+- Normalized conversions produce canonical numeric
+  representations.
+- Empty storage behavior remains unchanged.
+- `#![no_std]` compatibility is preserved.
+
+### Remaining Considerations
+
+- Benchmark allocation and formatting improvements (R12).
+- Review empty representation and conversion semantics (R08).
+- Implement arithmetic directly on compact chunks (R09).
 
 ## R08 — Clarify conversions, parsing, and zero-width representation [P1]
 
