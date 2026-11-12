@@ -84,7 +84,7 @@ impl Ternary {
 
     /// Converts a balanced ternary number into its absolute
     /// magnitude, stored as little-endian base-3 digits.
-    fn magnitude_base3(value: &Ternary) -> Vec<u8> {
+    pub(super) fn magnitude_base3(value: &Ternary) -> Vec<u8> {
         let digits = value.significant_digits();
         let negative = digits.first() == Some(&Digit::Neg);
         let mut result = Vec::with_capacity(digits.len().max(1));
@@ -161,13 +161,18 @@ impl Ternary {
         (quotient, remainder)
     }
 
-    /// Converts an unsigned base-3 magnitude into a
-    /// balanced ternary number with the requested sign.
-    fn ternary_from_base3(magnitude: &[u8], negative: bool) -> Ternary {
+    /// Converts a little-endian unsigned base-3 magnitude into
+    /// a normalized balanced ternary number with the requested sign.
+    ///
+    /// Every input digit must be in `0..=2`.
+    /// An empty magnitude represents zero.
+    pub(super) fn ternary_from_base3(
+        magnitude: impl ExactSizeIterator<Item = u8>,
+        negative: bool,
+    ) -> Ternary {
         let mut digits = Vec::with_capacity(magnitude.len() + 1);
         let mut carry = 0u8;
-
-        for &digit in magnitude {
+        for digit in magnitude {
             let value = digit + carry;
             if value <= 1 {
                 digits.push(Digit::from_i8(value as i8));
@@ -191,10 +196,10 @@ impl Ternary {
                 *digit = -*digit;
             }
         }
-
         digits.reverse();
         Ternary::new(digits)
     }
+
     pub fn div_rem(&self, rhs: &Self) -> (Self, Self) {
         assert!(
             !rhs.significant_digits().is_empty(),
@@ -207,8 +212,8 @@ impl Ternary {
         let (quotient, remainder) = Self::div_rem_base3(&dividend, &divisor);
 
         (
-            Self::ternary_from_base3(&quotient, lhs_negative != rhs_negative),
-            Self::ternary_from_base3(&remainder, lhs_negative),
+            Self::ternary_from_base3(quotient.iter().copied(), lhs_negative != rhs_negative),
+            Self::ternary_from_base3(remainder.iter().copied(), lhs_negative),
         )
     }
 }

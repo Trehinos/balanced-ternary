@@ -11,8 +11,8 @@
 | R05 | done                     | ~~Standardize overflow, carry, and checked constructors for `Tryte<N>` / `Ter40`~~                     | `src/tryte.rs`, `src/store.rs`                                     |
 | R06 | done                     | ~~Implement arbitrary-precision arithmetic directly on `Ternary` digits~~                              | `src/operations.rs`, `src/lib.rs`                                  |
 | R07 | done                     | ~~Eliminate temporary `Ternary` and `String` objects in remaining fixed-width methods and formatting~~ | `src/tryte.rs`, `src/store.rs`, `src/lib.rs`                       |
-| R08 | **P1 — conversion API**  | Normalize conversion and parsing error behavior, including padding/empty input                         | `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs` |
-| R09 | **P2 — architecture**    | Introduce arithmetic directly on `TritsChunk` / `DataTernary` in balanced base 243                     | `src/store.rs`                                                     |
+| R08 | done                     | ~~Normalize conversion and parsing error behavior, including padding/empty input~~                     | `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs` |
+| R09 | cancelled                | ~~Introduce arithmetic directly on `TritsChunk` / `DataTernary` in balanced base 243~~                 | `src/store.rs`                                                     |
 | R10 | **P2 — semantic design** | Decide numeric-value versus representation equality for `DataTernary`                                  | `src/store.rs`                                                     |
 | R11 | **P1 — verification**    | Expand boundary/property tests and CI feature matrix                                                   | tests, `.github/workflows/rust.yml`                                |
 | R12 | **P2 — release quality** | Benchmark, documentation consistency, release metadata, optional API extensions                        | docs, benchmarks, `Cargo.toml`, `.changelog/`                      |
@@ -77,65 +77,30 @@ done
 - Review empty representation and conversion semantics (R08).
 - Implement arithmetic directly on compact chunks (R09).
 
-## R08 — Clarify conversions, parsing, and zero-width representation [P1]
+## R08 — Clarify conversions, parsing, and zero-width representation [DONE]
 
-**Sources:** `src/lib.rs`, `src/tryte.rs`, `src/store.rs`, `src/conversions.rs`.
+- Balanced parsing explicitly preserves empty input and leading zeros.
+- Fallible parsing reports invalid characters and UTF-8 byte offsets.
+- Bounded numeric conversions ignore redundant leading zeros and
+  return errors when values do not fit.
+- `Tryte<N>` no longer has a 40-trit width limit.
+- `Tryte<0>` represents only zero; conversions reject nonzero values.
+- Fallible conversions to `i64` report out-of-range values.
+- Explicit panicking convenience constructors remain available.
+- Unbalanced ternary conversions support arbitrary precision,
+  optional ASCII signs, and normalized numeric output.
+- Empty unbalanced input and signs without digits are rejected.
+- Empty `DataTernary` storage remains valid. Fixed representations
+  preserve stored chunks; numeric conversions normalize zero.
+- `Ternary` equality, ordering, and hashing use numeric values.
+  Exact representations remain accessible through `to_digit_slice()`.
 
-**Remaining ambiguities / defects:**
-
-- `Ternary::from_str("")` currently succeeds because `.chars().all(...)` returns true for the empty
-  string. `Ternary::parse("")` creates an empty vector. This behaves numerically like zero under
-  equality but formats as an empty string. Decide whether empty input should be rejected,
-  canonicalized to `"0"`, or explicitly accepted as an empty representation; apply consistently to
-  `FromStr`, `parse`, and `Display`.
-- `Tryte<N>::from_ternary()` rejects values based on the *raw trit count*, not on significant
-  length: `"00000+"` cannot become `Tryte<1>` even though its value fits. Decide whether conversion
-  should accept leading-zero padding; if yes, check significant digits before enforcing width.
-  Similarly review `TritsChunk::from_ternary()`.
-- `Tryte<N>::from_str()` validates characters but can still panic on width overflow, despite
-  returning `Result`. It needs a meaningful error variant for width/range overflow. The same issue
-  arises with other `FromStr`/`From` conversions.
-- `Ternary::to_unbalanced()` and `from_unbalanced()` still rely on `i64`; long values fail even if
-  they are valid `Ternary` numbers. Either implement arbitrary-length base-3 conversion or
-  explicitly expose a checked, bounded variant.
-- `Digit::from_char` / `From<char>` panic for invalid characters; consider `try_from_char()` or an
-  error-oriented constructor. Replacing the existing `From<char>` with `TryFrom<char>` is a breaking
-  change because of the blanket `TryFrom` implementation.
-- `DataTernary::default()` contains no chunks. Its fixed-width conversion and `Display` currently
-  have zero length, whereas its numeric conversion yields a single `0`. Decide whether empty storage
-  is a valid zero-width sequence or should canonicalize to a 5-trit zero chunk.
-- Document that `Ternary` equality is numeric but `to_digit_slice()` retains the exact
-  representation; consider an explicitly named `same_digits()` helper if users need structural
-  comparison.
-
-**Acceptance:** All fallible parsing/conversion APIs return errors instead of panicking on
-valid-but-too-wide input; empty and padding cases have tests; arbitrary precision versus bounded
-conversion is clearly indicated by names/docs.
+The choice between structural and numeric equality for `DataTernary`
+remains tracked separately in R10.
 
 ## R09 — Add arithmetic to compact `DataTernary` storage [P2]
 
-**Source:** `src/store.rs`.
-
-Five balanced trits have `3^5 = 243` possible values, represented by one signed byte in
-`[-121,121]`; the current storage density is already near optimal. The next gain is **performing
-operations on chunks without decoding all individual trits**.
-
-Treat chunks as digits in balanced base `243`:
-
-```rust
-fn add_chunks(a: i8, b: i8, carry: i16) -> (i8, i16) {
-    let sum = a as i16 + b as i16 + carry;
-    let next_carry = (sum + 121).div_euclid(243);
-    let digit = sum - 243 * next_carry;
-    (digit as i8, next_carry)
-}
-```
-
-**Work plan:** Define chunk order and sign/zero extension; add `checked`/`wrapping` semantics where
-appropriate; implement a right-to-left chunk adder (`O(number_of_chunks)`), subtraction by negation,
-and normalized output. Test partial leading blocks, internal zero blocks, negative numbers, carries
-at chunk boundaries, and 100+ trit inputs. Later consider multiplication directly on chunks. Do not
-spend time further compressing five-trit storage before benchmarking.
+cancelled
 
 ## R10 — Choose `DataTernary` equality/order semantics [P2]
 

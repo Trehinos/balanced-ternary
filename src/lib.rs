@@ -62,7 +62,7 @@ extern crate alloc;
 pub mod concepts;
 
 #[cfg(feature = "ternary-string")]
-use alloc::{format, string::String, vec, vec::Vec};
+use alloc::{string::String, vec, vec::Vec};
 
 use crate::concepts::DigitOperate;
 use core::fmt::Write;
@@ -112,7 +112,7 @@ pub enum TernaryConversionError {
 impl Display for TernaryConversionError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::OutOfRange => f.write_str("value is outside the destination type's range")
+            Self::OutOfRange => f.write_str("value is outside the destination type's range"),
         }
     }
 }
@@ -123,32 +123,39 @@ impl Error for TernaryConversionError {}
 #[cfg(feature = "ternary-string")]
 impl Error for ParseTernaryError {}
 
-/// Provides helper functions for formatting integers in a given radix.
-///
-/// Used internally to convert decimal numbers into their ternary representation.
-/// - `x`: The number to be formatted.
-/// - `radix`: The base of the numeral system.
-///
-/// Returns a string representation of the number in the specified base.
+/// Error returned when parsing an unbalanced ternary number fails.
 #[cfg(feature = "ternary-string")]
-fn format_radix(x: i64, radix: u32) -> String {
-    let mut result = vec![];
-    let sign = x.signum();
-    let mut x = x.unsigned_abs();
-    loop {
-        let m = (x % radix as u64) as u32;
-        x /= radix as u64;
-        result.push(char::from_digit(m, radix).unwrap());
-        if x == 0 {
-            break;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseUnbalancedTernaryError {
+    /// The input is empty or contains only a sign.
+    MissingDigits,
+
+    /// The input contains a character other than an expected base-3 digit.
+    InvalidCharacter {
+        /// The invalid character.
+        character: char,
+        /// The zero-based UTF-8 byte offset in the original input.
+        index: usize,
+    },
+}
+
+#[cfg(feature = "ternary-string")]
+impl Display for ParseUnbalancedTernaryError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::MissingDigits => {
+                f.write_str("unbalanced ternary input must contain at least one digit")
+            }
+            Self::InvalidCharacter { character, index } => write!(
+                f,
+                "invalid unbalanced ternary character {character:?} at byte index {index}"
+            ),
         }
     }
-    format!(
-        "{}{}",
-        if sign == -1 { "-" } else { "" },
-        result.into_iter().rev().collect::<String>()
-    )
 }
+
+#[cfg(feature = "ternary-string")]
+impl Error for ParseUnbalancedTernaryError {}
 
 mod digit;
 
@@ -292,7 +299,8 @@ pub fn dter(from: &str) -> DataTernary {
 /// `to_digit_slice()`.
 ///
 /// Empty representations are valid and have the numeric value zero.
-/// Parsing and formatting preserve the exact digit sequence,
+/// Balanced parsing through `parse()`, `try_parse()`, and `FromStr`,
+/// and formatting through `Display`, preserve the exact digit sequence,
 /// including leading zeros and empty input.
 ///
 /// Use `trim()` to get a canonical numeric representation.
@@ -306,8 +314,11 @@ pub fn dter(from: &str) -> DataTernary {
 /// Use `checked_to_dec()` to get an Option, or `i64::try_from()`
 /// to get a Result. Both borrowed and owned conversions are supported.
 ///
-/// Conversions to and from unbalanced ternary currently
-/// rely on `i64` and are therefore range-limited.
+/// Conversions to and from unbalanced ternary support arbitrary precision
+/// and produce normalized numeric representations.
+///
+/// Unbalanced input requires at least one digit, optionally preceded
+/// by an ASCII `+` or `-`. Use `try_from_unbalanced()` for fallible parsing.
 ///
 /// # Examples
 ///
@@ -489,61 +500,107 @@ impl Ternary {
         i64::try_from(value?).ok()
     }
 
-    /// Converts the balanced ternary number to its unbalanced representation as a string.
+    /// Converts this number to an arbitrary-precision unbalanced
+    /// ternary string using the digits `0`, `1`, and `2`.
     ///
-    /// The unbalanced representation treats the digits as standard ternary (0, 1, 2),
-    /// instead of balanced ternary (-1, 0, +1). Negative digits are handled by
-    /// calculating the decimal value of the balanced ternary number and converting
-    /// it back to an unbalanced ternary string.
-    ///
-    /// Returns:
-    /// * `String` - The unbalanced ternary representation of the number, where each
-    /// digit is one of `0`, `1`, or `2`.
-    ///
-    /// Example:
-    /// ```
-    /// use balanced_ternary::Ternary;
-    ///
-    /// let repr = Ternary::parse("+--");
-    /// assert_eq!(repr.to_unbalanced(), "12");
-    /// assert_eq!(repr.to_dec(), 5);
-    /// let repr = Ternary::parse("-++");
-    /// assert_eq!(repr.to_unbalanced(), "-12");
-    /// assert_eq!(repr.to_dec(), -5);
-    /// ```
-    pub fn to_unbalanced(&self) -> String {
-        format_radix(self.to_dec(), 3)
-    }
-
-    /// Parses a string representation of an unbalanced ternary number into a `Ternary` object.
-    ///
-    /// The string must only contain characters valid in the unbalanced ternary numeral system (`0`, `1`, or `2`).
-    /// Each character is directly converted into its decimal value and then interpreted as a balanced ternary number.
-    ///
-    /// # Arguments
-    ///
-    /// * `unbalanced` - A string slice representing the unbalanced ternary number.
-    ///
-    /// # Returns
-    ///
-    /// A `Ternary` object representing the same value as the input string in balanced ternary form.
-    ///
-    /// # Panics
-    ///
-    /// This function will panic if the string is not a valid unbalanced ternary number.
-    /// For instance, if it contains characters other than `0`, `1`, or `2`.
+    /// Negative values have a leading `-`. Positive values have no sign.
+    /// The output has no leading zeros, except that zero is written as `"0"`.
+    /// Empty balanced representations also produce `"0"`.
     ///
     /// # Examples
     ///
     /// ```
     /// use balanced_ternary::Ternary;
     ///
-    /// let ternary = Ternary::from_unbalanced("-12");
-    /// assert_eq!(ternary.to_string(), "-++");
-    /// assert_eq!(ternary.to_dec(), -5);
+    /// assert_eq!(Ternary::from_dec(5).to_unbalanced(), "12");
+    /// assert_eq!(Ternary::from_dec(-5).to_unbalanced(), "-12");
+    /// assert_eq!(Ternary::parse("").to_unbalanced(), "0");
+    /// ```
+    pub fn to_unbalanced(&self) -> String {
+        let negative = self.significant_digits().first() == Some(&Neg);
+        let mut digits = Self::magnitude_base3(self);
+        for digit in &mut digits {
+            *digit += b'0';
+        }
+        if negative {
+            digits.push(b'-');
+        }
+
+        digits.reverse();
+        String::from_utf8(digits).expect("unbalanced ternary output contains only ASCII")
+    }
+
+    /// Parses an arbitrary-precision unbalanced ternary number.
+    ///
+    /// The input must contain an optional leading ASCII `+` or `-`,
+    /// followed by at least one digit from `0`, `1`, and `2`.
+    /// Whitespace and separators are not accepted.
+    ///
+    /// Leading zeros are accepted. The result is normalized:
+    /// zero has one zero trit, and nonzero values have no leading zeros.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ParseUnbalancedTernaryError::MissingDigits`] for empty
+    /// input or a sign without digits.
+    ///
+    /// Otherwise, reports the first invalid character and its UTF-8 byte
+    /// offset in the original input.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::Ternary;
+    ///
+    /// let value = Ternary::try_from_unbalanced("+0012").unwrap();
+    /// assert_eq!(value.to_string(), "+--");
+    ///
+    /// let zero = Ternary::try_from_unbalanced("-000").unwrap();
+    /// assert_eq!(zero.to_string(), "0");
+    /// ```
+    pub fn try_from_unbalanced(unbalanced: &str) -> Result<Self, ParseUnbalancedTernaryError> {
+        let (negative, digits, offset) = match unbalanced.as_bytes().first() {
+            Some(b'-') => (true, &unbalanced[1..], 1),
+            Some(b'+') => (false, &unbalanced[1..], 1),
+            _ => (false, unbalanced, 0),
+        };
+        if digits.is_empty() {
+            return Err(ParseUnbalancedTernaryError::MissingDigits);
+        }
+        for (index, character) in digits.char_indices() {
+            if !matches!(character, '0' | '1' | '2') {
+                return Err(ParseUnbalancedTernaryError::InvalidCharacter {
+                    character,
+                    index: offset + index,
+                });
+            }
+        }
+
+        let digits = digits.trim_start_matches('0');
+        Ok(Self::ternary_from_base3(
+            digits.bytes().rev().map(|digit| digit - b'0'),
+            negative,
+        ))
+    }
+
+    /// Parses an arbitrary-precision unbalanced ternary number.
+    ///
+    /// Uses the same syntax and normalization rules as
+    /// [`Self::try_from_unbalanced`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the input is not a valid unbalanced ternary number.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use balanced_ternary::Ternary;
+    ///
+    /// assert_eq!(Ternary::from_unbalanced("-12").to_dec(), -5);
     /// ```
     pub fn from_unbalanced(unbalanced: &str) -> Self {
-        Self::from_dec(i64::from_str_radix(unbalanced, 3).unwrap())
+        Self::try_from_unbalanced(unbalanced).expect("invalid unbalanced ternary string")
     }
 
     /// Removes leading zero digits.
@@ -1406,5 +1463,192 @@ mod tests {
     #[should_panic(expected = "invalid balanced ternary string")]
     fn infallible_parse_rejects_invalid_input() {
         let _ = Ternary::parse("+x");
+    }
+
+    mod unbalanced_tests {
+        use crate::{ParseUnbalancedTernaryError, Ternary};
+        use alloc::{
+            format,
+            string::{String, ToString},
+            vec::Vec,
+        };
+
+        fn reference_unbalanced(value: i64) -> String {
+            let mut magnitude = value.unsigned_abs();
+            let mut bytes = Vec::new();
+
+            loop {
+                bytes.push(b'0' + (magnitude % 3) as u8);
+                magnitude /= 3;
+
+                if magnitude == 0 {
+                    break;
+                }
+            }
+
+            if value < 0 {
+                bytes.push(b'-');
+            }
+
+            bytes.reverse();
+            String::from_utf8(bytes).unwrap()
+        }
+
+        #[test]
+        fn unbalanced_parsing_normalizes_numeric_input() {
+            for (input, balanced, unbalanced) in [
+                ("0", "0", "0"),
+                ("000", "0", "0"),
+                ("+000", "0", "0"),
+                ("-000", "0", "0"),
+                ("1", "+", "1"),
+                ("2", "+-", "2"),
+                ("-2", "-+", "-2"),
+                ("12", "+--", "12"),
+                ("+0012", "+--", "12"),
+                ("-0012", "-++", "-12"),
+                ("22", "+0-", "22"),
+            ] {
+                let value = Ternary::try_from_unbalanced(input).unwrap();
+
+                assert_eq!(value.to_string(), balanced, "input: {input}");
+                assert_eq!(value.to_unbalanced(), unbalanced, "input: {input}");
+                assert_eq!(
+                    Ternary::from_unbalanced(input).to_digit_slice(),
+                    value.to_digit_slice(),
+                    "input: {input}",
+                );
+            }
+        }
+
+        #[test]
+        fn unbalanced_parsing_requires_digits() {
+            for input in ["", "+", "-"] {
+                assert_eq!(
+                    Ternary::try_from_unbalanced(input),
+                    Err(ParseUnbalancedTernaryError::MissingDigits),
+                    "input: {input:?}",
+                );
+            }
+        }
+
+        #[test]
+        fn unbalanced_parsing_reports_the_first_invalid_character() {
+            for (input, character, index) in [
+                ("3", '3', 0),
+                (" 1", ' ', 0),
+                ("1 ", ' ', 1),
+                ("1\n", '\n', 1),
+                ("1_0", '_', 1),
+                ("++1", '+', 1),
+                ("--1", '-', 1),
+                ("+-1", '-', 1),
+                ("1-0", '-', 1),
+                ("0b10", 'b', 1),
+                ("é12", 'é', 0),
+                ("+12é", 'é', 3),
+                ("-0🙂", '🙂', 2),
+                ("１２", '１', 0),
+            ] {
+                assert_eq!(
+                    Ternary::try_from_unbalanced(input),
+                    Err(ParseUnbalancedTernaryError::InvalidCharacter {
+                        character,
+                        index,
+                    }),
+                    "input: {input:?}",
+                );
+            }
+        }
+
+        #[test]
+        fn unbalanced_conversions_match_native_reference() {
+            for value in (-10_000i64..=10_000).chain([i64::MIN, i64::MAX]) {
+                let expected = reference_unbalanced(value);
+                let ternary = Ternary::from_dec(value);
+
+                assert_eq!(
+                    ternary.to_unbalanced(),
+                    expected,
+                    "value: {value}",
+                );
+
+                let parsed = Ternary::try_from_unbalanced(&expected).unwrap();
+
+                assert_eq!(parsed.checked_to_dec(), Some(value));
+                assert_eq!(parsed.to_digit_slice(), ternary.to_digit_slice());
+            }
+        }
+
+        #[test]
+        fn unbalanced_conversions_support_large_known_values() {
+            for width in [1usize, 40, 41, 128, 4096] {
+                let zeros = "0".repeat(width);
+                let inner_zeros = "0".repeat(width - 1);
+                let twos = "2".repeat(width);
+
+                // Check 3^width and 3^width - 1, with both signs.
+                for (unbalanced, balanced) in [
+                    (format!("1{zeros}"), format!("+{zeros}")),
+                    (format!("-1{zeros}"), format!("-{zeros}")),
+                    (twos.clone(), format!("+{inner_zeros}-")),
+                    (format!("-{twos}"), format!("-{inner_zeros}+")),
+                ] {
+                    let value = Ternary::try_from_unbalanced(&unbalanced).unwrap();
+
+                    assert_eq!(value.to_string(), balanced);
+                    assert_eq!(value.to_unbalanced(), unbalanced);
+
+                    if width >= 40 {
+                        assert_eq!(value.checked_to_dec(), None);
+                    }
+                }
+            }
+        }
+
+        #[test]
+        fn unbalanced_round_trips_normalize_balanced_representations() {
+            for input in ["", "0", "000", "000+-0", "-++", "+0-+-0"] {
+                let value = Ternary::parse(input);
+                let restored =
+                    Ternary::try_from_unbalanced(&value.to_unbalanced()).unwrap();
+
+                assert_eq!(
+                    restored.to_digit_slice(),
+                    value.trim().to_digit_slice(),
+                    "input: {input:?}",
+                );
+            }
+
+            let input = format!("000{}", "+0-".repeat(1024));
+            let value = Ternary::parse(&input);
+            let restored =
+                Ternary::try_from_unbalanced(&value.to_unbalanced()).unwrap();
+
+            assert_eq!(
+            restored.to_digit_slice(),
+            value.trim().to_digit_slice(),
+        );
+        }
+
+        #[test]
+        fn unbalanced_parsing_accepts_long_zero_padding() {
+            let padding = "0".repeat(4096);
+
+            let zero =
+                Ternary::try_from_unbalanced(&format!("-{padding}")).unwrap();
+            assert_eq!(zero.to_string(), "0");
+
+            let value =
+                Ternary::try_from_unbalanced(&format!("+{padding}12")).unwrap();
+            assert_eq!(value.to_string(), "+--");
+            assert_eq!(value.to_unbalanced(), "12");
+        }
+
+        #[test]
+        #[should_panic(expected = "invalid unbalanced ternary string")]
+        fn unbalanced_panicking_constructor_rejects_invalid_input() {
+            let _ = Ternary::from_unbalanced("1023");
+        }
     }
 }

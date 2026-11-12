@@ -706,14 +706,10 @@ impl Digit {
         }
     }
 
-    /// This method maps this `Digit` value to its corresponding unbalanced ternary
-    /// integer representation.
+    /// Encodes this trit as its numeric value plus one.
     ///
-    /// - Returns:
-    ///     - `0` for `Digit::Neg`.
-    ///     - `1` for `Digit::Zero`.
-    ///     - `2` for `Digit::Pos`.
-    ///
+    /// Maps `Neg` to `0`, `Zero` to `1`, and `Pos` to `2`.
+    /// This is an offset encoding, not a numeric base conversion.
     pub const fn to_unbalanced(self) -> u8 {
         match self {
             Digit::Neg => 0,
@@ -722,19 +718,14 @@ impl Digit {
         }
     }
 
-    /// Creates a `Digit` from an unbalanced ternary integer representation.
+    /// Decodes a trit from its offset encoding.
     ///
-    /// # Arguments:
-    /// - `u`: An unsigned 8-bit integer representing an unbalanced ternary value.
+    /// Maps `0` to `Neg`, `1` to `Zero`, and `2` to `Pos`.
+    /// This is the inverse of [`Self::to_unbalanced`].
     ///
-    /// # Returns:
-    /// - `Digit::Neg` for `0`.
-    /// - `Digit::Zero` for `1`.
-    /// - `Digit::Pos` for `2`.
+    /// # Panics
     ///
-    /// # Panics:
-    /// - Panics if the provided value is not `0`, `1`, or `2`, as these are the
-    ///   only valid representations of unbalanced ternary values.
+    /// Panics if `u` is outside `0..=2`.
     pub const fn from_unbalanced(u: u8) -> Digit {
         match u {
             0 => Digit::Neg,

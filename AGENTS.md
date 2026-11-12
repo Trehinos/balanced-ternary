@@ -24,8 +24,8 @@ The crate distinguishes numeric values from fixed-width
 ternary words:
 
 - `Digit` arithmetic is performed modulo 3.
-- `Ternary` represents arbitrary-length balanced ternary
-  values, but its current arithmetic is limited to `i64`.
+- `Ternary` supports arbitrary-precision arithmetic and unbalanced
+  ternary conversions. Conversions to `i64` remain range-limited.
 - `Ter40` is a bounded signed numeric type whose arithmetic
   operators panic on overflow.
 - `Tryte<N>` is a fixed-width word. Addition, subtraction
