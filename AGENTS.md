@@ -18,3 +18,26 @@ Before merging new code, ensure that:
 1. Every public function has an accompanying unit test.
 2. `cargo build` and `cargo test` run successfully. These steps mirror the CI defined in `.github/workflows/rust.yml`.
 
+## Arithmetic semantics
+
+The crate distinguishes numeric values from fixed-width
+ternary words:
+
+- `Digit` arithmetic is performed modulo 3.
+- `Ternary` represents arbitrary-length balanced ternary
+  values, but its current arithmetic is limited to `i64`.
+- `Ter40` is a bounded signed numeric type whose arithmetic
+  operators panic on overflow.
+- `Tryte<N>` is a fixed-width word. Addition, subtraction
+  and multiplication wrap modulo 3^N.
+- `Tryte<N>` division uses signed integer division.
+- Modular division is available through explicit methods.
+
+Do not silently change these semantics when refactoring.
+
+Preserve the public `DigitOperate` trait signatures.
+Use additive APIs to expose additional information such
+as outgoing carry.
+
+Maintain `#![no_std]` compatibility and avoid unnecessary
+heap allocation in fixed-width arithmetic.

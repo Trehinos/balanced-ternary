@@ -79,9 +79,7 @@ The `DigitOperate::each*` methods now work directly over the `Tryte<N>` array or
 *Do not redo that work.** Remaining hotspots are elsewhere:
 
 - `Tryte<N>`: `to_i64()` converts through `to_ternary()`; `from_i64()` converts through `Ternary`;
-  operator implementations (`Neg`, `Add`, `Sub`, `Mul`, `Div`, `BitAnd`, `BitOr`, `BitXor`, `Not`)
-  still construct temporary `Ternary` instances. Use the direct array for digitwise logic and
-  fixed-width carry arithmetic. For bounded `N<=40`, a direct Horner fold over the array is
+  For bounded `N<=40`, a direct Horner fold over the array is
   sufficient for `to_i64()`.
 - `Tryte<N>::fmt`: formats through an allocated `Ternary` and `String`; write characters directly to
   the formatter.
