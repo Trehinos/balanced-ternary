@@ -1,7 +1,7 @@
 mod common;
 
 use common::Runner;
-use stats_alloc::{Region, StatsAlloc, INSTRUMENTED_SYSTEM};
+use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
 use std::alloc::System;
 use std::hint::black_box;
 
