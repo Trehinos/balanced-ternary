@@ -118,11 +118,11 @@ done
 
 ## R12 — Benchmark, documentation, and release hygiene [P2]
 
-- Add benchmarks for parsing, formatting, conversions, `Tryte` digitwise operations, `Ter40`
+- ~~Add benchmarks for parsing, formatting, conversions, `Tryte` digitwise operations, `Ter40`
   extraction, `DataTernary` encoding/decoding, and increasingly wide arithmetic. Compare median
-  runtime and allocation counts; avoid declaring optimization wins without measurements.
-- If using `criterion`, keep it a dev dependency so the published library's default dependency/
-  `no_std` constraints remain unchanged.
+  runtime and allocation counts; avoid declaring optimization wins without measurements.~~
+- ~~If using `criterion`, keep it a dev dependency so the published library's default dependency/
+  `no_std` constraints remain unchanged.~~
 - Review API documentation for semantics of balanced versus ordinary ternary, fixed-width carry
   loss, numerical versus structural equality, width-preserving versus normalized formatting, and
   checked/wrapping operations.
