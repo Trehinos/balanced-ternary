@@ -15,4 +15,16 @@ ternary-store = ["ternary-string"]
 tryte = ["ternary-string"]
 ternary-string = []
 
-[dependencies]
+[dev-dependencies]
+criterion = "0.8.2"
+stats_alloc = "0.1.10"
+
+[[bench]]
+name = "timings"
+harness = false
+required-features = ["tryte", "ternary-store"]
+
+[[bench]]
+name = "allocations"
+harness = false
+required-features = ["tryte", "ternary-store"]
