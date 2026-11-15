@@ -31,58 +31,13 @@ impl Display for DigitConversionError {
 
 impl Error for DigitConversionError {}
 
-/// ## Module: Balanced Ternary `Digit`
+/// One balanced trit. Addition and subtraction wrap modulo three.
+/// Division by zero panics.
 ///
-/// This module defines the `Digit` type for the balanced ternary numeral system,
-/// along with its associated operations and functionality.
+/// The bitwise operators implement digit logic. Named methods provide
+/// additional truth functions, such as [`Self::k3_imply`] and [`Self::ht_imply`].
 ///
-/// Represents a digit in the balanced ternary numeral system.
-///
-/// A digit can have one of three values:
-/// - `Neg` (-1): Represents value -1 in the balanced ternary system.
-/// - `Zero` (0): Represents value 0 in the balanced ternary system.
-/// - `Pos` (+1): Represents value +1 in the balanced ternary system.
-///
-/// Provides utility functions for converting to/from characters, integers, and negation.
-///
-/// ### Key Features
-///
-/// - **`Digit` Type**: Represents a digit in the balanced ternary numeral system.
-///     - Possible values: `Neg` (-1), `Zero` (0), `Pos` (+1).
-///     - Provides utility functions for converting between characters, integers, and other formats.
-/// - **Arithmetic Operators**: Implements arithmetic operations for digits, including:
-///     - Negation (`Neg`) and Bitwise Not (`Not`).
-///     - Addition (`Add`) and Subtraction (`Sub`).
-///     - Multiplication (`Mul`) and Division (`Div`), with safe handling of divisors (division by zero panics).
-/// - **Logical Operators**: Supports bitwise logical operations (AND, OR, XOR) based on ternary logic rules.
-/// - **Custom Methods**: Additional utility methods implementing balanced ternary logic principles.
-///
-/// ### Supported Use Cases
-///
-/// - Arithmetic in balanced ternary numeral systems.
-/// - Logic operations in custom numeral systems.
-/// - Conversion between balanced ternary representation and more common formats like integers and characters.
-///
-/// ## `Digit` type arithmetical and logical operations
-///
-/// - `Neg` and `Not` for `Digit`: Negates the digit value, adhering to balanced ternary rules.
-/// - `Add<Digit>` for `Digit`: Adds two `Digit` values and returns a `Digit`.
-/// - `Sub<Digit>` for `Digit`: Subtracts one `Digit` from another and returns a `Digit`.
-/// - `Mul<Digit>` for `Digit`: Multiplies two `Digit` values and returns a `Digit`.
-/// - `Div<Digit>` for `Digit`: Divides one `Digit` by another and returns a `Digit`. Division by zero panics.
-///
-/// ### Logical Operations for `Digit`
-///
-/// The `Digit` type supports bitwise logical operations, which are implemented according to logical rules applicable to balanced ternary digits.
-///
-/// ### Digits operations
-///
-/// ![Digit operations](https://raw.githubusercontent.com/Trehinos/balanced-ternary/refs/heads/master/digit-operations.png)
-///
-/// `/`, `*`, `&`, `|` and `^` should not be used with `Ternary::each_{with,zip}()`.
-/// Instead, use these operators from `Ternary` directly.
-///
-/// Do so to `add` and `sub` ternaries, too.
+/// ![Digit truth tables](https://raw.githubusercontent.com/Trehinos/balanced-ternary/refs/heads/master/digit-operations.png)
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum Digit {
@@ -805,13 +760,7 @@ impl Not for Digit {
 impl Add<Digit> for Digit {
     type Output = Digit;
 
-    /// Adds two `Digit` values together and returns a `Digit` result.
-    ///
-    /// - Returns:
-    ///   - A `Digit` instance that holds the result of the addition.
-    ///
-    /// - Panics:
-    ///   - This method does not panic under any circumstances.
+    /// Returns the sum modulo three.
     fn add(self, other: Digit) -> Self::Output {
         match self {
             Digit::Neg => other.pre(),
@@ -824,13 +773,7 @@ impl Add<Digit> for Digit {
 impl Sub<Digit> for Digit {
     type Output = Digit;
 
-    /// Subtracts two `Digit` values and returns a `Digit` result.
-    ///
-    /// - Returns:
-    ///   - A `Digit` instance that holds the result of the subtraction.
-    ///
-    /// - Panics:
-    ///   - This method does not panic under any circumstances.
+    /// Returns the difference modulo three.
     fn sub(self, other: Digit) -> Self::Output {
         self + (-other)
     }
@@ -866,27 +809,11 @@ impl Mul<Digit> for Digit {
 impl Div<Digit> for Digit {
     type Output = Digit;
 
-    /// Divides one `Digit` value by another and returns the result as a `Digit`.
+    /// Divides by a single trit.
     ///
-    /// # Rules for division:
-    /// - For `Digit::Neg`:
-    ///   - Dividing `Digit::Neg` by `Digit::Neg` results in `Digit::Pos`.
-    ///   - Dividing `Digit::Neg` by `Digit::Zero` will panic with "Cannot divide by zero."
-    ///   - Dividing `Digit::Neg` by `Digit::Pos` results in `Digit::Neg`.
-    /// - For `Digit::Zero`:
-    ///   - Dividing `Digit::Zero` by `Digit::Neg` results in `Digit::Zero`.
-    ///   - Dividing `Digit::Zero` by `Digit::Zero` will panic with "Cannot divide by zero."
-    ///   - Dividing `Digit::Zero` by `Digit::Pos` results in `Digit::Zero`.
-    /// - For `Digit::Pos`:
-    ///   - Dividing `Digit::Pos` by `Digit::Neg` results in `Digit::Neg`.
-    ///   - Dividing `Digit::Pos` by `Digit::Zero` will panic with "Cannot divide by zero."
-    ///   - Dividing `Digit::Pos` by `Digit::Pos` results in `Digit::Pos`.
+    /// # Panics
     ///
-    /// # Returns:
-    /// - A `Digit` value representing the result of the division.
-    ///
-    /// # Panics:
-    /// - Panics with "Cannot divide by zero." if the `other` operand is `Digit::Zero`.
+    /// Panics if the divisor is zero.
     fn div(self, other: Digit) -> Self::Output {
         if other == Digit::Zero {
             panic!("Cannot divide by zero.");

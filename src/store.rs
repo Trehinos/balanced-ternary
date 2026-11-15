@@ -52,20 +52,7 @@ impl TritsChunk {
         Self::checked_from_dec(from).expect("TritsChunk value out of range")
     }
 
-    /// Converts the `TritsChunk` into its decimal representation.
-    ///
-    /// # Returns
-    ///
-    /// An `i8` value representing the decimal form of the `TritsChunk`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use balanced_ternary::TritsChunk;
-    ///
-    /// let chunk = TritsChunk::from_dec(42);
-    /// assert_eq!(chunk.to_dec(), 42);
-    /// ```
+    /// Returns the signed value of the five-trit chunk.
     pub fn to_dec(&self) -> i8 {
         self.0
     }
@@ -405,7 +392,7 @@ impl DataTernary {
     /// Decodes the stored chunks into balanced ternary digits.
     ///
     /// When `trim` is true, leading zeros are removed,
-    /// and an empty or all-zero value becomes [Zero].
+    /// and an empty or all-zero value becomes a single zero trit.
     ///
     /// When `trim` is false, the result contains
     /// exactly five digits per chunk.
@@ -482,8 +469,8 @@ impl TryFrom<DataTernary> for i64 {
 /// Construction from `i64` or `Ternary` validates the numeric value.
 /// Leading-zero padding in a `Ternary` representation is accepted.
 ///
-/// Digit-wise operations provided by `DigitOperate` operate on
-/// exactly 40 trits and may discard the outgoing carry.
+/// `Display` writes all 40 trits. For the outgoing digit of a carry
+/// operation, see [`Self::each_zip_carry_full`].
 ///
 /// # Examples
 ///

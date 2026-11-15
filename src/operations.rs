@@ -200,6 +200,19 @@ impl Ternary {
         Ternary::new(digits)
     }
 
+    /// Returns the quotient and remainder together. The quotient truncates toward
+    /// zero. A nonzero remainder has the dividend's sign.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `rhs` has numeric value zero, including an empty representation.
+    ///
+    /// ```
+    /// use balanced_ternary::Ternary;
+    ///
+    /// let (q, r) = Ternary::from_dec(-7).div_rem(&Ternary::from_dec(3));
+    /// assert_eq!((q.to_dec(), r.to_dec()), (-2, -1));
+    /// ```
     pub fn div_rem(&self, rhs: &Self) -> (Self, Self) {
         assert!(
             !rhs.significant_digits().is_empty(),
@@ -221,9 +234,13 @@ impl Ternary {
 impl Neg for &Ternary {
     type Output = Ternary;
 
-    /// Returns the negation of the current `Ternary` object.
+    /// Negates each trit and preserves the stored width.
     ///
-    /// Negates each digit in the number.
+    /// ```
+    /// use balanced_ternary::Ternary;
+    ///
+    /// assert_eq!((-&Ternary::parse("00+")).to_string(), "00-");
+    /// ```
     fn neg(self) -> Self::Output {
         let mut repr = Ternary::new(vec![]);
         for digit in self.digits.iter() {

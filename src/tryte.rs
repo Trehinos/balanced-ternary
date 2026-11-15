@@ -39,74 +39,25 @@ impl Error for ParseTryteError {
     }
 }
 
-/// A fixed-width balanced ternary word containing exactly
-/// `SIZE` trits.
-///
-/// Each trit is represented by a `Digit` with one of three
-/// possible values: -1, 0, or +1.
-///
-/// Unlike `Ter40`, which is a bounded signed integer,
-/// `Tryte<SIZE>` represents a fixed-width ternary word.
+/// A fixed-width word containing exactly `SIZE` balanced trits (six by default).
+/// For positive widths its signed range is `−(3^SIZE − 1)/2 ..= (3^SIZE − 1)/2`.
+/// `Tryte<0>` is the empty word and represents only zero.
 ///
 /// # Arithmetic
 ///
-/// - Addition, subtraction, and multiplication wrap modulo 3^SIZE.
-/// - Division (`/`) performs a signed integer division,
-///   truncating toward zero.
-/// - `checked_*` methods return `None` on overflow or
-///   division by zero.
-/// - `overflowing_*` methods return the wrapped result
-///   and an overflow flag.
-/// - `saturating_*` methods clamp arithmetic results
-///   to the representable range.
-/// - `checked_modular_inverse()` and
-///   `checked_modular_div()` provide modular arithmetic.
+/// Addition, subtraction, and multiplication wrap modulo `3^SIZE`. Use the
+/// `checked_*`, `overflowing_*`, or `saturating_*` methods for explicit overflow
+/// handling. The `/` operator truncates toward zero and panics on division by zero.
+/// [`Self::checked_modular_div`] divides by an invertible word modulo `3^SIZE`.
 ///
-/// Division is not modular by default. Modular division
-/// requires an invertible divisor.
+/// # Representation and conversions
 ///
-/// # Width
+/// `Display` writes the full width. Numeric constructors accept redundant
+/// leading zeros and check that the value fits. [`Self::checked_to_i64`]
+/// checks the numeric value even for words wider than 40 trits.
 ///
-/// SIZE is fixed at compile time and has no numeric upper limit.
-/// Practical widths are constrained by memory and Rust type-layout limits.
-///
-/// Arithmetic operates directly on digit arrays without heap allocation.
-/// Temporary storage grows linearly with SIZE.
-///
-/// The type is Copy, but copying a word has a cost proportional to SIZE.
-///
-/// The default width is 6 trits, as in the Setun computer.
-///
-/// The signed numeric range for SIZE > 0 is:
-///
-/// -(3^SIZE - 1) / 2 ..= (3^SIZE - 1) / 2
-///
-/// Examples:
-///
-/// - 6 trits: -364 ..= 364
-/// - 40 trits: -6_078_832_729_528_464_400
-///           ..= 6_078_832_729_528_464_400
-///
-/// `Tryte<0>` is an empty word whose only numeric value is zero.
-/// Numeric conversions accept zero, including empty and all-zero
-/// ternary representations, and reject every nonzero value.
-///
-/// # Conversions
-///
-/// Numeric conversions check significant trits rather than raw length.
-/// Leading zeros are accepted, and successful conversions preserve
-/// exactly SIZE trits.
-///
-/// Constructors do not wrap out-of-range values, even though
-/// addition, subtraction, and multiplication use wrapping arithmetic.
-///
-/// Use `TryFrom` for detailed conversion errors or `checked_from_*`
-/// for an Option result. Parsing through `FromStr` does not allocate.
-///
-/// Conversion into i64 is fallible and depends on the numeric value,
-/// not the word width. Use `checked_to_i64()` or `i64::try_from()`.
-///
-/// Every i64 value can be represented using 41 or more balanced trits.
+/// Arithmetic uses digit arrays with scratch space proportional to `SIZE`.
+/// The word is `Copy`. Its size grows linearly with its width.
 ///
 /// # Examples
 ///
@@ -154,23 +105,12 @@ impl<const SIZE: usize> Tryte<SIZE> {
         Self { raw: digits }
     }
 
-    /// Converts the `Tryte` into its `Ternary` representation.
-    ///
-    /// # Returns
-    ///
-    /// A `Ternary` object representing the same balanced ternary number.
+    /// Copies all `SIZE` trits into a [`Ternary`], including leading zeros.
     pub fn to_ternary(&self) -> Ternary {
         Ternary::new(self.raw.to_vec())
     }
 
-    /// Retrieves a slice containing the digits of the `Tryte`.
-    ///
-    /// # Returns
-    ///
-    /// A slice referencing the SIZE-digit array of the `Tryte`.
-    ///
-    /// This function allows access to the raw representation of the
-    /// balanced ternary number as a slice of `Digit` values.
+    /// Borrows the complete word in most-significant-first order.
     pub const fn to_digit_slice(&self) -> &[Digit] {
         &self.raw
     }
@@ -661,22 +601,18 @@ impl<const SIZE: usize> DigitOperate for Tryte<SIZE> {
         }
     }
 
-    /// See [Ternary::each].
     fn each(&self, f: impl Fn(Digit) -> Digit) -> Self {
         Self::new(array::from_fn(|i| f(self.raw[i])))
     }
 
-    /// See [Ternary::each_with].
     fn each_with(&self, f: impl Fn(Digit, Digit) -> Digit, with: Digit) -> Self {
         Self::new(array::from_fn(|i| f(self.raw[i], with)))
     }
 
-    /// See [Ternary::each_zip].
     fn each_zip(&self, f: impl Fn(Digit, Digit) -> Digit, other: Self) -> Self {
         Self::new(array::from_fn(|i| f(self.raw[i], other.raw[i])))
     }
 
-    /// See [Ternary::each_zip_carry].
     fn each_zip_carry(
         &self,
         f: impl Fn(Digit, Digit, Digit) -> (Digit, Digit),

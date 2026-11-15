@@ -1,63 +1,24 @@
-//! A [balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary) data structure.
+//! Balanced ternary arithmetic, compact storage, and three-valued logic.
+//! A numeral uses powers of three with trits drawn from −1, 0, and +1.
 //!
-//! Balanced ternary is a non-standard positional numeral system that uses three digits: {-1, 0, +1}
-//! represented here as `Neg` for -1, `Zero` for 0, and `Pos` for +1. It is useful in some domains
-//! of computer science and mathematics due to its arithmetic properties and representation
-//! symmetry.
+//! [`Digit`] and [`concepts::DigitOperate`] are always available.
+//! The library uses `core` and `alloc`.
 //!
-//! # Data Structures
+//! # Cargo features
 //!
-//! - **`Digit` Enum**:
-//!     Represents a single digit for balanced ternary values, with possible values:
-//!     - `Neg` for -1
-//!     - `Zero` for 0
-//!     - `Pos` for +1
+//! - `ternary-string` exposes `Ternary`, an arbitrary-precision signed integer.
+//! - `tryte` adds the fixed-width word `Tryte<N>`.
+//! - `ternary-store` adds `TritsChunk`, `DataTernary`, and `Ter40`.
 //!
-//! ## Features
-//!
-//! All features are enabled by default.
-//!
-//! To enable only some features, use the `default-features` option
-//! in your [dependency declaration](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features):
-//!
-//! ```toml
-//! [dependencies.balanced-ternary]
-//! version = "*.*"
-//! default-features = false
-//!
-//! # Choose which one to enable
-//! features = ["ternary-string", "tryte", "ternary-store"]
-//! ```
-//!
-//! ### Featureless
-//!
-//! Without any feature, this library provide the type `Digit` and all its operations and the trait `DigitOperate`.
-//!
-//! ### `ternary-string`
-//!
-//! `Ternary` represents arbitrary-precision signed integers
-//! using balanced ternary digits. Arithmetic is performed
-//! directly on digit sequences, while conversions to native
-//! integer types remain limited by their respective ranges.
-//!
-//! ### `tryte`
-//!
-//! > Needs the feature `ternary-string`.
-//!
-//! Add the type [Tryte]`<N>` which is a fixed size copy-type ternary number. Implements [DigitOperate].
-//!
-//! ### `ternary-store`
-//!
-//! > Needs the feature `ternary-string`.
-//!
-//! Add structures to store ternaries efficiently. These types are provided:
-//! - [DataTernary]: variable-length storage of five-trit [TritsChunk]s, with structural equality and hashing, without ordering or arithmetic,
-//! - [TritsChunk]: a fixed size copy-type 5 digits stored into one byte,
-//! - [Ter40]: a fixed size copy-type 40 digits stored into one 64 bits integer. Implements [DigitOperate].
-//!
+//! The last two features are enabled by default and each includes `ternary-string`.
 
 #![no_std]
 extern crate alloc;
+
+// Run the README's public examples with the features they use.
+#[cfg(all(doctest, feature = "tryte", feature = "ternary-store"))]
+#[doc = include_str!("../README.md")]
+mod readme_examples {}
 
 pub mod concepts;
 
@@ -164,49 +125,27 @@ pub use crate::digit::{
     DigitConversionError,
 };
 
-/// Converts a character into a `Digit`.
+/// Returns the trit written as `+`, `0`, or `-`.
 ///
-/// # Arguments
-/// * `from` - A single character (`+`, `0`, or `-`).
-/// * **Panics** if the input character is invalid.
+/// # Panics
 ///
-/// # Returns
-/// * A `Digit` enum corresponding to the character.
+/// Panics on an invalid character. Use [`Digit::try_from_char`] for fallible input.
 ///
-/// # Example
 /// ```
-/// use balanced_ternary::{trit, Digit};
-///
-/// let digit = trit('+');
-/// assert_eq!(digit, Digit::Pos);
+/// assert_eq!(balanced_ternary::trit('+'), balanced_ternary::Pos);
 /// ```
 pub const fn trit(from: char) -> Digit {
     Digit::from_char(from)
 }
 
-/// Converts a string representation of a balanced ternary number into a `Ternary` object.
+/// Shorthand for [`Ternary::parse`].
 ///
-/// This function is a convenient shorthand for creating `Ternary` numbers
-/// from string representations. The input string must consist of balanced
-/// ternary characters: `+`, `0`, and `-`.
+/// # Panics
 ///
-/// # Arguments
+/// Panics on an invalid balanced digit. Use [`Ternary::try_parse`] for fallible input.
 ///
-/// * `from` - A string slice representing the balanced ternary number.
-/// * **Panics** if an input character is invalid.
-///
-/// # Returns
-///
-/// A `Ternary` object created from the provided string representation.
-///
-/// # Example
 /// ```
-/// use balanced_ternary::{ter, Ternary};
-///
-/// let ternary = ter("+-0+");
-/// assert_eq!(ternary.to_string(), "+-0+");
-/// let ternary = "+-0+".parse::<Ternary>().unwrap();
-/// assert_eq!(ternary.to_string(), "+-0+");
+/// assert_eq!(balanced_ternary::ter("0-").to_string(), "0-");
 /// ```
 #[cfg(feature = "ternary-string")]
 pub fn ter(from: &str) -> Ternary {
@@ -235,89 +174,37 @@ pub fn tryte(from: &str) -> Tryte {
     from.parse().expect("invalid six-trit word")
 }
 
-/// Creates a `DataTernary` object from a string representation of a balanced ternary number.
-///
-/// This function converts the provided string representation of a balanced ternary number
-/// into a `DataTernary` object. It first parses the input string into a `Ternary`
-/// using the `ter` function, and then constructs the `DataTernary`.
-///
-/// # Arguments
-///
-/// * `from` - A string slice that contains a valid balanced ternary number.
-///   Valid characters are `+`, `0`, and `-`.
+/// Parses balanced digits into compact five-trit chunks.
 ///
 /// # Panics
 ///
-/// * Panics if the input contains invalid balanced ternary characters.
+/// Panics on an invalid balanced digit.
 ///
-/// # Returns
-///
-/// A `DataTernary` object constructed from the input string.
-///
-/// # Example
 /// ```
-/// use balanced_ternary::{dter, DataTernary};
+/// use balanced_ternary::dter;
 ///
-/// let data_ternary = dter("+-0-");
-/// assert_eq!(data_ternary.to_string(), "0+-0-");
+/// assert_eq!(dter("+-0-").to_string(), "0+-0-");
 /// ```
 #[cfg(feature = "ternary-store")]
 pub fn dter(from: &str) -> DataTernary {
     DataTernary::from_ternary(ter(from))
 }
 
-/// An arbitrary-precision balanced ternary integer.
+/// An arbitrary-precision signed integer stored as a sequence of balanced trits.
 ///
-/// Represents a signed integer as a variable-length sequence
-/// of balanced ternary digits (`Neg`, `Zero`, and `Pos`).
+/// Balanced parsing and `Display` preserve the exact digits, including leading
+/// zeros and empty input. An empty sequence has numeric value zero. Equality,
+/// ordering, and hashing compare numeric values. Use [`Self::to_digit_slice`]
+/// to compare representations and [`Self::trim`] to obtain canonical digits.
 ///
-/// Unlike `Tryte<N>` and `Ter40`, this type has no fixed
-/// numeric range.
+/// The binary arithmetic operators (`+`, `-`, `*`, `/`, `%`) return canonical
+/// results. Unary negation changes each trit's sign and preserves the width.
+/// See [`Self::div_rem`] for signed quotient and remainder semantics.
 ///
-/// # Arithmetic
-///
-/// Addition, subtraction, multiplication, division, and the
-/// remainder are implemented directly on digit sequences,
-/// without converting operands to machine integers.
-///
-/// - `+`, `-`, `*`: arbitrary-precision arithmetic.
-/// - `/`: signed integer division, truncating toward zero.
-/// - `%`: remainder with the sign of the dividend.
-/// - `div_rem()`: computes quotient and remainder together.
-///
-/// Arithmetic results are normalized by removing leading
-/// zeros. Zero is represented by a single `Zero` digit.
-///
-/// # Representation
-///
-/// Leading zeros are permitted in stored representations.
-/// Equality, hashing, and ordering use the numeric value,
-/// independently of leading-zero padding.
-///
-/// The original digit sequence can be accessed through
-/// `to_digit_slice()`.
-///
-/// Empty representations are valid and have the numeric value zero.
-/// Balanced parsing through `parse()`, `try_parse()`, and `FromStr`,
-/// and formatting through `Display`, preserve the exact digit sequence,
-/// including leading zeros and empty input.
-///
-/// Use `trim()` to get a canonical numeric representation.
-///
-/// # Conversions
-///
-/// Although arithmetic supports arbitrary precision,
-/// `to_dec()` returns an `i64` and panics if the value
-/// cannot be represented.
-///
-/// Use `checked_to_dec()` to get an Option, or `i64::try_from()`
-/// to get a Result. Both borrowed and owned conversions are supported.
-///
-/// Conversions to and from unbalanced ternary support arbitrary precision
-/// and produce normalized numeric representations.
-///
-/// Unbalanced input requires at least one digit, optionally preceded
-/// by an ASCII `+` or `-`. Use `try_from_unbalanced()` for fallible parsing.
+/// [`Self::try_from_unbalanced`] and [`Self::to_unbalanced`] convert ordinary
+/// base-3 numerals at arbitrary precision. For a bounded `i64` conversion,
+/// [`Self::checked_to_dec`] returns an `Option` and `i64::try_from` returns
+/// a `Result`. [`Self::to_dec`] panics on overflow.
 ///
 /// # Examples
 ///
@@ -353,14 +240,7 @@ impl Ternary {
         self.digits.len()
     }
 
-    /// Retrieves a slice containing the digits of the `Ternary`.
-    ///
-    /// # Returns
-    ///
-    /// A slice referencing the digits vec of the `Ternary`.
-    ///
-    /// This function allows access to the raw representation of the
-    /// balanced ternary number as a slice of `Digit` values.
+    /// Borrows the stored digits in most-significant-first order, including padding.
     pub fn to_digit_slice(&self) -> &[Digit] {
         self.digits.as_slice()
     }
@@ -622,36 +502,15 @@ impl Ternary {
         }
     }
 
-    /// Adjusts the representation of the `Ternary` number to have a fixed number of digits.
-    ///
-    /// If the current `Ternary` has fewer digits than the specified `length`, leading zero digits
-    /// will be added to the `Ternary` to match the desired length. If the current `Ternary` has
-    /// more digits than the specified `length`, it will be returned unmodified.
-    ///
-    /// # Arguments
-    ///
-    /// * `length` - The desired length of the `Ternary` number.
-    ///
-    /// # Returns
-    ///
-    /// * `Self` - A new `Ternary` object with the specified fixed length.
-    ///
-    /// # Notes
-    ///
-    /// If `length` is smaller than the existing number of digits, the function does not truncate
-    /// the number but instead returns the original `Ternary` unchanged.
-    ///
-    /// # Examples
+    /// Returns a copy padded on the left with zeros to at least `length` digits.
+    /// If the representation is already long enough, all its digits are retained.
     ///
     /// ```
-    /// use balanced_ternary::{Ternary, Zero, Pos};
+    /// use balanced_ternary::Ternary;
     ///
-    /// let ternary = Ternary::new(vec![Pos]);
-    /// let fixed = ternary.with_length(5);
-    /// assert_eq!(fixed.to_string(), "0000+");
-    ///
-    /// let fixed = ternary.with_length(1);
-    /// assert_eq!(fixed.to_string(), "+");
+    /// let value = Ternary::parse("0+");
+    /// assert_eq!(value.with_length(4).to_string(), "000+");
+    /// assert_eq!(value.with_length(1).to_string(), "0+");
     /// ```
     pub fn with_length(&self, length: usize) -> Self {
         let current_length = self.digits.len();

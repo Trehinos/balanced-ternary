@@ -31,12 +31,6 @@
   (for N > 0).
 - `Tryte<0>` remains supported as an empty word.
 
-### Deferred work
-
-- Normalize conversions and edge cases for `Tryte<0>` (R08).
-- Improve performance of remaining conversion-based methods (R07).
-- Extend CI coverage and property tests (R11).
-
 ## R06 — Replace `i64`-based arithmetic in `Ternary` [P1]
 
 done
@@ -71,10 +65,6 @@ done
 - Empty storage behavior remains unchanged.
 - `#![no_std]` compatibility is preserved.
 
-### Remaining Considerations
-
-- Benchmark allocation and formatting improvements (R12).
-
 ## R08 — Clarify conversions, parsing, and zero-width representation [DONE]
 
 - Balanced parsing explicitly preserves empty input and leading zeros.
@@ -92,9 +82,6 @@ done
   preserve stored chunks; numeric conversions normalize zero.
 - `Ternary` equality, ordering, and hashing use numeric values.
   Exact representations remain accessible through `to_digit_slice()`.
-
-The choice between structural and numeric equality for `DataTernary`
-remains tracked separately in R10.
 
 ## R09 — Add arithmetic to compact `DataTernary` storage [P2]
 
@@ -118,16 +105,11 @@ done
 
 ## R12 — Benchmark, documentation, and release hygiene [P2]
 
-- ~~Add benchmarks for parsing, formatting, conversions, `Tryte` digitwise operations, `Ter40`
-  extraction, `DataTernary` encoding/decoding, and increasingly wide arithmetic. Compare median
-  runtime and allocation counts; avoid declaring optimization wins without measurements.~~
-- ~~If using `criterion`, keep it a dev dependency so the published library's default dependency/
-  `no_std` constraints remain unchanged.~~
-- Review API documentation for semantics of balanced versus ordinary ternary, fixed-width carry
-  loss, numerical versus structural equality, width-preserving versus normalized formatting, and
-  checked/wrapping operations.
-- Update `README.md` examples and `AGENTS.md` to match chosen policies; consider MSRV and SemVer
-  implications of changing constructors, equality, or operator behavior.
+- [x] R12.1 — Measure runtime and allocations for the benchmark suite.
+- [ ] R12.2 — Validate the README examples and feature-specific rustdoc.
+- [ ] R12.3 — Document migration and breaking changes from 2.x.
+- [ ] R12.4 — Validate the MSRV, release metadata, and packaged files.
+- [ ] R12.5 — Set the final version and validate the release candidate.
 - Avoid introducing a `BoundedTernary` trait until repeated concrete implementations show a stable
   shared API.
 

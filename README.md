@@ -1,250 +1,94 @@
-[![Rust](https://github.com/Trehinos/balanced-ternary/actions/workflows/rust.yml/badge.svg)](https://github.com/Trehinos/balanced-ternary/actions/workflows/rust.yml)
-
 # Balanced Ternary
 
-**Balanced Ternary** is a Rust library for manipulating
-**[balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary)**
-numbers, a numeral system with digits `-1`, `0`, and `+1`.
+[![Rust](https://github.com/Trehinos/balanced-ternary/actions/workflows/rust.yml/badge.svg)](https://github.com/Trehinos/balanced-ternary/actions/workflows/rust.yml)
 
-This system is particularly useful in specialized computing applications such as reversible computing, digital signal
-processing, and three-valued logic modeling.
+A Rust library for [balanced ternary](https://en.wikipedia.org/wiki/Balanced_ternary)
+arithmetic and three-valued logic. In a balanced numeral, `+`, `0`, and `-`
+are digits with values +1, 0, and −1. For example, `+--` means 9 − 3 − 1 = 5.
 
-## Features
+## Getting started
 
-- **No Standard Library:** Suitable for `#![no_std]` environments.
-- **Number Conversions:** Convert between decimal and balanced ternary representations.
-- **Arithmetic Operations:** Support for addition, subtraction, multiplication, division, and bit shifting (`<<`, `>>`).
-- **[Three-value Logic Operations](https://en.wikipedia.org/wiki/Three-valued_logic):**
-    - Support for bitwise and, or, xor, and not (in Kleene algebra (K3)).
-    - **Advanced logic**: Implementation of
-      [K3](https://en.wikipedia.org/wiki/De_Morgan_algebra#Kleene_algebra),
-      [BI3](https://en.wikipedia.org/wiki/Many-valued_logic#Bochvar's_internal_three-valued_logic),
-      [L3](https://en.wikipedia.org/wiki/%C5%81ukasiewicz_logic),
-      [RM3](https://en.wikipedia.org/wiki/Paraconsistent_logic#An_ideal_three-valued_paraconsistent_logic),
-      [paraconsistent-logic](https://en.wikipedia.org/wiki/Paraconsistent_logic#An_ideal_three-valued_paraconsistent_logic)
-      and [HT](https://en.wikipedia.org/wiki/Intermediate_logic) imply operation,
-      and some more HT, BI3, L3, and post-logic operations.
-- **Custom Representation:** Parse and display numbers using `+`, `0`, and `-` symbols by default, or custom ones.
+The library supports `no_std` and uses `alloc` for growable collections.
+Cargo enables `tryte` and `ternary-store` by default. Each enables
+`ternary-string`. To select a subset, set `default-features = false` and
+list the features you need.
 
-### Library `features`
+| Type          | Cargo feature    | Use it for                                                                                                                                |
+|---------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `Digit`       | Always available | Single-trit arithmetic and logic.                                                                                                         |
+| `Ternary`     | `ternary-string` | Arbitrary-precision signed arithmetic. Equality, ordering, and hashing use the numeric value.                                             |
+| `Tryte<N>`    | `tryte`          | An exact-width word. Addition, subtraction, and multiplication wrap modulo `3^N`.                                                         |
+| `Ter40`       | `ternary-store`  | A bounded 40-trit integer in an `i64`. Operators panic on overflow. Use `checked_*` to handle failure.                                    |
+| `TritsChunk`  | `ternary-store`  | Five trits in one byte.                                                                                                                   |
+| `DataTernary` | `ternary-store`  | Variable-length chunk storage. Equality and hashing include leading zero chunks. Convert to `Ternary` for numeric ordering or arithmetic. |
 
-All features are enabled by default.
+## Parsing and formatting
 
-To enable only some features, use the `default-features` option
-in your [dependency declaration](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features):
-
-```toml
-[dependencies.balanced-ternary]
-version = "*.*"
-default-features = false
-# Choose which one to enable
-features = ["ternary-string", "tryte", "ternary-store"]
-```
-
-#### Featureless
-
-Without any feature, this library provide the type `Digit` and all its operations and the trait `DigitOperate`.
-
-#### Feature `ternary-string`
-
-Add the structure `Ternary` which is a vector of `Digits` and a lot of utilities
-to manipulate digits into the ternary number.
-Implements `DigitOperate`.
-
-#### Feature `tryte`
-
-> Needs the feature `ternary-string`.
-
-Add the type `Tryte<N>` which is a fixed size copy-type ternary number.
-Implements `DigitOperate`.
-
-#### Feature `ternary-store`
-
-> Needs the feature `ternary-string`.
-
-Add structures to store ternaries efficiently. These types are provided:
-
-- `DataTernary`: variable-length storage of five-trit `TritsChunk`s, with structural equality and hashing, without ordering or arithmetic,
-- `TritsChunk`: a fixed size copy-type 5 digits stored into one byte,
-- `Ter40`: a fixed size copy-type 40 digits stored into one 64 bits integer. Implements `DigitOperate`.
-
-## Types summary
-
-| Type          | Representation    | Behavior                                               |
-|---------------|-------------------|--------------------------------------------------------|
-| `Digit`       | Single trit       | Arithmetic operations modulo 3                         |
-| `Ternary`     | `Vec<Digit>`      | Arbitrary precision                                    |
-| `Tryte<N>`    | `[Digit; N]`      | Fixed-width word; wrapping add, sub and mul            |
-| `Ter40`       | `i64`             | Bounded signed 40-trit integer with checked arithmetic |
-| `TritsChunk`  | `i8`              | Compact storage for 5 trits                            |
-| `DataTernary` | `Vec<TritsChunk>` | Compact variable-length storage                        |
-
-## Three-valued logic
-
-The library supports numerous three-valued logic operations, each of them having its own specificities:
-
-- **K3** (Kleene logic)  
-  A three-valued logic that introduces an "unknown" (0) state, useful for dealing with partial information.
-- **BI3** (Bochvar logic)  
-  A logic designed to handle "nonsense" or meaningless statements, where 0 represents an invalid or undefined value.
-- **L3** (Łukasiewicz logic)  
-  A non-classical logic allowing for degrees of truth, often used in fuzzy logic and multi-valued reasoning.
-- **RM3** (Routley-Meyer paraconsistent logic)  
-  A logic that tolerates contradictions without collapsing into triviality, useful in paraconsistent reasoning.
-- **HT** (Heyting logic-inspired ternary system)  
-  A variant of intermediate logic, often related to intuitionistic logic and constructive reasoning.
-- **Paraconsistent logic**  
-  A logic framework that avoids the principle of explosion, allowing systems to work with contradictory information.
-- **Post logic**  
-  A logical system that extends classical logic with additional operators to handle uncertainty in a structured way.
-
-### Digits operations
-
-### Digits operations
-
-The library provides a variety of operations that can be performed on individual balanced ternary digits. These
-operations include logical operations, arithmetic operations, and utility functions that are useful for manipulating
-ternary numbers at the digit level. Below are the truth table of these operations:
-
-![Digit operations](digit-operations.png)
-
-You can use these operations with the `DigitOperate` trait methods,  
-`each_*` (`with`, `zip`, `zip_carry`):
+Balanced parsing and display preserve the input digits. Ordinary base-3
+conversion writes a normalized numeral using `0`, `1`, and `2`, with a
+leading minus sign for negative values.
 
 ```rust
-#[cfg(feature = "ternary-string")]
-fn test_each() {
-    use crate::*;
-    let ternary = Ternary::parse("+0-");
-    assert_eq!(ternary.each(Digit::possibly).to_string(), "++-");
-}
+use balanced_ternary::Ternary;
+
+let five = Ternary::try_parse("00+--").unwrap();
+assert_eq!(five.to_string(), "00+--");
+assert_eq!(five.to_unbalanced(), "12");
+assert_eq!(five.checked_to_dec(), Some(5));
+assert_eq!(Ternary::try_from_unbalanced("+0012").unwrap(), five);
 ```
 
-## Examples
-
-### Convert between decimal and balanced ternary
-
-```rust
-use balanced_ternary::*;
-
-fn test() {
-    let ternary = Ternary::from_dec(5);
-    assert_eq!(ternary.to_string(), "+--");
-
-    let ternary = Ternary::parse("+--");
-    assert_eq!(ternary.to_dec(), 5);
-
-    let ternary = "+-0".parse::<Ternary>().unwrap();
-    assert_eq!(ternary.to_string(), "+-0");
-}
-```
-
-### Perform arithmetic or logic operations
-
-```rust
-use balanced_ternary::*;
-
-fn test() {
-    let a = Ternary::from_dec(9);
-    let b = Ternary::from_dec(4);
-    let sum = &a + &b;
-    assert_eq!(sum.to_string(), "+++");
-    assert_eq!(sum.to_dec(), 13);
-
-    let bitwise = &Ternary::parse("++00") & &Ternary::parse("0000");
-    assert_eq!(bitwise.to_string(), "0000");
-
-    let bitwise = &Ternary::parse("++00") & &Ternary::parse("0+00");
-    assert_eq!(bitwise.to_string(), "0+00");
-
-    let bitwise = &Ternary::parse("+000") | &Ternary::parse("000-");
-    assert_eq!(bitwise.to_string(), "+000");
-
-
-    let bitwise = &Ternary::parse("+000") & &Ternary::parse("000-");
-    assert_eq!(bitwise.to_string(), "000-");
-
-    let bitwise = &Ternary::parse("+000") | &Ternary::parse("000+");
-    assert_eq!(bitwise.to_string(), "+00+");
-
-    let shifted = &Ternary::parse("+0-") << 2;
-    assert_eq!(shifted.to_string(), "+0-00");
-    let back = &shifted >> 2;
-    assert_eq!(back.to_string(), "+0-");
-}
-```
-
-### Fixed-width ternary arithmetic
-
-`Tryte<N>` represents a fixed-width ternary word. Addition, subtraction, and multiplication wrap modulo `3^N`.
-
-For checked numeric arithmetic, use `checked_*` methods.
+## Fixed-width arithmetic
 
 ```rust
 use balanced_ternary::Tryte;
 
 type Word = Tryte<2>;
+let one = Word::from_i64(1);
+let two = Word::from_i64(2);
 
-fn test() {
-    let one = Word::from_i64(1);
-    let two = Word::from_i64(2);
-
-    // Arithmetic wraps modulo 9.
-    assert_eq!(Word::MAX + one, Word::MIN);
-
-    // Detect overflow instead of wrapping.
-    assert_eq!(Word::MAX.checked_add(one), None);
-
-    // Integer division truncates toward zero.
-    assert_eq!(one / two, Word::ZERO);
-
-    // Modular division uses the multiplicative inverse.
-    assert_eq!(
-        one.checked_modular_div(two),
-        Some(Word::from_i64(-4))
-    );
-}
+assert_eq!(Word::MAX + one, Word::MIN);
+assert_eq!(Word::MAX.checked_add(one), None);
+assert_eq!(one / two, Word::ZERO); // Integer quotient.
+assert_eq!(one.checked_modular_div(two), Some(Word::from_i64(-4)));
 ```
 
-`Ter40` has different semantics: it represents a bounded
-signed integer, and its arithmetic operators panic on overflow.
+## Compact storage
 
-
-### Handle negative numbers
+Encoding rounds the width up to a multiple of five. Choose the decoding
+method according to the representation the caller needs.
 
 ```rust
-use balanced_ternary::*;
+use balanced_ternary::dter;
 
-fn test() {
-    let negative = Ternary::from_dec(-5);
-    assert_eq!(negative.to_string(), "-++");
-}
+let stored = dter("00+");
+assert_eq!(stored.to_fixed_ternary().to_string(), "0000+");
+assert_eq!(stored.to_ternary().to_string(), "+");
+assert_ne!(stored, dter("00000+")); // An additional stored chunk.
 ```
 
-### Iterate through digits
+## Digit operations
+
+`Digit` provides Kleene, Bochvar, Łukasiewicz, RM3, HT, paraconsistent,
+and Post logic operations. Apply a digit function to a whole word with
+the `DigitOperate` trait.
 
 ```rust
-use balanced_ternary::*;
+use balanced_ternary::concepts::DigitOperate;
+use balanced_ternary::{Digit, Ternary};
 
-fn test() {
-    let ternary = Ternary::parse("+0-");
-
-    // Using `.iter()`
-    let v: Vec<Digit> = ternary.iter().cloned().collect();
-    assert_eq!(v, vec![Pos, Zero, Neg]);
-
-    // Using `IntoIterator`
-    let v: Vec<Digit> = Ternary::parse("+0-").into_iter().collect();
-    assert_eq!(v, vec![Pos, Zero, Neg]);
-}
+let value = Ternary::parse("+0-");
+assert_eq!(value.each(Digit::possibly).to_string(), "++-");
 ```
+
+![Truth tables for digit operations](digit-operations.png)
 
 ## Documentation
 
-The complete API documentation can be found [on docs.rs](https://docs.rs/balanced-ternary).
-There you can find descriptions and examples of available types and methods.
+Read the [API reference for the published crate](https://docs.rs/balanced-ternary).
+For the current checkout, run `cargo doc --all-features --open`.
 
 ## License
 
-Copyright (c) 2025 [Sébastien GELDREICH](mailto:dev@trehinos.eu)  
-`Balanced Ternary` is licensed under the [MIT License](LICENSE).
+Copyright (c) 2025-2026 [Sébastien GELDREICH](mailto:dev@trehinos.eu).  
+Licensed under the [MIT License](LICENSE).

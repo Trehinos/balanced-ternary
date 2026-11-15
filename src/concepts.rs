@@ -1,46 +1,18 @@
 use crate::Digit;
 use alloc::vec::Vec;
 
+/// Digit-wise transformations on balanced ternary representations.
 pub trait DigitOperate {
-    /// Returns individual [Digit] of this [DigitOperate] object.
+    /// Returns the stored digits in most-significant-first order.
     fn to_digits(&self) -> Vec<Digit>;
 
-    /// Returns one individual [Digit] of this [DigitOperate] object if it exists.
+    /// Returns the digit at `index`, counting from the least significant trit at index zero.
     fn digit(&self, index: usize) -> Option<Digit>;
 
-    /// Applies a transformation function to each digit of the balanced ternary number,
-    /// returning a new `DigitOperate` object with the transformed digits.
+    /// Maps each digit through `f`.
     ///
-    /// ### Arguments
+    /// # Examples
     ///
-    /// * `f` - A closure or function that takes a `Digit` and returns a transformed `Digit`.
-    ///
-    /// ### Returns
-    ///
-    /// * `Self` - A new `DigitOperate` object containing the transformed digits.
-    ///
-    /// ### Digit transformations
-    ///
-    /// These methods (unary operators) from the [Digit] type can be called directly.
-    ///
-    /// * Returns either `Pos` or `Neg`:
-    ///     * [Digit::possibly]
-    ///     * [Digit::necessary]
-    ///     * [Digit::contingently]
-    ///     * [Digit::ht_not]
-    /// * Returns either `Zero` or `Pos` or `Neg`.
-    ///     * [Digit::pre]
-    ///     * [Digit::post]
-    ///     * `Digit::not`
-    ///     * `Digit::neg`
-    ///     * [Digit::absolute_positive]
-    ///     * [Digit::positive]
-    ///     * [Digit::not_negative]
-    ///     * [Digit::not_positive]
-    ///     * [Digit::negative]
-    ///     * [Digit::absolute_negative]
-    ///
-    /// ### Examples with [crate::Ternary]
     /// ```
     /// # #[cfg(feature = "ternary-string")]
     /// # {
@@ -62,41 +34,10 @@ pub trait DigitOperate {
     where
         Self: Sized;
 
-    /// Applies a transformation function to each digit of the balanced ternary number,
-    /// using an additional parameter for the transformation process, returning a new `DigitOperate`
-    /// object with the transformed digits.
+    /// Maps each digit `d` through `f(d, other)`.
     ///
-    /// ### Arguments
+    /// # Examples
     ///
-    /// * `f` - A closure or function that takes a `Digit` and an additional `Digit`,
-    ///         and returns a transformed `Digit`.
-    /// * `other` - An additional `Digit` to be passed to the transformation function `f`.
-    ///
-    /// ### Returns
-    ///
-    /// * `Self` - A new `DigitOperate` object containing the transformed digits.
-    ///
-    /// ### Digit transformations
-    ///
-    /// These methods (binary operators) from the [Digit] type can be called directly.
-    ///
-    /// * `Digit::add`
-    /// * `Digit::sub`
-    /// * `Digit::mul`
-    /// * `Digit::div`
-    /// * `Digit::bitand` (k3/l3 and)
-    /// * [Digit::bi3_and]
-    /// * `Digit::bitor`  (k3/l3 or)
-    /// * [Digit::bi3_or]
-    /// * `Digit::bitxor` (k3/l3 xor)
-    /// * [Digit::k3_imply]
-    /// * [Digit::k3_equiv]
-    /// * [Digit::bi3_imply]
-    /// * [Digit::l3_imply]
-    /// * [Digit::rm3_imply]
-    /// * [Digit::ht_imply]
-    ///
-    /// ### Examples with [crate::Ternary]
     /// ```
     /// # #[cfg(feature = "ternary-string")]
     /// # {
@@ -113,22 +54,10 @@ pub trait DigitOperate {
     where
         Self: Sized;
 
-    /// Applies a transformation function to each digit of the balanced ternary number,
-    /// along with a corresponding digit from another `DigitOperate` number.
+    /// Combines corresponding digits as `f(left, right)`. `Ternary` aligns the
+    /// operands at the least significant digit and zero-extends the shorter one.
     ///
-    /// ### Arguments
-    ///
-    /// * `f` - A closure or function that takes two arguments:
-    ///     * a `Digit` from the current `Ternary`,
-    ///     * a `Digit` from the corresponding position in the `other` `Ternary`.
-    ///     * The function must return a transformed `Digit`.
-    /// * `other` - A `DigitOperate` object with digits to process alongside the digits of the current object.
-    ///
-    /// ### Returns
-    ///
-    /// * `Self` - A new `DigitOperate` object containing the transformed digits.
-    ///
-    /// ### Examples with [crate::Ternary]
+    /// # Examples
     ///
     /// ```
     /// # #[cfg(feature = "ternary-string")]
@@ -155,38 +84,15 @@ pub trait DigitOperate {
     where
         Self: Sized;
 
-    /// Applies a transformation function to each digit of the balanced ternary number,
-    /// along with a corresponding digit from another `DigitOperate` number, and a carry digit.
+    /// Combines corresponding digits from least to most significant. The initial
+    /// carry is zero. The callback receives `(left, right, carry)` and returns
+    /// `(next_carry, result_digit)`.
     ///
-    /// ### Carry behavior
+    /// `Ternary` zero-extends the shorter input and prepends a nonzero final
+    /// carry. `Tryte<N>` and `Ter40` retain their width and discard that carry.
+    /// Use their inherent `each_zip_carry_full` method to retrieve it.
     ///
-    /// The callback is evaluated from the least significant
-    /// digit to the most significant digit.
-    ///
-    /// [crate::Ternary] preserves a nonzero outgoing carry by
-    /// extending the resulting representation.
-    ///
-    /// Fixed-width implementations ([`crate::Tryte<N>`] and [crate::Ter40])
-    /// discard the outgoing carry and preserve their width.
-    ///
-    /// The returned value therefore does not necessarily
-    /// represent an exact arithmetic result for fixed-width
-    /// types.
-    ///
-    /// ### Arguments
-    ///
-    /// * `f` - A closure or function that takes three arguments:
-    ///     * a `Digit` from the current `DigitOperate`,
-    ///     * a `Digit` from the corresponding position in the `other` `DigitOperate`,
-    ///     * and the current carry `Digit`.
-    ///     * The function must return a tuple containing `(carry: Digit, transformed: Digit)`.
-    /// * `other` - A `DigitOperate` object with digits to process alongside the digits of the current object.
-    ///
-    /// ### Returns
-    ///
-    /// * `Self` - A new `DigitOperate` object containing the transformed digits.
-    ///
-    /// ### Examples with [crate::Ternary]
+    /// # Examples
     ///
     /// ```
     /// # #[cfg(feature = "ternary-string")]
@@ -199,8 +105,6 @@ pub trait DigitOperate {
     ///
     /// // Transformation function that adds digits with a carry digit
     /// let combine = |d1: Digit, d2: Digit, carry: Digit| -> (Digit, Digit) {
-    ///     // Simple example operation: this just illustrates transforming with carry.
-    ///     // Replace with meaningful logic as needed for your application.
     ///     let sum = d1.to_i8() + d2.to_i8() + carry.to_i8();
     ///
     ///     let next_carry = (sum + 1).div_euclid(3);
