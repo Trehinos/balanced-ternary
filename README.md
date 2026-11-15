@@ -8,6 +8,11 @@ are digits with values +1, 0, and −1. For example, `+--` means 9 − 3 − 1 =
 
 ## Getting started
 
+```toml
+[dependencies]
+balanced-ternary = "3"
+```
+
 The library supports `no_std` and uses `alloc` for growable collections.
 Cargo enables `tryte` and `ternary-store` by default. Each enables
 `ternary-string`. To select a subset, set `default-features = false` and

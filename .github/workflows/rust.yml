@@ -114,3 +114,30 @@ jobs:
                         --no-default-features \
                         "${feature_args[@]}"
                     done
+    msrv:
+        name: Library / Rust 1.85.0
+        runs-on: ubuntu-latest
+
+        steps:
+            -   uses: actions/checkout@v7
+
+            -   name: Install minimum supported Rust
+                run: rustup toolchain install 1.85.0 --profile minimal
+
+            -   name: Check the library across feature combinations
+                shell: bash
+                run: |
+                    set -e
+                    for features in \
+                        "" \
+                        "ternary-string" \
+                        "tryte" \
+                        "ternary-store" \
+                        "tryte,ternary-store"
+                    do
+                        args=(--locked --lib --no-default-features)
+                        if [[ -n "$features" ]]; then
+                            args+=(--features "$features")
+                        fi
+                        cargo +1.85.0 check "${args[@]}"
+                    done

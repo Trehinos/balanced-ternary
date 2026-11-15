@@ -1,13 +1,26 @@
 [package]
 name = "balanced-ternary"
-description = "A library to manipulate balanced ternary values."
-authors = ["Sébastien GELDREICH <trehinos@gmail.com>"]
-version = "3.0.0-dev"
+version = "3.0.0"
 edition = "2024"
+rust-version = "1.85"
+description = "Balanced ternary arithmetic, compact storage, and three-valued logic for no_std Rust."
+authors = ["Sébastien GELDREICH <trehinos@gmail.com>"]
 license = "MIT"
+repository = "https://github.com/Trehinos/balanced-ternary"
+readme = "README.md"
 keywords = ["ternary", "balanced_ternary", "base3", "three_value_logic", "logic"]
 categories = ["data-structures", "mathematics", "science", "no-std"]
-repository = "https://github.com/Trehinos/balanced-ternary"
+autobenches = false
+include = [
+    "/src/**",
+    "/benches/**",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/LICENSE",
+    "/digit-operations.png",
+    "/.changelog/v3.0.0.md",
+]
 
 [features]
 default = ["tryte", "ternary-store"]
