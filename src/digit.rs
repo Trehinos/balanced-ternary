@@ -604,33 +604,22 @@ impl Digit {
         }
     }
 
-    /// Converts the `Digit` to a `bool` in HT logic.
+    /// Converts `Neg` to `false` and `Pos` to `true`.
     ///
-    /// - Returns:
-    ///     - `true` when `self` is `Digit::Pos`.
-    ///     - `false` when `self` is `Digit::Neg`.
+    /// # Panics
     ///
-    /// - Panics:
-    ///     - Panics if `self` is `Digit::Zero`, as `Digit::Zero` cannot be directly
-    ///       converted to a boolean value.
-    ///       > To ensure `Pos` or `Neg` value, use one of :
-    ///       > * [Digit::possibly]
-    ///       > * [Digit::necessary]
-    ///       > * [Digit::contingently]
-    ///       > * [Digit::ht_not]
-    ///
+    /// Panics on `Zero`. Use [`Self::try_to_bool`] to preserve the unknown value,
+    /// [`Self::possibly`] to resolve it to `Pos`, or [`Self::necessary`] to
+    /// resolve it to `Neg`.
     pub const fn ht_bool(self) -> bool {
-        match self {
-            Digit::Neg => false,
-            Digit::Zero => panic!(
-                "Cannot convert a Digit::Zero to a bool. \
-                 Use Digit::possibly()->try_to_bool()? or Digit::necessary()->try_to_bool()? instead."
-            ),
-            Digit::Pos => true,
-        }
+        self.try_to_bool()
+            .expect("Cannot convert Digit::Zero to bool. Use try_to_bool() to handle Zero.")
     }
 
-    pub fn try_to_bool(self) -> Option<bool> {
+    /// Converts a known digit to a boolean.
+    ///
+    /// Returns `Some(false)` for `Neg`, `None` for `Zero`, and `Some(true)` for `Pos`.
+    pub const fn try_to_bool(self) -> Option<bool> {
         match self {
             Digit::Neg => Some(false),
             Digit::Zero => None,
@@ -667,6 +656,286 @@ impl Digit {
             Digit::Zero => Digit::Neg,
             Digit::Pos => Digit::Zero,
         }
+    }
+
+    /// Grades the distance between two digits.
+    ///
+    /// Equal digits yield `Neg`, adjacent digits yield `Zero`, and opposite
+    /// nonzero digits yield `Pos`. Numerically, the result is `|a - b| - 1`.
+    pub const fn graded_diff(self, other: Self) -> Self {
+        let distance = (self.to_i8() - other.to_i8()).abs();
+        Self::from_i8(distance - 1)
+    }
+
+    /// Computes RM3 fusion.
+    ///
+    /// `Neg` is absorbing and `Zero` is the identity. In particular,
+    /// fusing `Pos` with `Neg` yields `Neg` in either operand order.
+    pub const fn rm3_fusion(self, other: Self) -> Self {
+        match self {
+            Self::Neg => Self::Neg,
+            Self::Zero => other,
+            Self::Pos => other.possibly(),
+        }
+    }
+
+    /// Computes Łukasiewicz strong conjunction.
+    ///
+    /// For balanced digit values `a` and `b`, the result is
+    /// `max(-1, a + b - 1)`. `Pos` is the identity, and combining
+    /// two `Zero` digits yields `Neg`.
+    pub const fn l3_strong_and(self, other: Self) -> Self {
+        match self {
+            Self::Neg => Self::Neg,
+            Self::Zero => other.not_positive(),
+            Self::Pos => other,
+        }
+    }
+
+    /// Computes Łukasiewicz strong disjunction.
+    ///
+    /// For balanced digit values `a` and `b`, the result is
+    /// `min(1, a + b + 1)`. `Neg` is the identity, and combining
+    /// two `Zero` digits yields `Pos`.
+    pub const fn l3_strong_or(self, other: Self) -> Self {
+        match self {
+            Self::Neg => other,
+            Self::Zero => other.not_negative(),
+            Self::Pos => Self::Pos,
+        }
+    }
+
+    /// Returns the shared digit when both operands agree, or `Zero` otherwise.
+    ///
+    /// The result is `Neg` only for `(Neg, Neg)` and `Pos` only for
+    /// `(Pos, Pos)`.
+    pub const fn consensus(self, other: Self) -> Self {
+        if self.to_i8() == other.to_i8() {
+            self
+        } else {
+            Self::Zero
+        }
+    }
+
+    /// Adds the two digits with saturation at `Neg` and `Pos`.
+    ///
+    /// `Zero` is the identity. Opposite signs cancel, and adding two
+    /// identical nonzero digits preserves their sign.
+    pub const fn accept_anything(self, other: Self) -> Self {
+        match self {
+            Self::Neg => other.not_positive(),
+            Self::Zero => other,
+            Self::Pos => other.not_negative(),
+        }
+    }
+
+    /// Grades the number of unknown operands, treating `Zero` as unknown.
+    ///
+    /// Returns `Pos` when both operands are unknown, `Zero` when exactly
+    /// one is unknown, and `Neg` when both are known.
+    pub const fn unknown_consensus(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::Zero, Self::Zero) => Self::Pos,
+            (Self::Zero, _) | (_, Self::Zero) => Self::Zero,
+            _ => Self::Neg,
+        }
+    }
+
+    /// Compares the digits in the order `Neg < Zero < Pos`.
+    ///
+    /// Returns `Neg` when `self` is less than `other`, `Zero` when they
+    /// are equal, and `Pos` when `self` is greater than `other`.
+    pub const fn compare(self, other: Self) -> Self {
+        Self::from_i8((self.to_i8() - other.to_i8()).signum())
+    }
+
+    /// Returns `Pos` when the digits are equal and `Neg` when they differ.
+    ///
+    /// Two `Zero` digits compare equal and therefore yield `Pos`.
+    pub const fn equal(self, other: Self) -> Self {
+        if self.to_i8() == other.to_i8() {
+            Self::Pos
+        } else {
+            Self::Neg
+        }
+    }
+
+    /// Returns `Pos` when the digits differ and `Neg` when they are equal.
+    ///
+    /// Two `Zero` digits therefore yield `Neg`.
+    pub const fn different(self, other: Self) -> Self {
+        if self.to_i8() != other.to_i8() {
+            Self::Pos
+        } else {
+            Self::Neg
+        }
+    }
+
+    /// Returns `Pos` if `self` is strictly greater than `other` in the order
+    /// `Neg < Zero < Pos`, and `Neg` otherwise.
+    pub const fn greater(self, other: Self) -> Self {
+        if self.to_i8() > other.to_i8() {
+            Self::Pos
+        } else {
+            Self::Neg
+        }
+    }
+
+    /// Returns `Pos` if `self` is greater than or equal to `other` in the
+    /// order `Neg < Zero < Pos`, and `Neg` otherwise.
+    pub const fn greater_or_equal(self, other: Self) -> Self {
+        if self.to_i8() >= other.to_i8() {
+            Self::Pos
+        } else {
+            Self::Neg
+        }
+    }
+
+    /// Resolves a rock-paper-scissors duel between two digits.
+    ///
+    /// The winning digit is returned: `Zero` beats `Neg`, `Pos` beats `Zero`,
+    /// and `Neg` beats `Pos`. A tie returns the shared digit.
+    pub const fn duel(self, other: Self) -> Self {
+        match self {
+            Self::Neg => other.absolute_negative(),
+            Self::Zero => other.positive(),
+            Self::Pos => other.possibly(),
+        }
+    }
+
+    /// Computes McCarthy's left-sequential conjunction.
+    ///
+    /// A left operand of `Pos` selects `other`. A left operand of `Neg` or
+    /// `Zero` determines the result regardless of `other`.
+    pub const fn mc_and(self, other: Self) -> Self {
+        match self {
+            Self::Pos => other,
+            _ => self,
+        }
+    }
+
+    /// Computes McCarthy's left-sequential disjunction.
+    ///
+    /// A left operand of `Neg` selects `other`. A left operand of `Zero` or
+    /// `Pos` determines the result regardless of `other`.
+    pub const fn mc_or(self, other: Self) -> Self {
+        match self {
+            Self::Neg => other,
+            _ => self,
+        }
+    }
+
+    /// Returns `Pos` if `self` is strictly less than `other` in the order
+    /// `Neg < Zero < Pos`, and `Neg` otherwise.
+    pub const fn lesser(self, other: Self) -> Self {
+        if self.to_i8() < other.to_i8() {
+            Self::Pos
+        } else {
+            Self::Neg
+        }
+    }
+
+    /// Returns `Pos` if `self` is less than or equal to `other` in the
+    /// order `Neg < Zero < Pos`, and `Neg` otherwise.
+    pub const fn lesser_or_equal(self, other: Self) -> Self {
+        if self.to_i8() <= other.to_i8() {
+            Self::Pos
+        } else {
+            Self::Neg
+        }
+    }
+
+    /// Returns the first nonzero digit, checking `self` before `other`.
+    ///
+    /// If both digits are zero, the result is `Zero`.
+    pub const fn coalesce(self, other: Self) -> Self {
+        match self {
+            Self::Zero => other,
+            _ => self,
+        }
+    }
+
+    /// Returns `Neg` when the digits have opposite nonzero signs and `Pos`
+    /// otherwise. `Zero` is compatible with every digit, including itself.
+    pub const fn compatible(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::Neg, Self::Pos) | (Self::Pos, Self::Neg) => Self::Neg,
+            _ => Self::Pos,
+        }
+    }
+
+    /// Moves `self` one step toward `other` in the order `Neg < Zero < Pos`.
+    ///
+    /// Equal digits stay in place. Adjacent digits reach `other` in one step.
+    /// Moving between `Neg` and `Pos` in either direction yields `Zero`.
+    pub const fn step_toward(self, other: Self) -> Self {
+        Self::from_i8(self.to_i8() + other.compare(self).to_i8())
+    }
+
+    /// Uses `other` to inhibit `self`.
+    ///
+    /// A zero control digit passes `self` through. Either nonzero control
+    /// digit clears the result to `Zero`.
+    pub const fn inhibit(self, other: Self) -> Self {
+        match other {
+            Self::Zero => self,
+            _ => Self::Zero,
+        }
+    }
+
+    /// Returns `other` when the digits differ, or `Zero` when they agree.
+    ///
+    /// For opposite signs, the result takes the sign of `other`.
+    pub const fn step_back(self, other: Self) -> Self {
+        if self.to_i8() == other.to_i8() {
+            Self::Zero
+        } else {
+            other
+        }
+    }
+
+    /// Returns the shared digit for a tie, or the third digit for a distinct pair.
+    ///
+    /// For example, `Neg` and `Zero` yield `Pos` in either operand order.
+    pub const fn third(self, other: Self) -> Self {
+        if self.to_i8() == other.to_i8() {
+            self
+        } else {
+            // The three distinct digit values sum to zero.
+            Self::from_i8(-self.to_i8() - other.to_i8())
+        }
+    }
+
+    /// Returns the sole nonzero digit when exactly one operand is nonzero.
+    /// If both operands are zero or both are nonzero, returns `Zero`.
+    pub const fn exclusive_merge(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::Zero, digit) | (digit, Self::Zero) => digit,
+            _ => Self::Zero,
+        }
+    }
+
+    /// Returns `Pos` if `other` immediately follows `self` in the cycle
+    /// `Neg → Zero → Pos → Neg`, and `Neg` otherwise.
+    pub const fn is_successor(self, other: Self) -> Self {
+        self.post().equal(other)
+    }
+
+    /// Uses `other` to enable `self`.
+    ///
+    /// Either nonzero control digit passes `self` through. A zero control
+    /// digit clears the result to `Zero`.
+    pub const fn enable(self, other: Self) -> Self {
+        match other {
+            Self::Zero => Self::Zero,
+            _ => self,
+        }
+    }
+
+    /// Returns `Pos` if `other` immediately precedes `self` in the cycle
+    /// `Neg → Zero → Pos → Neg`, and `Neg` otherwise.
+    pub const fn is_predecessor(self, other: Self) -> Self {
+        self.pre().equal(other)
     }
 
     /// Encodes this trit as its numeric value plus one.
