@@ -1377,4 +1377,6 @@ mod tests {
     fn digit_from_i8_rejects_invalid_input() {
         let _ = crate::Digit::from_i8(2);
     }
+
+    mod digit_operations;
 }
