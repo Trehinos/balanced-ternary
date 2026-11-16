@@ -2,16 +2,16 @@
 //! Inputs, rows (left operand), and columns (right operand) use the order
 //! `Neg`, `Zero`, `Pos`. The three zero-divisor cells have separate panic tests.
 
-use crate::Digit;
+use crate::{Digit, Neg, Pos, Zero};
 use core::ops::{Add, BitAnd, BitOr, BitXor, Mul, Not, Sub};
 
-const DIGITS: [Digit; 3] = [Digit::Neg, Digit::Zero, Digit::Pos];
+const DIGITS: [Digit; 3] = [Neg, Zero, Pos];
 
 fn expected_digit(symbol: u8) -> Digit {
     match symbol {
-        b'-' => Digit::Neg,
-        b'0' => Digit::Zero,
-        b'+' => Digit::Pos,
+        b'-' => Neg,
+        b'0' => Zero,
+        b'+' => Pos,
         _ => panic!("invalid digit in expected table: {}", char::from(symbol)),
     }
 }
@@ -132,17 +132,33 @@ fn div_nonzero() {
 #[test]
 #[should_panic(expected = "Cannot divide by zero")]
 fn div_neg_by_zero() {
-    let _ = Digit::Neg / Digit::Zero;
+    let _ = Neg / Zero;
 }
 
 #[test]
 #[should_panic(expected = "Cannot divide by zero")]
 fn div_zero_by_zero() {
-    let _ = Digit::Zero / Digit::Zero;
+    let _ = Zero / Zero;
 }
 
 #[test]
 #[should_panic(expected = "Cannot divide by zero")]
 fn div_pos_by_zero() {
-    let _ = Digit::Pos / Digit::Zero;
+    let _ = Pos / Zero;
+}
+
+#[test]
+fn digit_bool_conversions() {
+    assert_eq!(Neg.try_to_bool(), Some(false));
+    assert_eq!(Zero.try_to_bool(), None);
+    assert_eq!(Pos.try_to_bool(), Some(true));
+
+    assert!(!Neg.ht_bool());
+    assert!(Pos.ht_bool());
+}
+
+#[test]
+#[should_panic(expected = "Cannot convert Digit::Zero to bool. Use try_to_bool() to handle Zero.")]
+fn ht_bool_panics_on_zero() {
+    let _ = Zero.ht_bool();
 }
