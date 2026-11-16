@@ -1496,5 +1496,6 @@ mod tests {
         }
     }
 
+    mod digit_operations;
     mod r11_properties;
 }
