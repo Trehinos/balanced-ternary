@@ -624,9 +624,17 @@ impl Digit {
             Digit::Neg => false,
             Digit::Zero => panic!(
                 "Cannot convert a Digit::Zero to a bool. \
-                 Use Digit::possibly()->to_bool() or Digit::necessary()->to_bool() instead."
+                 Use Digit::possibly()->try_to_bool()? or Digit::necessary()->try_to_bool()? instead."
             ),
             Digit::Pos => true,
+        }
+    }
+
+    pub fn try_to_bool(self) -> Option<bool> {
+        match self {
+            Digit::Neg => Some(false),
+            Digit::Zero => None,
+            Digit::Pos => Some(true),
         }
     }
 
