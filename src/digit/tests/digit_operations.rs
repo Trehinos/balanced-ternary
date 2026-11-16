@@ -2,8 +2,6 @@
 //! Inputs, rows (left operand), and columns (right operand) use the order
 //! `Neg`, `Zero`, `Pos`. The three zero-divisor cells have separate panic tests.
 
-#![no_std]
-
 use crate::Digit;
 use core::ops::{Add, BitAnd, BitOr, BitXor, Mul, Not, Sub};
 
