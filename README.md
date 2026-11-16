@@ -74,9 +74,9 @@ assert_ne!(stored, dter("00000+")); // An additional stored chunk.
 
 ## Digit operations
 
-`Digit` provides Kleene, Bochvar, Łukasiewicz, RM3, HT, paraconsistent,
-and Post logic operations. Apply a digit function to a whole word with
-the `DigitOperate` trait.
+`Digit` provides Kleene, Bochvar, Łukasiewicz, RM3, HT, paraconsistent, Post logic operations...
+There are 13 unary and 43 binary operations.  
+Apply a digit function to a whole word with the `DigitOperate` trait.
 
 ```rust
 use balanced_ternary::concepts::DigitOperate;

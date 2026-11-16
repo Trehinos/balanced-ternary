@@ -1,6 +1,6 @@
 [package]
 name = "balanced-ternary"
-version = "3.1.0-dev"
+version = "3.1.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Balanced ternary arithmetic, compact storage, and three-valued logic for no_std Rust."
@@ -19,7 +19,7 @@ include = [
     "/README.md",
     "/LICENSE",
     "/digit-operations.png",
-    "/.changelog/v3.0.0.md",
+    "/.changelog/**",
 ]
 
 [features]
