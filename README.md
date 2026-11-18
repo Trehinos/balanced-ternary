@@ -102,9 +102,9 @@ assert_eq!(value.each(Digit::possibly).to_string(), "++-");
 
 ![State manipulation](.doc/state.png)
 
-### Cyclic operations
+### Cycles and transitions
 
-![Cyclic operations](.doc/cycle.png)
+![Cycles and transitions](.doc/cycle.png)
 
 ## Documentation
 
