@@ -86,7 +86,25 @@ let value = Ternary::parse("+0-");
 assert_eq!(value.each(Digit::possibly).to_string(), "++-");
 ```
 
-![Truth tables for digit operations](digit-operations.png)
+### Arithmetic operations 
+
+![Arithmetic operations](.doc/arithmetic.png)
+
+### Logic operations
+
+![Logic operations](.doc/logic.png)
+
+### Comparison operations
+
+![Comparison operations](.doc/comparison.png)
+
+### State manipulation
+
+![State manipulation](.doc/state.png)
+
+### Cyclic operations
+
+![Cyclic operations](.doc/cycle.png)
 
 ## Documentation
 
