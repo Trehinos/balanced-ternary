@@ -109,9 +109,9 @@ test_binary_table!(lesser_or_equal, b"+++", b"-++", b"--+");
 
 test_binary_table!(coalesce, b"---", b"-0+", b"+++");
 test_binary_table!(compatible, b"++-", b"+++", b"-++");
-test_binary_table!(step_toward, b"-00", b"-0+", b"00+");
+test_binary_table!(to, b"-00", b"-0+", b"00+");
 test_binary_table!(inhibit, b"0-0", b"000", b"0+0");
-test_binary_table!(step_back, b"00+", b"-0+", b"-00");
+test_binary_table!(from, b"00+", b"-0+", b"-00");
 
 test_binary_table!(third, b"-+0", b"+0-", b"0-+");
 test_binary_table!(exclusive_merge, b"0-0", b"-0+", b"0+0");
