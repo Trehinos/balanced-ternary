@@ -895,7 +895,10 @@ impl Digit {
     /// Returns `other` when the digits differ, or `Zero` when they agree.
     ///
     /// For opposite signs, the result takes the sign of `other`.
-    #[deprecated(since = "3.2.0", note = "Use `from` instead. Will be removed in 4.0.0.")]
+    #[deprecated(
+        since = "3.2.0",
+        note = "Use `from` instead. Will be removed in 4.0.0."
+    )]
     pub const fn step_back(self, other: Self) -> Self {
         self.from(other)
     }
