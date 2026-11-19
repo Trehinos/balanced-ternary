@@ -868,16 +868,19 @@ impl Digit {
     ///
     /// Equal digits stay in place. Adjacent digits reach `other` in one step.
     /// Moving between `Neg` and `Pos` in either direction yields `Zero`.
-    #[deprecated(since = "3.2.0", note = "Use `to` instead. Will be removed in 4.0.0.")]
+    #[deprecated(
+        since = "3.2.0",
+        note = "Use `toward` instead. Will be removed in 4.0.0."
+    )]
     pub const fn step_toward(self, other: Self) -> Self {
-        self.to(other)
+        self.toward(other)
     }
 
     /// Moves `self` one step toward `other` in the order `Neg < Zero < Pos`.
     ///
     /// Equal digits stay in place. Adjacent digits reach `other` in one step.
     /// Moving between `Neg` and `Pos` in either direction yields `Zero`.
-    pub const fn to(self, other: Self) -> Self {
+    pub const fn toward(self, other: Self) -> Self {
         Self::from_i8(self.to_i8() + other.compare(self).to_i8())
     }
 
@@ -897,16 +900,16 @@ impl Digit {
     /// For opposite signs, the result takes the sign of `other`.
     #[deprecated(
         since = "3.2.0",
-        note = "Use `from` instead. Will be removed in 4.0.0."
+        note = "Use `changed` instead. Will be removed in 4.0.0."
     )]
     pub const fn step_back(self, other: Self) -> Self {
-        self.from(other)
+        self.change(other)
     }
 
     /// Returns `other` when the digits differ, or `Zero` when they agree.
     ///
     /// For opposite signs, the result takes the sign of `other`.
-    pub const fn from(self, other: Self) -> Self {
+    pub const fn change(self, other: Self) -> Self {
         if self.to_i8() == other.to_i8() {
             Self::Zero
         } else {
