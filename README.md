@@ -75,7 +75,7 @@ assert_ne!(stored, dter("00000+")); // An additional stored chunk.
 ## Digit operations
 
 `Digit` provides Kleene, Bochvar, Łukasiewicz, RM3, HT, paraconsistent, Post logic operations...
-There are 13 unary and 43 binary operations.  
+There are 14 unary and 43 binary operations.  
 Apply a digit function to a whole word with the `DigitOperate` trait.
 
 ```rust
@@ -86,12 +86,34 @@ let value = Ternary::parse("+0-");
 assert_eq!(value.each(Digit::possibly).to_string(), "++-");
 ```
 
-![Truth tables for digit operations](digit-operations.png)
+All operations in one image: [All operations](.doc/digit-operations.png).
+
+### Arithmetic operations 
+
+![Arithmetic operations](.doc/arithmetic.png)
+
+### Logic operations
+
+![Logic operations](.doc/logic.png)
+
+### Comparison operations
+
+![Comparison operations](.doc/comparison.png)
+
+### State manipulation
+
+![State manipulation](.doc/state.png)
+
+### Cycles and transitions
+
+![Cycles and transitions](.doc/cycle.png)
 
 ## Documentation
 
 Read the [API reference for the published crate](https://docs.rs/balanced-ternary).
 For the current checkout, run `cargo doc --all-features --open`.
+
+Read the [Three-valued logic and balanced ternary tutorial](.doc/tutorial.md).
 
 ## License
 
