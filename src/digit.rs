@@ -900,7 +900,7 @@ impl Digit {
     /// For opposite signs, the result takes the sign of `other`.
     #[deprecated(
         since = "3.2.0",
-        note = "Use `changed` instead. Will be removed in 4.0.0."
+        note = "Use `change` instead. Will be removed in 4.0.0."
     )]
     pub const fn step_back(self, other: Self) -> Self {
         self.change(other)

@@ -1,6 +1,6 @@
 # Three-Valued Logic and Balanced Ternary in Rust
 
-*A practical introduction with `balanced-ternary` 3.1.0*
+*A practical introduction with `balanced-ternary` 3.2.0*
 
 A configuration setting has not been loaded yet. A check has not finished. A sensor has not reported a value. In each
 case, `false` would say more than you actually know.
@@ -15,9 +15,8 @@ formats and Cargo features for `no_std` code.
 You need basic Rust: enums, functions, references, traits, `Option`, `Result`, and Cargo. No previous knowledge of
 three-valued logic is assumed.
 
-**Version scope.** The API examples target **3.1.0**, checked against repository revision [
-`d6b08f8`](https://github.com/Trehinos/balanced-ternary/tree/d6b08f8afcd991c198453a6f848f6d7cc0d765a2). They do not
-depend on the development branch. Use the pinned dependency below to follow along reproducibly.
+**Version scope.** This tutorial targets **balanced-ternary 3.2.0**. Use the pinned dependency below to follow along
+reproducibly. All examples use the current `toward` and `change` names.
 
 ## Contents
 
@@ -100,7 +99,7 @@ Add this entry under `[dependencies]` in `Cargo.toml`:
 
 ```toml
 [dependencies]
-balanced-ternary = "=3.1.0"
+balanced-ternary = "=3.2.0"
 ```
 
 The package name uses a hyphen; the Rust import uses an underscore:
@@ -144,7 +143,7 @@ assert_eq!(Pos.to_char(), '+');
 ```
 
 `from_char` and `from_i8` also exist, but panic on invalid input. The `try_` forms are appropriate at an input boundary.
-In 3.1.0, `Digit` itself does not implement `Display`: print `digit.to_char()` for a symbol, or use `{:?}` for its enum
+In 3.2.0, `Digit` itself does not implement `Display`: print `digit.to_char()` for a symbol, or use `{:?}` for its enum
 variant.
 
 Use `to_i8()` for the signed numeric value. **Do not cast the enum with `as i8` to obtain −1, 0, or +1.** Its
@@ -538,7 +537,7 @@ assert_eq!(l3_equiv(Zero, Zero), Pos);
 assert_eq!(Zero.k3_equiv(Zero), Zero);
 ```
 
-`l3_equiv` above is a local helper, not a built-in method in 3.1.0. The changed self-equivalence illustrates why you
+`l3_equiv` above is a local helper, not a built-in method in 3.2.0. The changed self-equivalence illustrates why you
 should not reuse `k3_equiv` merely because its name contains “equiv.” For the theoretical comparison,
 see [Hölldobler and Ramli, section 2](https://iccl.inf.tu-dresden.de/w/images/7/72/Hoelldobler%3A09%3Awv02.pdf).
 
@@ -945,14 +944,34 @@ predicate. Checking those functions over three or nine cases is cheap and makes 
 
 Other operations in the crate are useful without belonging to one of the preceding logical systems:
 
-| Method        | Rule                                        | Example                        |
-|---------------|---------------------------------------------|--------------------------------|
-| `coalesce`    | Keep the left value unless it is zero       | `Zero.coalesce(Pos) == Pos`    |
-| `consensus`   | Keep an agreed value; otherwise return zero | `Pos.consensus(Neg) == Zero`   |
-| `compatible`  | Reject opposite nonzero signs               | `Zero.compatible(Neg) == Pos`  |
-| `compare`     | Encode the ordering of the two values       | `Neg.compare(Pos) == Neg`      |
-| `step_toward` | Move one step toward the other value        | `Neg.step_toward(Pos) == Zero` |
-| `duel`        | Return the winner under a cyclic rule       | `Neg.duel(Pos) == Neg`         |
+| Method       | Rule                                                | Example                       |
+|--------------|-----------------------------------------------------|-------------------------------|
+| `coalesce`   | Keep the left value unless it is zero               | `Zero.coalesce(Pos) == Pos`   |
+| `consensus`  | Keep an agreed value; otherwise return zero         | `Pos.consensus(Neg) == Zero`  |
+| `compatible` | Reject opposite nonzero signs                       | `Zero.compatible(Neg) == Pos` |
+| `compare`    | Encode the ordering of the two values               | `Neg.compare(Pos) == Neg`     |
+| `toward`     | Move one step toward the other value                | `Neg.toward(Pos) == Zero`     |
+| `change`     | Return the other value if different; otherwise zero | `Neg.change(Pos) == Pos`      |
+| `duel`       | Return the winner under a cyclic rule               | `Neg.duel(Pos) == Neg`        |
+
+`toward` and `change` return new values; neither mutates its receiver. They answer different questions:
+`toward` computes the next step toward a target, while `change` returns a different target value or zero when unchanged.
+
+```rust
+use balanced_ternary::Digit::{Neg, Pos, Zero};
+
+assert_eq!(Neg.toward(Pos), Zero);
+assert_eq!(Zero.toward(Pos), Pos);
+assert_eq!(Pos.toward(Pos), Pos);
+
+assert_eq!(Neg.change(Pos), Pos);
+assert_eq!(Zero.change(Pos), Pos);
+assert_eq!(Pos.change(Pos), Zero);
+assert_eq!(Pos.change(Zero), Zero);
+```
+
+`change` returns a `Digit`, not a Boolean change indicator. A change to `Zero` and an unchanged value both produce
+`Zero`; use `a != b` when you need to detect whether any change occurred.
 
 For `duel`, `Zero` beats `Neg`, `Pos` beats `Zero`, and `Neg` beats `Pos`: a rock-paper-scissors rule, not an ordinary
 maximum.
@@ -1113,7 +1132,7 @@ assert_eq!(checked_digit_div(Zero, Pos), Some(Zero));
 assert_eq!(checked_digit_div(Pos, Zero), None);
 ```
 
-This helper is application code; `Digit` has no inherent `checked_div` method in 3.1.0. A failure marker such as `!` in
+This helper is application code; `Digit` has no inherent `checked_div` method in 3.2.0. A failure marker such as `!` in
 an arithmetic table denotes an invalid operation, not an additional `Digit`. Mapping that failure to logical unknown
 would be a separate policy, not the behavior of `/`.
 
@@ -1660,7 +1679,7 @@ assert_eq!(empty.to_fixed_ternary().to_string(), "");
 assert_eq!(empty.to_ternary().to_string(), "0");
 ```
 
-Finally, compact in-memory storage is not automatically a file or network format. Version 3.1.0 does not expose a
+Finally, compact in-memory storage is not automatically a file or network format. Version 3.2.0 does not expose a
 general `DataTernary` byte serialization API. Define a wire format and validation rules explicitly if persistence or
 interoperability is your goal; do not reinterpret the private `Vec` layout as serialized data.
 
@@ -1690,7 +1709,7 @@ For digit-only application logic, use:
 
 ```toml
 [dependencies]
-balanced-ternary = { version = "=3.1.0", default-features = false }
+balanced-ternary = { version = "=3.2.0", default-features = false }
 ```
 
 Put this in a library's `src/lib.rs`:
@@ -1711,7 +1730,7 @@ pub fn confirmed(value: Digit) -> bool {
 
 Those functions perform no heap allocation.
 
-**Version-specific distinction:** in 3.1.0, the crate declares `extern crate alloc` unconditionally, and
+**Version-specific distinction:** in 3.2.0, the crate declares `extern crate alloc` unconditionally, and
 `DigitOperate::to_digits()` returns a `Vec`. Disabling default features does not make the dependency strictly `core`
 -only. Non-allocating operations and allocator-free final linking are separate claims; check the latter in your actual
 firmware build.
@@ -1722,7 +1741,7 @@ Enable fixed-width words with:
 
 ```toml
 [dependencies]
-balanced-ternary = { version = "=3.1.0", default-features = false, features = ["tryte"] }
+balanced-ternary = { version = "=3.2.0", default-features = false, features = ["tryte"] }
 ```
 
 A library can then operate on an array-backed word:
@@ -1752,7 +1771,7 @@ For growable numbers without the other optional types:
 
 ```toml
 [dependencies]
-balanced-ternary = { version = "=3.1.0", default-features = false, features = ["ternary-string"] }
+balanced-ternary = { version = "=3.2.0", default-features = false, features = ["ternary-string"] }
 ```
 
 A `no_std` library using an allocated string can be written as follows:
@@ -1777,7 +1796,7 @@ handling, and linking configuration; this example is a reusable library, not tha
 
 ### Audit operations, not just types
 
-| Operation or representation                          | Heap allocation behavior in 3.1.0                                    |
+| Operation or representation                          | Heap allocation behavior in 3.2.0                                    |
 |------------------------------------------------------|----------------------------------------------------------------------|
 | `Digit` logic and arithmetic                         | No allocation                                                        |
 | `Tryte<N>` storage, parsing, and arithmetic          | Fixed arrays; no heap allocation                                     |
@@ -1825,7 +1844,7 @@ operations. Wrapping the chosen type in a domain struct helps prevent accidental
 | Construct a bounded word               | `Tryte::<N>::checked_from_i64` or `TryFrom`       |
 | Handle word overflow                   | `checked_add`, `checked_sub`, `checked_mul`       |
 | Divide `Tryte<N>` or `Ter40` safely    | `checked_div`                                     |
-| Divide `Digit` or `Ternary` safely     | Validate the divisor first in 3.1.0               |
+| Divide `Digit` or `Ternary` safely     | Validate the divisor first in 3.2.0               |
 | Convert a truth value to Boolean       | `try_to_bool()` or an explicit resolution policy  |
 | Preserve a packed record's exact width | Store original length; use `to_fixed_ternary()`   |
 
@@ -1969,37 +1988,37 @@ corresponding `core::ops` trait in scope if called by name; operator syntax need
 | Arithmetic and signed shaping   | Unary `-`; binary `+`, `-`, `*`, `/`; `absolute_positive`, `absolute_negative`, `positive`, `negative`, `not_positive`, `not_negative`, `accept_anything`                                                                                                                                     | Wrapping versus saturation; zero divisors                |
 | Truth functions and uncertainty | `!` (`not`), `&` (`bitand`), `\|` (`bitor`), `^` (`bitxor`); `k3_imply`, `k3_equiv`; `bi3_and`, `bi3_or`, `bi3_imply`; `l3_imply`, `l3_strong_and`, `l3_strong_or`; `rm3_imply`, `rm3_fusion`; `ht_imply`, `ht_not`; `para_imply`; `mc_and`, `mc_or`; `necessary`, `possibly`, `contingently` | Interpretation of the middle state and operand order     |
 | Comparison and agreement        | `compare`, `equal`, `different`, `greater`, `greater_or_equal`, `lesser`, `lesser_or_equal`, `graded_diff`, `consensus`, `unknown_consensus`, `compatible`                                                                                                                                    | Numeric/state comparison versus logical equivalence      |
-| Selection and control           | `coalesce`, `inhibit`, `enable`, `exclusive_merge`, `step_back`                                                                                                                                                                                                                               | Which operand is the control; whether zero means absence |
-| Cycles and movement             | `post`, `pre`, `is_successor`, `is_predecessor`, `duel`, `third`, `step_toward`                                                                                                                                                                                                               | Linear ordering versus cyclic relationships              |
+| Selection and control           | `coalesce`, `inhibit`, `enable`, `exclusive_merge`, `change`                                                                                                                                                                                                                                  | Which operand is the control; whether zero means absence |
+| Cycles and movement             | `post`, `pre`, `is_successor`, `is_predecessor`, `duel`, `third`, `toward`                                                                                                                                                                                                                    | Linear ordering versus cyclic relationships              |
 
 Two particularly easy names to misread are:
 
 - `enable(value, control)` passes the value through for **either** nonzero control digit, including `Neg`. It is not
   “pass only when control is logically true.” In method syntax, use `value.enable(control)`.
-- `step_back` returns the right operand when the two differ, and `Zero` when they agree. It is not the inverse of
-  `step_toward`.
+- `change` returns the right operand when the two differ, and `Zero` when they agree. It is not the inverse of
+  `toward`.
 
 The `inc()` and `dec()` helpers on `Digit` are available with `ternary-string` and return a `Ternary`, because their
 mathematical result can need more than one trit. They are distinct from the single-trit cyclic operations.
 
 ### Primary implementation references
 
-The source links below are pinned to the version used for this tutorial:
+The source links below are pinned to the 3.2.0 source revision used to validate this tutorial:
 
-- [README and type overview](https://github.com/Trehinos/balanced-ternary/blob/d6b08f8afcd991c198453a6f848f6d7cc0d765a2/README.md)
-- [Cargo features and minimum Rust version](https://github.com/Trehinos/balanced-ternary/blob/d6b08f8afcd991c198453a6f848f6d7cc0d765a2/Cargo.toml)
+- [README and type overview](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/README.md)
+- [Cargo features and minimum Rust version](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/Cargo.toml)
 - [
-  `Digit` operations](https://github.com/Trehinos/balanced-ternary/blob/d6b08f8afcd991c198453a6f848f6d7cc0d765a2/src/digit.rs)
-- [Executable digit truth-table tests](https://github.com/Trehinos/balanced-ternary/blob/d6b08f8afcd991c198453a6f848f6d7cc0d765a2/src/digit/tests/digit_operations.rs)
+  `Digit` operations](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/src/digit.rs)
+- [Executable digit truth-table tests](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/src/tests/digit_operations.rs)
 - [
-  `Ternary`, parsing, representation, and conversions](https://github.com/Trehinos/balanced-ternary/blob/d6b08f8afcd991c198453a6f848f6d7cc0d765a2/src/lib.rs)
+  `Ternary`, parsing, representation, and conversions](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/src/lib.rs)
 - [
-  `Ternary` arithmetic](https://github.com/Trehinos/balanced-ternary/blob/d6b08f8afcd991c198453a6f848f6d7cc0d765a2/src/operations.rs)
+  `Ternary` arithmetic](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/src/operations.rs)
 - [
-  `DigitOperate` contracts](https://github.com/Trehinos/balanced-ternary/blob/d6b08f8afcd991c198453a6f848f6d7cc0d765a2/src/concepts.rs)
-- [`Tryte<N>`](https://github.com/Trehinos/balanced-ternary/blob/d6b08f8afcd991c198453a6f848f6d7cc0d765a2/src/tryte.rs)
+  `DigitOperate` contracts](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/src/concepts.rs)
+- [`Tryte<N>`](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/src/tryte.rs)
 - [`Ter40`, `TritsChunk`, and
-  `DataTernary`](https://github.com/Trehinos/balanced-ternary/blob/d6b08f8afcd991c198453a6f848f6d7cc0d765a2/src/store.rs)
+  `DataTernary`](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/src/store.rs)
 
 ### Further reading
 
@@ -2029,9 +2048,13 @@ cargo doc --open
 
 ### Example validation
 
-All 59 Rust blocks were checked against the published `balanced-ternary` 3.1.0 package using Rust 1.100.0: 56 executable
-examples passed their assertions, and the three `no_std` library examples compiled. The additional truth tables in
-section 6 were generated directly from the same published crate; the examples also verify several defining identities
-and inference-preservation properties exhaustively over the finite input domain. Each `no_std` example was also checked
-with its stated Cargo features on both the host and `thumbv7em-none-eabi`. These are library compilation checks, not a
-claim that a complete firmware image was linked or run on hardware.
+All 60 Rust blocks were checked using Rust 1.100.0 against the 3.2.0 development sources at
+[`6b50a1a`](https://github.com/Trehinos/balanced-ternary/tree/6b50a1ab3b363e4fefa2854876b682f1a6e491f3)
+(the snapshot's Cargo package version is `3.2.0-dev`). The dependency declarations above target the final **3.2.0**
+release.
+
+The 57 executable examples passed their assertions, and the three `no_std` library examples compiled. The truth tables
+in section 6 were verified against the same source snapshot; examples also check defining identities and
+inference-preservation properties exhaustively over the finite input domain. Each `no_std` example was checked with its
+stated Cargo features on both the host and `thumbv7em-none-eabi`. These are library compilation checks, not a claim that
+a complete firmware image was linked or run on hardware.
