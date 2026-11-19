@@ -15,8 +15,7 @@ formats and Cargo features for `no_std` code.
 You need basic Rust: enums, functions, references, traits, `Option`, `Result`, and Cargo. No previous knowledge of
 three-valued logic is assumed.
 
-**Version scope.** This tutorial targets **balanced-ternary 3.2.0**. Use the pinned dependency below to follow along
-reproducibly. All examples use the current `toward` and `change` names.
+This tutorial uses **balanced-ternary 3.2.0**.
 
 ## Contents
 
@@ -789,9 +788,6 @@ With `!`, `&`, `|` and designated set `{B, T}`, adding this conditional still le
 from the LP subsection intact. That makes a concrete paraconsistent interpretation possible. It does not establish that
 every operation elsewhere in the crate belongs to that same system.
 
-This tutorial describes `para_imply` by its actual table rather than assigning it a more specific calculus name that the
-API does not document.
-
 ### 6.8. McCarthy's sequential logic
 
 McCarthy's conjunction and disjunction make the left operand decisive in a way that models evaluation order:
@@ -1110,10 +1106,10 @@ assert_eq!(two.to_dec(), 2);
 
 Addition is therefore not OR. `Pos | Pos` is `Pos`, while `Pos + Pos` is `Neg`.
 
-### Division by zero is not a fourth state
+### Single-trit division
 
-For a nonzero `Digit` divisor, division and multiplication give the same result because the only possible divisors are
-−1 and +1, each its own reciprocal. Their domains differ: **division by `Zero` panics**.
+A `Digit` can be divided by `Pos` (+1) or `Neg` (−1). Division by `Pos` preserves the dividend; division by `Neg`
+negates it. **Division by `Zero` panics.** Check the divisor before dividing when zero is a possible input:
 
 ```rust
 use balanced_ternary::Digit;
@@ -1132,9 +1128,8 @@ assert_eq!(checked_digit_div(Zero, Pos), Some(Zero));
 assert_eq!(checked_digit_div(Pos, Zero), None);
 ```
 
-This helper is application code; `Digit` has no inherent `checked_div` method in 3.2.0. A failure marker such as `!` in
-an arithmetic table denotes an invalid operation, not an additional `Digit`. Mapping that failure to logical unknown
-would be a separate policy, not the behavior of `/`.
+The helper returns `None` for a zero divisor and `Some(result)` for a successful division. It is defined locally;
+`Digit` has no inherent `checked_div` method in 3.2.0.
 
 ## 9. Calculate with `Ternary`
 
@@ -2003,7 +1998,7 @@ mathematical result can need more than one trit. They are distinct from the sing
 
 ### Primary implementation references
 
-The source links below are pinned to the 3.2.0 source revision used to validate this tutorial:
+The following source files document the types, operations, and contracts covered in this tutorial:
 
 - [README and type overview](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/README.md)
 - [Cargo features and minimum Rust version](https://github.com/Trehinos/balanced-ternary/blob/6b50a1ab3b363e4fefa2854876b682f1a6e491f3/Cargo.toml)
@@ -2045,16 +2040,3 @@ For local API documentation matching your dependency, run:
 ```sh
 cargo doc --open
 ```
-
-### Example validation
-
-All 60 Rust blocks were checked using Rust 1.100.0 against the 3.2.0 development sources at
-[`6b50a1a`](https://github.com/Trehinos/balanced-ternary/tree/6b50a1ab3b363e4fefa2854876b682f1a6e491f3)
-(the snapshot's Cargo package version is `3.2.0-dev`). The dependency declarations above target the final **3.2.0**
-release.
-
-The 57 executable examples passed their assertions, and the three `no_std` library examples compiled. The truth tables
-in section 6 were verified against the same source snapshot; examples also check defining identities and
-inference-preservation properties exhaustively over the finite input domain. Each `no_std` example was checked with its
-stated Cargo features on both the host and `thumbv7em-none-eabi`. These are library compilation checks, not a claim that
-a complete firmware image was linked or run on hardware.
