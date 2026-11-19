@@ -113,6 +113,8 @@ All operations in one image: [All operations](.doc/digit-operations.png).
 Read the [API reference for the published crate](https://docs.rs/balanced-ternary).
 For the current checkout, run `cargo doc --all-features --open`.
 
+Read the [Three-valued logic and balanced ternary tutorial](.doc/tutorial.md).
+
 ## License
 
 Copyright (c) 2025-2026 [Sébastien GELDREICH](mailto:dev@trehinos.eu).  

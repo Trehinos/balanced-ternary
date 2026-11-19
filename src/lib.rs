@@ -15,11 +15,6 @@
 #![no_std]
 extern crate alloc;
 
-// Run the README's public examples with the features they use.
-#[cfg(all(doctest, feature = "tryte", feature = "ternary-store"))]
-#[doc = include_str!("../README.md")]
-mod readme_examples {}
-
 pub mod concepts;
 
 #[cfg(feature = "ternary-string")]
@@ -784,24 +779,24 @@ mod tryte;
 #[cfg(feature = "tryte")]
 pub use crate::tryte::{ParseTryteError, Tryte};
 
+// Run the README's public examples with the features they use.
+#[cfg(all(doctest, feature = "tryte", feature = "ternary-store"))]
+#[doc = include_str!("../README.md")]
+mod readme_examples {}
+
 #[cfg(test)]
 mod tests {
     mod digit_base;
     mod digit_operations;
-
     mod r11_properties;
     #[cfg(feature = "ternary-string")]
     mod ternary_base;
-
     #[cfg(feature = "ternary-string")]
     mod ternary_conversions;
-
     #[cfg(feature = "ternary-string")]
     mod ternary_operations;
-
     #[cfg(feature = "ternary-store")]
     mod ternary_store;
-
     #[cfg(feature = "tryte")]
     mod tryte;
 }
